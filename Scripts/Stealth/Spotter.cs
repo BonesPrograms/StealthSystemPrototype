@@ -7,7 +7,7 @@ using XRL.World.Effects;
 using XRL.World.AI;
 using System.Collections.Generic;
 using XRL.World;
-using XRL.World.Parts;
+using StealthSystem;
 
 
 namespace Nexus.StealthSystem
@@ -153,4 +153,5 @@ namespace XRL.World.Effects
 
         public override bool UseStandardDurationCountdown() => true;
     }
+
 }
