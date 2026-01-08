@@ -131,7 +131,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (!opening.IsNullOrEmpty())
                 opening += ": ";
 
-            return Scores?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "|" : opening) + n.Value.ToString());
+            return Scores?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? ", " : opening) + n.Value.ToString());
         }
         public override string ToString()
             => ToString(null);

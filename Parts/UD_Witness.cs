@@ -36,13 +36,15 @@ namespace XRL.World.Parts
 
         public override bool HandleEvent(BeforeTakeActionEvent E)
         {
-            EmitMessage(Perception.ToString());
+            if (UD_Stealth.ConstantDebugOutput)
+                EmitMessage(Perception.ToString(ParentObject));
             return base.HandleEvent(E);
         }
 
         public bool HandleEvent(GetWitnessesEvent E)
         {
             if (ParentObject != E.Hider
+                && !ParentObject.InSamePartyAs(E.Hider)
                 && E.Hider?.CurrentCell is Cell { InActiveZone: true } hiderCell
                 && ParentObject.CurrentCell is Cell { InActiveZone: true } myCell
                 && hiderCell.CosmeticDistanceto(myCell.Location) is int distance

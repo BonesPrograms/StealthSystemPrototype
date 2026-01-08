@@ -38,7 +38,13 @@ namespace XRL.World.Parts
             if (E.Object == The.Player)
             {
                 if (GetWitnessesEvent.GetFor(The.Player) is List<GameObject> witnessList)
-                    UnityEngine.Debug.Log("Witnesses:\n" + witnessList.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + (n?.DebugName ?? "null?")));
+                {
+                    static string perceptionString(GameObject Object)
+                    {
+                        return (Object?.DebugName ?? "null?") + ": " + Object?.GetPart<UD_Witness>()?.Perception?.ToString(Object);
+                    }
+                    UnityEngine.Debug.Log("Witnesses:\n" + witnessList.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + perceptionString(n)));
+                }
                 else
                     UnityEngine.Debug.Log("no witnesses");
 
@@ -54,7 +60,11 @@ namespace XRL.World.Parts
             {
                 if (GetWitnessesEvent.GetFor(player) is List<GameObject> witnessList)
                 {
-                    Popup.Show("Witnesses:\n" + witnessList.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + (n?.DebugName ?? "null?")));
+                    static string perceptionString(GameObject Object)
+                    {
+                        return (Object?.DebugName ?? "null?") + ": " + Object?.GetPart<UD_Witness>()?.Perception?.ToString(Object);
+                    }
+                    Popup.Show("Witnesses:\n" + witnessList.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + perceptionString(n)));
                 }
                 else
                     Popup.Show("no witnesses");
