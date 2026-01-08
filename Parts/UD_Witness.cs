@@ -42,7 +42,8 @@ namespace XRL.World.Parts
 
         public bool HandleEvent(GetWitnessesEvent E)
         {
-            if (E.Hider?.CurrentCell is Cell { InActiveZone: true } hiderCell
+            if (ParentObject != E.Hider
+                && E.Hider?.CurrentCell is Cell { InActiveZone: true } hiderCell
                 && ParentObject.CurrentCell is Cell { InActiveZone: true } myCell
                 && hiderCell.CosmeticDistanceto(myCell.Location) is int distance
                 && Perception != null
