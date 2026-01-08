@@ -53,7 +53,7 @@ namespace XRL.World.Parts
                         Accumulator.Add(Next.Radius);
                         return Accumulator;
                     }) is List<int> radii
-                && distance.EqualsAny(radii.ToArray()))
+                && radii.Any(r => r >= distance))
                 E.AddWitness(this);
                 
             return base.HandleEvent(E);
