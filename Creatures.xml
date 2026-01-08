@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <objects>
   <object Name="Creature" Load="Merge">
-    <part Name="Bones_PerceptionHelper" />
-    <part Name="Bones_Witness" />
-    <part Name="Bones_Stealth" />
+    <part Name="UD_PerceptionHelper" />
+    <part Name="UD_Witness" />
+    <part Name="UD_Stealth" />
   </object>
 </objects>

@@ -12,7 +12,7 @@ using static StealthSystemPrototype.Capabilities.Stealth.Perception;
 namespace XRL.World.Parts
 {
     [Serializable]
-    public class Bones_PerceptionHelper : IScribedPart, IModEventHandler<GetPerceptionTypesEvent>
+    public class UD_PerceptionHelper : IScribedPart, IModEventHandler<GetPerceptionTypesEvent>
     {
         public static List<string> VisionMutations => MutationFactory.AllMutationEntries()
             ?.Aggregate(
@@ -26,7 +26,7 @@ namespace XRL.World.Parts
                 })
             ?.ToList();
 
-        public Bones_PerceptionHelper()
+        public UD_PerceptionHelper()
         {
         }
 

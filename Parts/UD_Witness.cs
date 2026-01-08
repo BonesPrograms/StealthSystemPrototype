@@ -13,11 +13,11 @@ using static StealthSystemPrototype.Capabilities.Stealth.Perception;
 namespace XRL.World.Parts
 {
     [Serializable]
-    public class Bones_Witness : IScribedPart, IModEventHandler<GetWitnessesEvent>
+    public class UD_Witness : IScribedPart, IModEventHandler<GetWitnessesEvent>
     {
         public Perception Perception;
 
-        public Bones_Witness()
+        public UD_Witness()
         {
             Perception = null;
         }

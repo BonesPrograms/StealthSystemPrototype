@@ -17,13 +17,13 @@ namespace XRL.World.Parts
 {
     [HasWishCommand]
     [Serializable]
-    public class Bones_Stealth : IScribedPart
+    public class UD_Stealth : IScribedPart
     {
         public static bool ConstantDebugOutput = false;
 
         public List<GameObject> Witnesses;
 
-        public Bones_Stealth()
+        public UD_Stealth()
         {
             Witnesses = null;
         }
