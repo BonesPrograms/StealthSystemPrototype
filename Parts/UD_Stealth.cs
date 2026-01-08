@@ -47,7 +47,7 @@ namespace XRL.World.Parts
         }
 
         #region Wishes
-        [WishCommand(Command = "Bones_Steath debug witnesses")]
+        [WishCommand(Command = "UD_Steath debug witnesses")]
         public static void DebugWitnesses_Wish()
         {
             if (The.Player is GameObject player)
@@ -60,7 +60,7 @@ namespace XRL.World.Parts
                     Popup.Show("no witnesses");
             }
         }
-        [WishCommand(Command = "Bones_Steath debug toggle witnesses")]
+        [WishCommand(Command = "UD_Steath debug toggle witnesses")]
         public static void DebugToggleWitnesses_Wish()
         {
             ConstantDebugOutput = !ConstantDebugOutput;
