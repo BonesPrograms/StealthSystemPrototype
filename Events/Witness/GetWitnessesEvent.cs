@@ -5,7 +5,7 @@ using System.Text;
 using XRL.World;
 using XRL.World.Parts;
 
-namespace StealthSystemPrototype.Events.Witness
+namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
     public class GetWitnessesEvent : IWitnessEvent<GetWitnessesEvent>

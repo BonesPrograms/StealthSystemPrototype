@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL.World.Anatomy;
+using XRL.World.Parts;
+
 namespace StealthSystemPrototype
 {
     public static class Extensions
@@ -168,5 +171,15 @@ namespace StealthSystemPrototype
         }
         public static string ThisManyTimes(this char @char, int Times = 1)
             => @char.ToString().ThisManyTimes(Times);
+
+        public static IEnumerable<BodyPart> LoopPart(this Body Body, string RequiredType, Predicate<BodyPart> Filter)
+        {
+            foreach (BodyPart bodyPart in Body?.LoopPart(RequiredType) ?? new List<BodyPart>())
+                if (Filter == null || Filter(bodyPart))
+                    yield return bodyPart;
+        }
+
+        public static IEnumerable<BodyPart> LoopPart(this Body Body, string RequiredType, bool ExcludeDismembered)
+            => Body?.LoopPart(RequiredType, bp => !ExcludeDismembered || !bp.IsDismembered);
     }
 }

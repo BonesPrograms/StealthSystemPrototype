@@ -11,7 +11,7 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Events.Perception;
 using StealthSystemPrototype.Events.Witness;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Perception;
+using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
 
 namespace XRL.World.Parts
 {
@@ -50,7 +50,7 @@ namespace XRL.World.Parts
                 && ParentObject.IsPlayer())
             {
                 GetWitnesses();
-                UnityEngine.Debug.Log("Witnesses:\n" + WitnessListString());
+                UnityEngine.Debug.Log((ParentObject?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + WitnessListString());
             }
             return base.HandleEvent(E);
         }
@@ -58,6 +58,7 @@ namespace XRL.World.Parts
         {
             GetWitnesses();
             E.AddEntry(this, nameof(Witnesses), WitnessListString());
+            E.AddEntry(this, nameof(Witnesses) + " " + nameof(Witnesses.Count), Witnesses?.Count ?? 0);
             return base.HandleEvent(E);
         }
 
@@ -69,7 +70,7 @@ namespace XRL.World.Parts
                 && player.TryGetPart(out UD_Stealth stealthPart))
             {
                 stealthPart.GetWitnesses();
-                Popup.Show("Witnesses:\n" + stealthPart.WitnessListString());
+                Popup.Show((player?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + stealthPart.WitnessListString());
             }
         }
         [WishCommand(Command = "UD_Steath debug toggle witnesses")]

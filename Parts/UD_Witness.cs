@@ -8,14 +8,14 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Events.Perception;
 using StealthSystemPrototype.Events.Witness;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Perception;
+using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
 
 namespace XRL.World.Parts
 {
     [Serializable]
     public class UD_Witness : IScribedPart, IModEventHandler<GetWitnessesEvent>
     {
-        public Perception Perception;
+        public Perception2 Perception;
 
         public UD_Witness()
         {
@@ -36,7 +36,7 @@ namespace XRL.World.Parts
             ;
         public override bool HandleEvent(BeforeTakeActionEvent E)
         {
-            if (UD_Stealth.ConstantDebugOutput)
+            if (UD_Stealth.ConstantDebugOutput && false)
                 UnityEngine.Debug.Log(Perception.ToString(ParentObject));
             return base.HandleEvent(E);
         }
@@ -62,10 +62,7 @@ namespace XRL.World.Parts
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
-            if (Perception != null)
-                E.AddEntry(this, nameof(Perception), Perception.ToString(ParentObject));
-            else
-                E.AddEntry(this, nameof(Perception), "none??");
+            E.AddEntry(this, nameof(Perception), Perception?.ToString(ParentObject) ?? "none??");
             return base.HandleEvent(E);
         }
     }

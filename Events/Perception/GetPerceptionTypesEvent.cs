@@ -5,9 +5,9 @@ using System.Text;
 using XRL.World;
 using XRL.World.Parts;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Perception;
+using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
 
-namespace StealthSystemPrototype.Events.Perception
+namespace StealthSystemPrototype.Events
 {
     [GameEvent(Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
     public class GetPerceptionTypesEvent : IPerceptionEvent<GetPerceptionTypesEvent>
@@ -47,11 +47,12 @@ namespace StealthSystemPrototype.Events.Perception
             return this;
         }
 
-        public virtual GetPerceptionTypesEvent AddScore(PerceptionScore PerceptionScore, bool Override = true)
-            => AddPerceptionScore(PerceptionScore.Type, PerceptionScore, Override);
-
-        public virtual GetPerceptionTypesEvent AddBaseScore(string Type, bool Override = true)
-            => AddPerceptionScore(Type, new PerceptionScore(Type, PerceptionScore.BASE_PERCEPTION_VALUE, PerceptionScore.BASE_PERCEPTION_RADIUS), Override);
+        public virtual GetPerceptionTypesEvent AddScore(
+            string Type,
+            int BaseScore = PerceptionScore.BASE_PERCEPTION_VALUE,
+            int BaseRadius = PerceptionScore.BASE_PERCEPTION_RADIUS,
+            bool Override = true)
+            => AddPerceptionScore(Type, GetPerceptionScoreEvent.GetFor(Perciever, Type, BaseScore, BaseScore, BaseRadius, BaseRadius), Override);
     }
 }
 

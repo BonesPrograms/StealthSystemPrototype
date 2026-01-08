@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using System.Text;
 
+using StealthSystemPrototype.Capabilities.Stealth;
+
+using XRL.Collections;
 using XRL.World;
 using XRL.World.Parts;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Perception;
+using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
 
-namespace StealthSystemPrototype.Events.Perception
+namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
     public abstract class IPerceptionEvent<T> : ModPooledEvent<T>
@@ -21,13 +24,13 @@ namespace StealthSystemPrototype.Events.Perception
 
         public GameObject Perciever;
 
-        public Dictionary<string, PerceptionScore> PerceptionScores;
+        public Perception Perception;
 
         public IPerceptionEvent()
         {
             StringyEvent = null;
             Perciever = null;
-            PerceptionScores = null;
+            Perception = null;
         }
 
         public virtual string GetRegisteredEventID()
@@ -42,10 +45,10 @@ namespace StealthSystemPrototype.Events.Perception
             StringyEvent?.Clear();
             StringyEvent = null;
             Perciever = null;
-            PerceptionScores = null;
+            Perception = null;
         }
 
-        public static T FromPool(GameObject Perciever, Dictionary<string, PerceptionScore> PerceptionScores = null)
+        public static T FromPool(GameObject Perciever, Perception Perception = null)
         {
             if (Perciever == null)
                 return FromPool();
@@ -53,7 +56,7 @@ namespace StealthSystemPrototype.Events.Perception
             T E = FromPool();
             E.StringyEvent = E.GetStringyEvent();
             E.Perciever = Perciever;
-            E.PerceptionScores = PerceptionScores ?? new();
+            E.Perception = Perception;
             return E;
         }
 
@@ -62,7 +65,7 @@ namespace StealthSystemPrototype.Events.Perception
             ? Event.New(RegisteredEventID)
             : Event.New(ForEvent.GetRegisteredEventID(),
                 nameof(ForEvent.Perciever), ForEvent?.Perciever,
-                nameof(ForEvent.PerceptionScores), ForEvent?.PerceptionScores);
+                nameof(ForEvent.Perception), ForEvent?.Perception);
 
         public virtual Event GetStringyEvent()
             => StringyEvent = GetStringyEvent(this);
@@ -80,22 +83,20 @@ namespace StealthSystemPrototype.Events.Perception
         {
             Success = true;
             T E = FromPool(Perciever, PerceptionScores);
-            if (Success
-                && GameObject.Validate(ref Perciever)
-                && Perciever.HasRegisteredEvent(E.GetRegisteredEventID()))
+            if (GameObject.Validate(ref Perciever))
             {
-                Success = Perciever.FireEvent(E.StringyEvent);
-            }
-            if (Success
-                && GameObject.Validate(ref Perciever)
-                && Perciever.WantEvent(E.GetID(), E.GetCascadeLevel()))
-            {
-                Success = Perciever.HandleEvent(E);
+                if (Success
+                    && Perciever.HasRegisteredEvent(E.GetRegisteredEventID()))
+                    Success = Perciever.FireEvent(E.StringyEvent);
+
+                E.UpdateFromStringyEvent(true);
+
+                if (Success
+                    && Perciever.WantEvent(E.GetID(), E.GetCascadeLevel()))
+                    Success = Perciever.HandleEvent(E);
             }
             return E;
         }
-
-        
     }
 }
 

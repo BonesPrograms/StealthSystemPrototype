@@ -5,7 +5,7 @@ using System.Text;
 using XRL.World;
 using XRL.World.Parts;
 
-namespace StealthSystemPrototype.Events.Witness
+namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
     public abstract class IWitnessEvent<T> : ModPooledEvent<T>
@@ -68,10 +68,8 @@ namespace StealthSystemPrototype.Events.Witness
 
         public virtual void UpdateFromStringyEvent(bool ClearStringyAfter = false)
         {
-            Witnesses ??= Event.NewGameObjectList();
-
             if (StringyEvent?.GetParameter(nameof(Witnesses)) != null)
-                Witnesses.AddRange(StringyEvent?.GetParameter(nameof(Witnesses)) as List<GameObject>);
+                Witnesses = StringyEvent?.GetParameter(nameof(Witnesses)) as List<GameObject>;
 
             if (ClearStringyAfter)
                 StringyEvent.Clear();
@@ -81,17 +79,17 @@ namespace StealthSystemPrototype.Events.Witness
         {
             Success = true;
             T E = FromPool(Hider, Witnesses);
-            if (Success
-                && GameObject.Validate(ref Hider)
-                && Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
+            if (GameObject.Validate(ref Hider))
             {
-                Success = Hider.FireEvent(E.StringyEvent);
-            }
-            if (Success
-                && GameObject.Validate(ref Hider)
-                && Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
-            {
-                Success = Hider.HandleEvent(E);
+                if (Success
+                    && Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
+                    Success = Hider.FireEvent(E.StringyEvent);
+
+                E.UpdateFromStringyEvent(true);
+
+                if (Success
+                    && Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
+                    Success = Hider.HandleEvent(E);
             }
             return E;
         }
