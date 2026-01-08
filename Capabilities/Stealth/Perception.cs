@@ -79,8 +79,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                         ? Math.Max((int)Cap, (int)AwarenessLevel.Alert)
                         : (int)AwarenessLevel.Alert);
 
+            public string ToString(bool Short)
+                => (Short ? (Type?[0] ?? '?').ToString() : Type ?? "null?") + "[" + Value + "]@R(" + Radius + ")";
+
             public override string ToString()
-                => Type + "[" + Value + "]@R(" + Radius + ")";
+                => ToString(false);
 
             #region Serialization
             public readonly void Write(SerializationWriter Writer)
@@ -125,13 +128,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
 
-        public string ToString(GameObject ParentObject)
+        public string ToString(GameObject ParentObject, bool Short = true)
         {
             string opening = ParentObject?.DebugName;
             if (!opening.IsNullOrEmpty())
                 opening += ": ";
 
-            return Scores?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? ", " : opening) + n.Value.ToString());
+            return Scores?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? ", " : opening) + n.Value.ToString(Short));
         }
         public override string ToString()
             => ToString(null);

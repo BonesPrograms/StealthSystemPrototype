@@ -32,15 +32,14 @@ namespace XRL.World.Parts
             => base.WantEvent(ID, Cascade)
             || ID == BeforeTakeActionEvent.ID
             || ID == GetWitnessesEvent.ID
+            || ID == GetDebugInternalsEvent.ID
             ;
-
         public override bool HandleEvent(BeforeTakeActionEvent E)
         {
             if (UD_Stealth.ConstantDebugOutput)
-                EmitMessage(Perception.ToString(ParentObject));
+                UnityEngine.Debug.Log(Perception.ToString(ParentObject));
             return base.HandleEvent(E);
         }
-
         public bool HandleEvent(GetWitnessesEvent E)
         {
             if (ParentObject != E.Hider
@@ -59,6 +58,14 @@ namespace XRL.World.Parts
                 && radii.Any(r => r >= distance))
                 E.AddWitness(this);
                 
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(GetDebugInternalsEvent E)
+        {
+            if (Perception != null)
+                E.AddEntry(this, nameof(Perception), Perception.ToString(ParentObject));
+            else
+                E.AddEntry(this, nameof(Perception), "none??");
             return base.HandleEvent(E);
         }
     }
