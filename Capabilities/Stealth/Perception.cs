@@ -5,6 +5,7 @@ using System.Text;
 
 using StealthSystemPrototype.Events;
 
+using XRL.Rules;
 using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
@@ -24,21 +25,29 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public GameObject Owner;
+        private GameObject _Owner;
+        public virtual GameObject Owner
+        {
+            get => _Owner;
+            set => _Owner = value;
+        }
 
         private int _Value;
-        protected virtual int Value
+        public virtual int Value
         {
             get => _Value = RestrainPerceptionScore(_Value);
-            set => _Value = RestrainPerceptionScore(value);
+            protected set => _Value = RestrainPerceptionScore(value);
         }
 
         private int _Radius;
-        protected virtual int Radius
+        public virtual int Radius
         {
             get => _Radius = RestrainPerceptionScore(_Radius);
-            set => _Radius = RestrainPerceptionScore(value);
+            protected set => _Radius = RestrainPerceptionScore(value);
         }
+
+        public virtual bool Occludes => false;
+        public virtual bool Tapers => false;
 
         #region Constructors
 
@@ -70,16 +79,38 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         protected static int RestrainPerceptionRadius(int Radius, int? Cap = null)
             => Radius.Restrain(MIN_PERCEPTION_RADIUS, Math.Max(Cap ?? MAX_PERCEPTION_RADIUS, MAX_PERCEPTION_RADIUS));
 
-        public abstract int RollPerception();
+        public virtual int Taper(int Distance)
+            => Tapers
+                && (Distance - Radius) > 0
+            ? Value - (int)Math.Pow(Math.Pow(2.5, Distance - Radius), 1.25)
+            : Value;
+
+        public virtual int Roll(GameObject Entity)
+        {
+            int value = Value;
+            if (Entity?.CurrentCell is Cell { InActiveZone: true } entityCell
+                && Owner?.CurrentCell is Cell { InActiveZone: true } myCell
+                && entityCell.CosmeticDistanceto(myCell.Location) is int distance
+                && (!Occludes
+                    || entityCell.HasLOSTo(myCell)))
+                value = Taper(distance);
+
+            return Stat.RollCached("1d" + value);
+        }
+
+        public virtual AwarenessLevel GetAwareness(GameObject Entity)
+            => (AwarenessLevel)Math.Ceiling(((Roll(Entity) + 1) / 20.0) - 1);
 
         #region Serialization
         public virtual void Write(SerializationWriter Writer)
         {
+            Writer.WriteGameObject(_Owner);
             Writer.WriteOptimized(_Value);
             Writer.WriteOptimized(_Radius);
         }
         public virtual void Read(SerializationReader Reader)
         {
+            Owner = Reader.ReadGameObject();
             Value = Reader.ReadOptimizedInt32();
             Radius = Reader.ReadOptimizedInt32();
         }

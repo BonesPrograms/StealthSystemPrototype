@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using StealthSystemPrototype.Events.Perception;
+using StealthSystemPrototype.Events;
 
 using XRL.World;
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using StealthSystemPrototype.Events.Perception;
+using StealthSystemPrototype.Events;
 
 using XRL.World;
 
@@ -12,7 +12,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [Serializable]
     public class Visual : Perception, IComposite
     {
+        public override bool Occludes => true;
+        public override bool Tapers => true;
+
         #region Constructors
+
         public Visual()
             : base()
         {
@@ -21,6 +25,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             : base(Owner, Value, Radius)
         {
         }
+
         #endregion
 
         public override int RollPerception()

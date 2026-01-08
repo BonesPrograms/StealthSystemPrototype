@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
@@ -181,5 +182,22 @@ namespace StealthSystemPrototype
 
         public static IEnumerable<BodyPart> LoopPart(this Body Body, string RequiredType, bool ExcludeDismembered)
             => Body?.LoopPart(RequiredType, bp => !ExcludeDismembered || !bp.IsDismembered);
+
+        public static bool HasLOSTo(this Cell Cell, Cell OtherCell)
+        {
+            if (Cell == null
+                || OtherCell == null)
+                return false;
+
+            if (Cell.ParentZone != OtherCell.ParentZone)
+                return false;
+
+            return Cell.ParentZone.CalculateLOS(
+                x0: Cell.X,
+                y0: Cell.Y,
+                x1: OtherCell.X,
+                y1: OtherCell.Y,
+                BlackoutStops: true);
+        }
     }
 }
