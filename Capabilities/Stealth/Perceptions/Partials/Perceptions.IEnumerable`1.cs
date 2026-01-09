@@ -9,30 +9,30 @@ using XRL.World;
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public partial class Perceptions
-        : IEnumerable<Perception>
+        : IEnumerable<BasePerception>
         , IEnumerable
     {
         [Serializable]
         public struct Enumerator
-            : IEnumerator<Perception>
+            : IEnumerator<BasePerception>
             , IEnumerator
             , IDisposable
         {
             private Perceptions Perceptions;
 
-            private readonly Perception[] Items;
+            private readonly BasePerception[] Items;
 
             private readonly int Version;
 
             private int Index;
 
-            public readonly Perception Current => Items[Index];
+            public readonly BasePerception Current => Items[Index];
             readonly object IEnumerator.Current => Current;
 
             public Enumerator(Perceptions Perceptions)
             {
                 this.Perceptions = Perceptions;
-                Items = new Perception[Perceptions.Length];
+                Items = new BasePerception[Perceptions.Length];
                 Array.Copy(Perceptions.Items, Items, Perceptions.Items.Length);
                 Version = Perceptions.Version;
                 Index = -1;
@@ -67,7 +67,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-        public IEnumerator<Perception> GetEnumerator()
+        public IEnumerator<BasePerception> GetEnumerator()
             => new Enumerator(this);
 
         IEnumerator IEnumerable.GetEnumerator()

@@ -5,56 +5,48 @@ using System.Text;
 
 using StealthSystemPrototype.Events;
 
+using XRL.Rules;
 using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public class Visual : BasePerception, IComposite
+    public abstract class Perception<T>
+        : BasePerception
+        , IComposite
+        where T
+        : class,
+        new()
     {
+        [NonSerialized]
+        protected T _Source;
+        public virtual T Source => _Source ??= GetBestSource(Owner); 
+
         #region Constructors
 
-        public Visual()
+        public Perception()
             : base()
         {
-            Occludes = true;
-            Tapers = true;
-            Sense = PerceptionSense.Visual;
+            _Source = null;
         }
-        public Visual(GameObject Owner, int BaseScore, int BaseRadius)
-            : base(Owner, PerceptionSense.Visual, BaseScore, BaseRadius)
+        public Perception(GameObject Owner, T Source, PerceptionSense Sense, int BaseScore, int BaseRadius)
+            : base(Owner, Sense, BaseScore, BaseRadius)
         {
-            Occludes = true;
-            Tapers = true;
+            _Source = Source;
         }
-        public Visual(GameObject Owner)
-            : this(Owner, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+        public Perception(GameObject Owner, T Source, PerceptionSense Sense)
+            : this(Owner, Source, Sense, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
         {
         }
 
         #endregion
 
-        public override bool Validate(GameObject Owner = null)
-        {
-            Owner ??= this.Owner;
-            if (Owner == null)
-                return false;
-
-            if (Owner != this.Owner)
-                return false;
-
-            if (Owner.Body == null
-                || Owner.Body.GetFirstPart("Face", false) is null)
-                return false;
-
-            return true;
-        }
+        public abstract T GetBestSource(GameObject Owner = null);
 
         protected override PerceptionRating? GetPerceptionRating(GameObject Owner = null)
         {
             throw new NotImplementedException();
         }
-
         public override int GetScore(GameObject Owner = null)
         {
             throw new NotImplementedException();
@@ -70,12 +62,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public override void Write(SerializationWriter Writer)
         {
             base.Write(Writer);
-            // Write Here.
+            // do writing here
         }
         public override void Read(SerializationReader Reader)
         {
             base.Read(Reader);
-            // Read Here.
+            // do reading here
         }
 
         #endregion

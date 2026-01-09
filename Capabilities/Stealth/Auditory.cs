@@ -10,24 +10,24 @@ using XRL.World;
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public class Visual : BasePerception, IComposite
+    public class Auditory : BasePerception, IComposite
     {
         #region Constructors
 
-        public Visual()
+        public Auditory()
             : base()
         {
             Occludes = true;
             Tapers = true;
-            Sense = PerceptionSense.Visual;
+            Sense = PerceptionSense.Auditory;
         }
-        public Visual(GameObject Owner, int BaseScore, int BaseRadius)
-            : base(Owner, PerceptionSense.Visual, BaseScore, BaseRadius)
+        public Auditory(GameObject Owner, int BaseScore, int BaseRadius)
+            : base(Owner, PerceptionSense.Auditory, BaseScore, BaseRadius)
         {
             Occludes = true;
             Tapers = true;
         }
-        public Visual(GameObject Owner)
+        public Auditory(GameObject Owner)
             : this(Owner, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
         {
         }

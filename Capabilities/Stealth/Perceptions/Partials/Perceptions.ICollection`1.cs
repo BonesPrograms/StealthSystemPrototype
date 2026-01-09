@@ -8,13 +8,13 @@ using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
-    public partial class Perceptions : ICollection<Perception>
+    public partial class Perceptions : ICollection<BasePerception>, IReadOnlyCollection<BasePerception>
     {
         public int Count => Length;
 
         public bool IsReadOnly => false;
 
-        private void Add(Perception Item)
+        private void Add(BasePerception Item)
         {
             if (Length >= Size)
                 Resize(Length + 1);
@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         public void Add<T>(T Item, bool Override)
-            where T : Perception, new()
+            where T : BasePerception, new()
         {
             if (Items == null)
                 throw new Exception(nameof(Items) + " is null when it shouldn't be");
@@ -49,18 +49,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Variant = 0;
         }
 
-        public void CopyTo(Perception[] Array, int ArrayIndex)
+        public void CopyTo(BasePerception[] Array, int ArrayIndex)
             => Items.CopyTo(Array, ArrayIndex);
 
-        public bool Remove<T>(T Item)
-            where T : Perception, new()
+        public bool RemoveType(Type Type)
         {
-            if (Item == null)
-                throw new ArgumentNullException(nameof(Item), "cannot be null");
-            
+            if (Type == null)
+                throw new ArgumentNullException(nameof(Type), "cannot be null");
+
             int index = -1;
             for (int i = 0; i < Count; i++)
-                if (Items[i].GetType() == typeof(T))
+                if (Items[i].GetType() == Type)
                 {
                     index = i;
                     break;
@@ -80,15 +79,22 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return true;
         }
 
+        public bool RemoveType(BasePerception Item)
+            => RemoveType(Item?.GetType());
+
+        public bool Remove<T>(T Item)
+            where T : BasePerception, new()
+            => RemoveType(Item?.GetType());
+
         #region Explicit Implementations
 
-        bool ICollection<Perception>.Contains(Perception Item)
+        bool ICollection<BasePerception>.Contains(BasePerception Item)
             => throw new NotImplementedException("This container's items should be uniquely typed");
 
-        bool ICollection<Perception>.Remove(Perception item)
+        bool ICollection<BasePerception>.Remove(BasePerception item)
             => throw new NotImplementedException("This container's items should be uniquely typed");
 
-        void ICollection<Perception>.Add(Perception item)
+        void ICollection<BasePerception>.Add(BasePerception item)
             => throw new NotImplementedException("This container's items should be uniquely typed");
 
         #endregion

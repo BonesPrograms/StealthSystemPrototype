@@ -24,13 +24,16 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Perciever;
 
-        public Perception Perception;
+        public BasePerception Perception;
+
+        public Perceptions Perceptions;
 
         public IPerceptionEvent()
         {
             StringyEvent = null;
             Perciever = null;
             Perception = null;
+            Perceptions = null;
         }
 
         public virtual string GetRegisteredEventID()
@@ -46,9 +49,11 @@ namespace StealthSystemPrototype.Events
             StringyEvent = null;
             Perciever = null;
             Perception = null;
+            Perceptions?.Clear();
+            Perceptions = null;
         }
 
-        public static T FromPool(GameObject Perciever, Perception Perception = null)
+        public static T FromPool(GameObject Perciever, BasePerception Perception, Perceptions Perceptions)
         {
             if (Perciever == null)
                 return FromPool();
@@ -57,32 +62,59 @@ namespace StealthSystemPrototype.Events
             E.StringyEvent = E.GetStringyEvent();
             E.Perciever = Perciever;
             E.Perception = Perception;
+            E.Perceptions = Perceptions;
             return E;
         }
 
+        public static T FromPool(GameObject Perciever, BasePerception Perception)
+            => FromPool(Perciever, Perception, null);
+
+        public static T FromPool(GameObject Perciever, Perceptions Perceptions)
+            => FromPool(Perciever, null, Perceptions);
+
+        public static T FromPool(GameObject Perciever)
+            => FromPool(Perciever, null, null);
+
         public static Event GetStringyEvent(IPerceptionEvent<T> ForEvent)
-            => ForEvent == null
-            ? Event.New(RegisteredEventID)
-            : Event.New(ForEvent.GetRegisteredEventID(),
-                nameof(ForEvent.Perciever), ForEvent?.Perciever,
-                nameof(ForEvent.Perception), ForEvent?.Perception);
+        {
+            if (ForEvent == null)
+                return Event.New(RegisteredEventID);
+
+            var @event = Event.New(ForEvent.GetRegisteredEventID(),
+                nameof(ForEvent.Perciever), ForEvent?.Perciever);
+
+            if (ForEvent.Perception != null)
+                @event.AddParameter(nameof(ForEvent.Perception), ForEvent?.Perception);
+
+            if (ForEvent.Perceptions != null)
+                @event.AddParameter(nameof(ForEvent.Perceptions), ForEvent?.Perceptions);
+
+            return @event;
+        }
 
         public virtual Event GetStringyEvent()
             => StringyEvent = GetStringyEvent(this);
 
         public virtual void UpdateFromStringyEvent(bool ClearStringyAfter = false)
         {
-            if (StringyEvent?.GetParameter(nameof(PerceptionScores)) is Dictionary<string, PerceptionScore> perceptionScores)
-                PerceptionScores = perceptionScores;
+            if (StringyEvent?.GetParameter(nameof(Perception)) is Perceptions perception)
+                Perceptions = perception;
+
+            if (StringyEvent?.GetParameter(nameof(Perceptions)) is Perceptions perceptions)
+                Perceptions = perceptions;
             
             if (ClearStringyAfter)
                 StringyEvent.Clear();
         }
 
-        protected static T Process(GameObject Perciever, Dictionary<string, PerceptionScore> PerceptionScores, out bool Success)
+        protected static T Process(
+            GameObject Perciever,
+            BasePerception Perception,
+            Perceptions Perceptions,
+            out bool Success)
         {
             Success = true;
-            T E = FromPool(Perciever, PerceptionScores);
+            T E = FromPool(Perciever, Perception, Perceptions);
             if (GameObject.Validate(ref Perciever))
             {
                 if (Success

@@ -11,7 +11,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [Serializable]
     public partial class Perceptions : IComposite
     {
-        private Perception[] Items = Array.Empty<Perception>();
+        public GameObject Owner;
+
+        private BasePerception[] Items = Array.Empty<BasePerception>();
 
         protected int Size;
 
@@ -31,6 +33,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public Perceptions()
         {
+            Owner = null;
             Size = 0;
             EnsureCapacity(DefaultCapacity);
             Length = 0;
@@ -41,21 +44,72 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             EnsureCapacity(Capacity);
         }
-        public Perceptions(IReadOnlyCollection<Perception> Source)
+        public Perceptions(GameObject Owner)
+            : this()
+        {
+            this.Owner = Owner;
+        }
+        public Perceptions(GameObject Owner, int Capacity)
+            : this(Owner)
+        {
+            EnsureCapacity(Capacity);
+        }
+        public Perceptions(IReadOnlyCollection<BasePerception> Source)
             : this(Source.Count)
         {
             Length = Source.Count;
         }
-        public Perceptions(IEnumerable<Perception> Source)
-            : this((IReadOnlyCollection<Perception>)Source)
+        public Perceptions(GameObject Owner, IReadOnlyCollection<BasePerception> Source)
+            : this(Source)
+        {
+            this.Owner = Owner;
+        }
+        public Perceptions(IEnumerable<BasePerception> Source)
+            : this((IReadOnlyCollection<BasePerception>)Source)
+        {
+        }
+        public Perceptions(GameObject Owner, IEnumerable<BasePerception> Source)
+            : this(Owner, (IReadOnlyCollection<BasePerception>)Source)
         {
         }
         public Perceptions(Perceptions Source)
-            : this((IReadOnlyCollection<Perception>)Source)
+            : this(Source.Owner, Source)
         {
         }
 
         #endregion
+
+        public bool Validate(GameObject Owner = null, bool RemoveInvalid = true)
+        {
+            Owner ??= this.Owner;
+            bool allValid = true;
+            List<BasePerception> removeList = new();
+            for (int i = 0; i < Count; i++)
+            {
+                if (Items[i] is not BasePerception perception)
+                    throw new InvalidOperationException(nameof(Items) + " contains null entry at " + i + " despite length of " + Count);
+
+                if (!perception.Validate(Owner))
+                {
+                    if (RemoveInvalid)
+                        removeList.Add(perception);
+                    else
+                        allValid = false;
+                }
+            }
+            foreach (BasePerception perception in removeList)
+                RemoveType(perception);
+
+            removeList.Clear();
+
+            if (RemoveInvalid
+                && !allValid)
+                allValid = Validate(Owner, false);
+
+            return allValid;
+        }
+
+        #region Container Helpers
 
         public void EnsureCapacity(int Capacity)
         {
@@ -80,14 +134,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return false;
         }
-        public virtual bool ContainsType(Perception Item)
+        public virtual bool ContainsType(BasePerception Item)
             => ContainsType(Item.GetType());
 
         public virtual bool Contains<T>(T Item)
-            where T : Perception
+            where T : BasePerception
             => ContainsType(typeof(T));
 
+        #endregion
+
         #region Serialization
+
         public virtual void Write(SerializationWriter Writer)
         {
             Writer.WriteOptimized(Size);
@@ -104,6 +161,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Variant = Reader.ReadOptimizedInt32();
 
         }
+
         #endregion
     }
 }

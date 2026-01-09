@@ -58,10 +58,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
 
             public static int RestrainPerceptionScore(int Value, int? Cap = null)
-                => Value.Restrain(MIN_PERCEPTION_VALUE, Math.Max(Cap ?? MAX_PERCEPTION_VALUE, MAX_PERCEPTION_VALUE));
+                => Value.Clamp(MIN_PERCEPTION_VALUE, Math.Max(Cap ?? MAX_PERCEPTION_VALUE, MAX_PERCEPTION_VALUE));
 
             public static int RestrainPerceptionRadius(int Radius, int? Cap = null)
-                => Radius.Restrain(MIN_PERCEPTION_RADIUS, Math.Max(Cap ?? MAX_PERCEPTION_RADIUS, MAX_PERCEPTION_RADIUS));
+                => Radius.Clamp(MIN_PERCEPTION_RADIUS, Math.Max(Cap ?? MAX_PERCEPTION_RADIUS, MAX_PERCEPTION_RADIUS));
 
             private int CalculateAwareness()
                 => (int)Math.Ceiling(((Value + 1) / 20.0) - 1);
@@ -73,7 +73,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             // Value >= 20 -> Awake
             // Value <  20 -> None
             public AwarenessLevel GetAwarenessLevel(AwarenessLevel? Cap = null)
-                => (AwarenessLevel)CalculateAwareness().Restrain(
+                => (AwarenessLevel)CalculateAwareness().Clamp(
                     Min: (int)AwarenessLevel.None, 
                     Max: Cap != null 
                         ? Math.Max((int)Cap, (int)AwarenessLevel.Alert)
@@ -114,7 +114,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         public Perception2(GameObject Perciever)
-            : this(GetPerceptionTypesEvent.GetFor(Perciever))
+            : this(GetPerceptionsEvent.GetFor(Perciever))
         {
         }
 

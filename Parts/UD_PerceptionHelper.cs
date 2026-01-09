@@ -5,7 +5,7 @@ using System.Text;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Events.Perception;
+using StealthSystemPrototype.Events;
 
 using XRL.World.Anatomy;
 using XRL.World.Parts.Mutation;
@@ -17,8 +17,8 @@ namespace XRL.World.Parts
     [Serializable]
     public class UD_PerceptionHelper 
         : IScribedPart
-        , IModEventHandler<GetPerceptionTypesEvent>
-        , IModEventHandler<GetPerceptionScoreEvent>
+        , IModEventHandler<GetPerceptionsEvent>
+        , IModEventHandler<GetPerceptionRatingEvent>
     {
         public static List<string> VisionMutations => MutationFactory.AllMutationEntries()
             ?.Aggregate(
@@ -38,19 +38,19 @@ namespace XRL.World.Parts
 
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
-            || ID == GetPerceptionTypesEvent.ID
-            || ID == GetPerceptionScoreEvent.ID
+            || ID == GetPerceptionsEvent.ID
+            || ID == GetPerceptionRatingEvent.ID
             ;
 
-        public bool HandleEvent(GetPerceptionTypesEvent E)
+        public bool HandleEvent(GetPerceptionsEvent E)
         {
-            E.AddScore(PerceptionScore.VISIUAL);
-            E.AddScore(PerceptionScore.AUDITORY);
-            E.AddScore(PerceptionScore.OLFACTORY);
+            E.AddPerception(new Visual(ParentObject));
+            E.AddPerception(new Auditory(ParentObject));
+            E.AddPerception(new Olfactory(ParentObject));
             return base.HandleEvent(E);
         }
 
-        public bool HandleEvent(GetPerceptionScoreEvent E)
+        public bool HandleEvent(GetPerceptionRatingEvent E)
         {
             if (E.Type == PerceptionScore.VISIUAL
                 && ParentObject.RequirePart<Mutations>() is var mutations

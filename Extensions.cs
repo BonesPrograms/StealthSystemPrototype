@@ -11,8 +11,17 @@ namespace StealthSystemPrototype
 {
     public static class Extensions
     {
-        public static int Restrain(this int Value, int Min, int Max)
-            => Math.Min(Math.Max(Min, Value), Max);
+        public static int Clamp(this int Value, int Min, int Max)
+            => Math.Clamp(Value, Min, Max);
+
+        public static int Clamp(this int Value, Range Range)
+            => Value.Clamp(Range.Start.Value, Range.End.Value);
+
+        public static int ClampWithCap(this int Value, int Min, int Max, int? Cap = null)
+            => Value.Clamp(Utils.GetRangeWithOverride(Min, Max, Cap));
+
+        public static int ClampWithCap(this int Value, Range Range, int? Cap = null)
+            => Value.Clamp(Utils.GetRangeWithOverride(Range, Cap));
 
         public static bool EqualIncludingBothNull<T>(this T Operand1, T Operand2)
             => (Utils.EitherNull(Operand1, Operand2, out bool areEqual) && areEqual) || (Operand1 != null && Operand1.Equals(Operand2));
@@ -198,6 +207,20 @@ namespace StealthSystemPrototype
                 x1: OtherCell.X,
                 y1: OtherCell.Y,
                 BlackoutStops: true);
+        }
+
+        public static int DistanceFromBody(this BodyPart BodyPart, int StartingDistance = 0)
+        {
+            if (BodyPart == null
+                || BodyPart.ParentPart == null
+                || BodyPart.ParentBody == null
+                || BodyPart.ParentBody.GetBody() == null)
+                return 0;
+
+            if (BodyPart.ParentPart == BodyPart.ParentBody.GetBody())
+                return StartingDistance;
+
+            return BodyPart.ParentPart.DistanceFromBody(++StartingDistance);
         }
     }
 }
