@@ -8,10 +8,7 @@ using XRL.UI;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Events.Perception;
-using StealthSystemPrototype.Events.Witness;
-
-using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
+using StealthSystemPrototype.Events;
 
 namespace XRL.World.Parts
 {
@@ -29,7 +26,10 @@ namespace XRL.World.Parts
         }
 
         public static string PerceptionString(GameObject Object)
-            => Object?.GetPart<UD_Witness>()?.Perception?.ToString(Object);
+            => Object
+                ?.GetPart<UD_Witness>()
+                ?.Perceptions
+                ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + n.ToString());
 
         public string WitnessListString(string Delimiter = "\n")
             => Witnesses

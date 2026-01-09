@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using StealthSystemPrototype.Events;
-
 using XRL.Rules;
 using XRL.World;
+
+using StealthSystemPrototype.Events;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -48,6 +48,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
+        #region Instance PropFields
         public GameObject Owner;
 
         public PerceptionSense Sense;
@@ -74,6 +75,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         private PerceptionRating? _Rating;
         protected PerceptionRating? Rating => _Rating ??= GetPerceptionRating(Owner);
 
+        #endregion
+
         #region Constructors
 
         public BasePerception()
@@ -94,13 +97,35 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             this.Owner = Owner;
         }
-        public BasePerception(GameObject Owner, PerceptionSense Sense, int BaseScore, int BaseRadius)
+        public BasePerception(
+            GameObject Owner,
+            PerceptionSense Sense,
+            int BaseScore,
+            int BaseRadius)
             : this(Owner)
         {
             this.Sense = Sense;
             this.BaseScore = BaseScore;
             this.BaseRadius = BaseRadius;
         }
+        public BasePerception(
+            GameObject Owner,
+            PerceptionSense Sense)
+            : this(Owner, Sense, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+        {
+        }
+
+        #endregion
+
+        #region Abstract Methods
+
+        public abstract bool Validate(GameObject Owner = null);
+
+        protected abstract PerceptionRating? GetPerceptionRating(GameObject Owner = null);
+
+        public abstract int GetScore(GameObject Owner = null, bool ClearFirst = false);
+
+        public abstract int GetRadius(GameObject Owner = null, bool ClearFirst = false);
 
         #endregion
 
@@ -116,26 +141,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         protected static int RestrainPerceptionRadius(int Radius, int? Cap = null)
             => Radius.ClampWithCap(PERCEPTION_RADIUS_CLAMP, Cap);
 
-        public abstract bool Validate(GameObject Owner = null);
-
-        protected abstract PerceptionRating? GetPerceptionRating(GameObject Owner = null);
-
-        public abstract int GetScore(GameObject Owner = null);
-
-        public abstract int GetRadius(GameObject Owner = null);
-
         protected void ClearRating()
             => _Rating = null;
 
         public virtual int Taper(int Distance)
             => Tapers
-                && (Distance - BaseRadius) > 0
-            ? BaseScore - (int)Math.Pow(Math.Pow(2.5, Distance - BaseRadius), 1.25)
-            : BaseScore;
+                && (Distance - GetRadius()) > 0
+            ? GetScore() - (int)Math.Pow(Math.Pow(2.5, Distance - GetRadius()), 1.25)
+            : GetScore();
 
         public virtual int Roll(GameObject Entity)
         {
-            int value = BaseScore;
+            int value = GetScore();
             if (Entity?.CurrentCell is Cell { InActiveZone: true } entityCell
                 && Owner?.CurrentCell is Cell { InActiveZone: true } myCell
                 && entityCell.CosmeticDistanceto(myCell.Location) is int distance
@@ -160,6 +177,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             BaseScore = Reader.ReadOptimizedInt32();
             BaseRadius = Reader.ReadOptimizedInt32();
         }
+
         #endregion
     }
 }

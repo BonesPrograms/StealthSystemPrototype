@@ -10,8 +10,6 @@ using StealthSystemPrototype.Events;
 using XRL.World.Anatomy;
 using XRL.World.Parts.Mutation;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
-
 namespace XRL.World.Parts
 {
     [Serializable]
@@ -20,6 +18,8 @@ namespace XRL.World.Parts
         , IModEventHandler<GetPerceptionsEvent>
         , IModEventHandler<GetPerceptionRatingEvent>
     {
+        public const string ANIMAL_BLUEPRINT = "Animal";
+
         public static List<string> VisionMutations => MutationFactory.AllMutationEntries()
             ?.Aggregate(
                 seed: new List<string>(),
@@ -47,40 +47,51 @@ namespace XRL.World.Parts
             E.AddPerception(new Visual(ParentObject));
             E.AddPerception(new Auditory(ParentObject));
             E.AddPerception(new Olfactory(ParentObject));
+
+            if (ParentObject.TryGetPart(out Esper esper))
+                E.AddPerception(new EsperPsionic(esper));
+
+            if (ParentObject.TryGetPart(out HeightenedHearing heightenedHearing))
+                E.AddIPartPerception(heightenedHearing, PerceptionSense.Auditory);
+
+            if (ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
+                E.AddIPartPerception(heightenedSmell, PerceptionSense.Olfactory);
+
             return base.HandleEvent(E);
         }
 
         public bool HandleEvent(GetPerceptionRatingEvent E)
         {
-            if (E.Type == PerceptionScore.VISIUAL
+            if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
             {
                 E.SetMinScore(40);
                 E.SetMinRadius(E.BaseRadius + 2);
             }
-            if (E.Type == PerceptionScore.OLFACTORY
-                && ParentObject.GetBlueprint().InheritsFrom("Animal"))
+            if (E.Sense == PerceptionSense.Olfactory
+                && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
             {
                 E.SetMinScore(40);
                 E.SetMinRadius(E.BaseRadius + 2);
             }
-            if (E.Type == PerceptionScore.OLFACTORY
+            if (E.Sense == PerceptionSense.Olfactory
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
             {
                 E.AdjustScore(2 * heightenedSmell.Level);
                 E.SetMinRadius(E.BaseRadius + 2 * heightenedSmell.Level);
             }
-            if (E.Type.EqualsAny(
-                new string[]
+            if (E.Sense.EqualsAny(
+                new PerceptionSense[]
                 {
-                    PerceptionScore.VISIUAL,
-                    PerceptionScore.AUDITORY,
-                    PerceptionScore.OLFACTORY,
-                }))
+                    PerceptionSense.Visual,
+                    PerceptionSense.Auditory,
+                    PerceptionSense.Olfactory,
+                })
+                && E.Type.InheritsFrom(typeof(SimplePerception)))
             {
                 if (ParentObject.Body is Body body
-                    && body.LoopPart("Face", bp => !bp.IsDismembered) is List<BodyPart> facesList)
+                    && body.LoopPart(SimplePerception.FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
                 {
                     if (facesList.Count > 1)
                     {

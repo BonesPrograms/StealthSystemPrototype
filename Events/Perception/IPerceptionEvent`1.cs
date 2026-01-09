@@ -8,8 +8,6 @@ using XRL.Collections;
 using XRL.World;
 using XRL.World.Parts;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
-
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]

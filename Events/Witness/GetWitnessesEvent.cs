@@ -32,7 +32,9 @@ namespace StealthSystemPrototype.Events
             if (proceed)
                 proceed = Hider.GetCurrentZone().HandleEvent(E);
 
-            return E.Witnesses;
+            return proceed
+                ? E.Witnesses
+                : null;
         }
 
         public GetWitnessesEvent AddWitness(GameObject Witness)

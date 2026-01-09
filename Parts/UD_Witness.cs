@@ -5,28 +5,25 @@ using System.Text;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Events.Perception;
-using StealthSystemPrototype.Events.Witness;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
+using StealthSystemPrototype.Events;
 
 namespace XRL.World.Parts
 {
     [Serializable]
     public class UD_Witness : IScribedPart, IModEventHandler<GetWitnessesEvent>
     {
-        public Perception2 Perception;
+        private Perceptions _Perceptions;
+
+        public Perceptions Perceptions => _Perceptions ??= GetPerceptionsEvent.GetFor(ParentObject);
 
         public UD_Witness()
         {
-            Perception = null;
+            _Perceptions = null;
         }
 
-        public override void Attach()
-        {
-            Perception = new(ParentObject);
-            base.Attach();
-        }
+        public void ClearPerceptions()
+            => _Perceptions = null;
 
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
@@ -37,7 +34,11 @@ namespace XRL.World.Parts
         public override bool HandleEvent(BeforeTakeActionEvent E)
         {
             if (UD_Stealth.ConstantDebugOutput && false)
-                UnityEngine.Debug.Log(Perception.ToString(ParentObject));
+            {
+                string perceptionsString = Perceptions
+                    ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + n.ToString());
+                UnityEngine.Debug.Log(perceptionsString);
+            }
             return base.HandleEvent(E);
         }
         public bool HandleEvent(GetWitnessesEvent E)
@@ -47,12 +48,11 @@ namespace XRL.World.Parts
                 && E.Hider?.CurrentCell is Cell { InActiveZone: true } hiderCell
                 && ParentObject.CurrentCell is Cell { InActiveZone: true } myCell
                 && hiderCell.CosmeticDistanceto(myCell.Location) is int distance
-                && Perception != null
-                && Perception.Scores
-                    ?.Values
-                    ?.Aggregate(new List<int>(), delegate (List<int> Accumulator, PerceptionScore Next)
+                && Perceptions != null
+                && Perceptions
+                    ?.Aggregate(new List<int>(), delegate (List<int> Accumulator, BasePerception Next)
                     {
-                        Accumulator.Add(Next.Radius);
+                        Accumulator.Add(Next.GetRadius());
                         return Accumulator;
                     }) is List<int> radii
                 && radii.Any(r => r >= distance))
@@ -62,8 +62,25 @@ namespace XRL.World.Parts
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
-            E.AddEntry(this, nameof(Perception), Perception?.ToString(ParentObject) ?? "none??");
+            string perceptionsString = Perceptions
+                ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + n.ToString());
+            E.AddEntry(this, nameof(Perceptions), perceptionsString ?? "none??");
             return base.HandleEvent(E);
         }
+
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            Writer.WriteObject(_Perceptions);
+            base.Write(Basis, Writer);
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            _Perceptions = Reader.ReadObject() as Perceptions;
+            base.Read(Basis, Reader);
+        }
+
+        #endregion
     }
 }

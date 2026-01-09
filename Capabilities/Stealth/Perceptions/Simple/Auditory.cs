@@ -1,31 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-using StealthSystemPrototype.Events;
 
 using XRL.World;
+
+using StealthSystemPrototype.Events;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public class Auditory : BasePerception, IComposite
+    public class Auditory : SimplePerception, IComposite
     {
         #region Constructors
 
         public Auditory()
             : base()
         {
-            Occludes = true;
-            Tapers = true;
             Sense = PerceptionSense.Auditory;
         }
         public Auditory(GameObject Owner, int BaseScore, int BaseRadius)
             : base(Owner, PerceptionSense.Auditory, BaseScore, BaseRadius)
         {
-            Occludes = true;
-            Tapers = true;
         }
         public Auditory(GameObject Owner)
             : this(Owner, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
@@ -34,36 +27,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public override bool Validate(GameObject Owner = null)
-        {
-            Owner ??= this.Owner;
-            if (Owner == null)
-                return false;
-
-            if (Owner != this.Owner)
-                return false;
-
-            if (Owner.Body == null
-                || Owner.Body.GetFirstPart("Face", false) is null)
-                return false;
-
-            return true;
-        }
-
         protected override PerceptionRating? GetPerceptionRating(GameObject Owner = null)
-        {
-            throw new NotImplementedException();
-        }
+            => base.GetPerceptionRating(Owner);
 
-        public override int GetScore(GameObject Owner = null)
-        {
-            throw new NotImplementedException();
-        }
+        public override int GetScore(GameObject Owner = null, bool ClearFirst = false)
+            => base.GetScore(Owner, ClearFirst);
 
-        public override int GetRadius(GameObject Owner = null)
-        {
-            throw new NotImplementedException();
-        }
+        public override int GetRadius(GameObject Owner = null, bool ClearFirst = false)
+            => base.GetRadius(Owner, ClearFirst);
 
         #region Serialization
 

@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Capabilities.Stealth;
-
 using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
+using StealthSystemPrototype.Capabilities.Stealth;
 
 namespace StealthSystemPrototype.Events
 {
@@ -42,33 +40,67 @@ namespace StealthSystemPrototype.Events
             return E.Perceptions;
         }
 
-        public GetPerceptionsEvent AddPerception<T>(T Perception, bool Override = true)
-            where T : BasePerception, new()
+        public GetPerceptionsEvent AddPerception<T>(
+            T Perception,
+            bool Override = true)
+            where T
+            : BasePerception
+            , new()
         {
             Perceptions ??= new();
             Perceptions.Add(Perception, Override);
             return this;
         }
 
-        public GetPerceptionsEvent AddIPartPerception<T>(T IPart, PerceptionSense Sense, int BaseScore, int BaseRadius, bool Override = true)
+        public GetPerceptionsEvent AddIPartPerception<T>(
+            T IPart,
+            PerceptionSense Sense,
+            int BaseScore,
+            int BaseRadius,
+            bool Override = true)
             where T : IPart, new()
             => AddPerception(
                 Perception: new IPartPerception<T>(
-                    Owner: IPart?.ParentObject, 
                     Source: IPart,
                     Sense: Sense, 
-                    Score: BaseScore, 
-                    Radius: BaseRadius), 
+                    BaseScore: BaseScore, 
+                    BaseRadius: BaseRadius), 
                 Override: Override);
 
-        public GetPerceptionsEvent AddBodyPartPerception(BodyPart BodyPart, PerceptionSense Sense, int BaseScore, int BaseRadius, bool Override = true)
+        public GetPerceptionsEvent AddIPartPerception<T>(T IPart,
+            PerceptionSense Sense,
+            bool Override = true)
+            where T : IPart, new()
+            => AddIPartPerception(
+                IPart: IPart,
+                Sense: Sense, 
+                BaseScore: BasePerception.BASE_PERCEPTION_SCORE, 
+                BaseRadius: BasePerception.BASE_PERCEPTION_RADIUS, 
+                Override: Override);
+
+        public GetPerceptionsEvent AddBodyPartPerception(
+            BodyPart BodyPart,
+            PerceptionSense Sense,
+            int BaseScore,
+            int BaseRadius,
+            bool Override = true)
             => AddPerception(
                 Perception: new BodyPartPerception(
-                    Owner: BodyPart?.ParentBody?.ParentObject, 
                     Source: BodyPart,
                     Sense: Sense, 
-                    Score: BaseScore, 
-                    Radius: BaseRadius), 
+                    BaseScore: BaseScore, 
+                    BaseRadius: BaseRadius), 
+                Override: Override);
+
+        public GetPerceptionsEvent AddBodyPartPerception(
+            BodyPart BodyPart,
+            PerceptionSense Sense,
+            bool Override = true)
+            => AddBodyPartPerception(
+                BodyPart: BodyPart,
+                Sense: Sense, 
+                BaseScore: BasePerception.BASE_PERCEPTION_SCORE, 
+                BaseRadius: BasePerception.BASE_PERCEPTION_RADIUS, 
                 Override: Override);
     }
 }

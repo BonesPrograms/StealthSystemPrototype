@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Capabilities.Stealth;
-
 using XRL.World;
 using XRL.World.Parts;
 
+using StealthSystemPrototype.Capabilities.Stealth;
+
 using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
-using static StealthSystemPrototype.Capabilities.Stealth.Perception2;
 
 namespace StealthSystemPrototype.Events
 {
@@ -17,7 +16,11 @@ namespace StealthSystemPrototype.Events
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
-        public string Type;
+        public string Name;
+
+        public Type Type;
+
+        public PerceptionSense Sense;
 
         public int BaseScore;
 
@@ -34,7 +37,9 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionRatingEvent()
             : base()
         {
+            Name = null;
             Type = null;
+            Sense = PerceptionSense.None;
             BaseScore = 0;
             BaseRadius = 0;
             ScoreClamp = default;
@@ -44,47 +49,49 @@ namespace StealthSystemPrototype.Events
         public override void Reset()
         {
             base.Reset();
+            Name = null;
             Type = null;
+            Sense = PerceptionSense.None;
             BaseScore = 0;
             BaseRadius = 0;
         }
 
         public static GetPerceptionRatingEvent FromPool<T>(
             GameObject Perceiver,
+            T Perception,
             int BaseScore,
-            int Score,
-            int BaseRadius,
-            int Radius)
-            where T : BasePerception, new()
+            int BaseRadius)
+            where T : BasePerception
         {
-            if (FromPool(Perceiver) is GetPerceptionRatingEvent E)
+            if (Perception != null
+                && FromPool(Perceiver) is GetPerceptionRatingEvent E)
             {
-                E.Type = typeof(T)?.Name;
+                E.Name = Perception.GetType().Name;
+                E.Type = Perception.GetType();
+                E.Sense = Perception.Sense;
                 E.BaseScore = BaseScore;
-                E.Score = Score;
+                E.Score = BaseScore;
                 E.BaseRadius = BaseRadius;
-                E.Radius = Radius;
-                E.ScoreClamp = BasePerception.PERCEPTION_SCORE_CLAMP;
-                E.RadiusClamp = BasePerception.PERCEPTION_RADIUS_CLAMP;
+                E.Radius = BaseRadius;
+                E.ScoreClamp = PERCEPTION_SCORE_CLAMP;
+                E.RadiusClamp = PERCEPTION_RADIUS_CLAMP;
             }
             return null;
         }
 
         public static PerceptionRating? GetFor<T>(
             GameObject Perceiver,
+            T Perception,
             int BaseScore,
-            int Score,
-            int BaseRadius,
-            int Radius)
-            where T : BasePerception, new()
+            int BaseRadius)
+            where T : BasePerception
         {
             if (!GameObject.Validate(ref Perceiver)
                 || FromPool<T>(
-                    Perceiver: Perceiver, 
+                    Perceiver: Perceiver,
+                    Perception: Perception,
                     BaseScore: BaseScore, 
-                    Score: Score, 
-                    BaseRadius: BaseRadius, 
-                    Radius: Radius) is not GetPerceptionRatingEvent E)
+                    BaseRadius: BaseRadius) is not GetPerceptionRatingEvent E)
                 return null;
 
             bool proceed = true;
@@ -103,17 +110,23 @@ namespace StealthSystemPrototype.Events
                 : null;
         }
 
-        private static void SetClamp(ref Range Restraint, Range BaseRestraint, int? Min = null, int? Max = null)
-            => Restraint = new((Min ?? Restraint.Start.Value).Clamp(BaseRestraint), (Max ?? Restraint.End.Value).Clamp(BaseRestraint));
+        private static void SetClamp(
+            ref Range Restraint,
+            Range BaseRestraint,
+            int? Min = null,
+            int? Max = null)
+            => Restraint = new(
+                start: (Min ?? Restraint.Start.Value).Clamp(BaseRestraint),
+                end: (Max ?? Restraint.End.Value).Clamp(BaseRestraint));
 
         private GetPerceptionRatingEvent SetScoreClamp(int? Min = null, int? Max = null)
         {
-            SetClamp(ref ScoreClamp, BasePerception.PERCEPTION_SCORE_CLAMP, Min, Max);
+            SetClamp(ref ScoreClamp, PERCEPTION_SCORE_CLAMP, Min, Max);
             return this;
         }
         private GetPerceptionRatingEvent SetRadiusClamp(int? Min = null, int? Max = null)
         {
-            SetClamp(ref RadiusClamp, BasePerception.PERCEPTION_RADIUS_CLAMP, Min, Max);
+            SetClamp(ref RadiusClamp, PERCEPTION_RADIUS_CLAMP, Min, Max);
             return this;
         }
 

@@ -46,9 +46,8 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(GameObject Hider, List<GameObject> Witnesses = null)
         {
             if (Hider == null)
-            {
                 return FromPool();
-            }
+
             T E = FromPool();
             E.GetStringyEvent();
             E.Hider = Hider;

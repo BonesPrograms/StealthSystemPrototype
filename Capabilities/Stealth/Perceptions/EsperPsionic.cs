@@ -28,8 +28,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Occludes = true;
             Tapers = true;
         }
+        public EsperPsionic(Esper Source, int BaseScore, int BaseRadius)
+            : this(Source?.ParentObject, Source, BaseScore, BaseRadius)
+        {
+        }
         public EsperPsionic(Esper Source)
-            : this(Source.ParentObject, Source, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+            : this(Source, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
         {
         }
 
@@ -38,6 +42,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         
 
         #region Serialization
+
         public override void Write(SerializationWriter Writer)
         {
             base.Write(Writer);
@@ -48,6 +53,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             base.Read(Reader);
             // Read Here.
         }
+
         #endregion
     }
 }
