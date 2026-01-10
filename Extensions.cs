@@ -23,6 +23,8 @@ namespace StealthSystemPrototype
         public static int ClampWithCap(this int Value, Range Range, int? Cap = null)
             => Value.Clamp(Utils.GetRangeWithOverride(Range, Cap));
 
+        #region Generic Conditionals
+
         public static bool EqualIncludingBothNull<T>(this T Operand1, T Operand2)
             => (Utils.EitherNull(Operand1, Operand2, out bool areEqual) && areEqual) || (Operand1 != null && Operand1.Equals(Operand2));
 
@@ -154,6 +156,10 @@ namespace StealthSystemPrototype
             return false;
         }
 
+        #endregion
+
+        #region Strings
+
         public static string ToLiteral(this string String, bool Quotes = false)
         {
             if (String.IsNullOrEmpty())
@@ -182,6 +188,37 @@ namespace StealthSystemPrototype
         public static string ThisManyTimes(this char @char, int Times = 1)
             => @char.ToString().ThisManyTimes(Times);
 
+
+        public static string GenericsString(this Type[] Types)
+            => !Types.IsNullOrEmpty()
+            ? "<" + Types.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? ", " : null) + n.ToStringWithGenerics()) + ">"
+            : null;
+
+        public static string ToStringWithGenerics(this Type Type)
+        {
+            if (Type == null)
+                return null;
+
+            if (Type.GetGenericArguments() is not Type[] typeGenerics)
+                return Type.Name;
+
+            return Type.Name.Split('`')[0] + typeGenerics.GenericsString();
+        }
+
+        public static string Acronymize(this string String)
+        {
+            if (String.IsNullOrEmpty()
+                || String.ToLower() == String
+                || String.ToUpper() == String)
+                return String;
+
+            return String.Aggregate("", (a, n) => a + (char.IsLetter(n) && char.IsUpper(n) ? n : null));
+        }
+
+        #endregion
+
+        #region Anatomy
+
         public static IEnumerable<BodyPart> LoopPart(this Body Body, string RequiredType, Predicate<BodyPart> Filter)
         {
             foreach (BodyPart bodyPart in Body?.LoopPart(RequiredType) ?? new List<BodyPart>())
@@ -191,6 +228,24 @@ namespace StealthSystemPrototype
 
         public static IEnumerable<BodyPart> LoopPart(this Body Body, string RequiredType, bool ExcludeDismembered)
             => Body?.LoopPart(RequiredType, bp => !ExcludeDismembered || !bp.IsDismembered);
+
+        public static int DistanceFromBody(this BodyPart BodyPart, int StartingDistance = 0)
+        {
+            if (BodyPart == null
+                || BodyPart.ParentPart == null
+                || BodyPart.ParentBody == null
+                || BodyPart.ParentBody.GetBody() == null)
+                return 0;
+
+            if (BodyPart.ParentPart == BodyPart.ParentBody.GetBody())
+                return StartingDistance;
+
+            return BodyPart.ParentPart.DistanceFromBody(++StartingDistance);
+        }
+
+        #endregion
+
+        #region Cells
 
         public static bool HasLOSTo(this Cell Cell, Cell OtherCell)
         {
@@ -209,18 +264,6 @@ namespace StealthSystemPrototype
                 BlackoutStops: true);
         }
 
-        public static int DistanceFromBody(this BodyPart BodyPart, int StartingDistance = 0)
-        {
-            if (BodyPart == null
-                || BodyPart.ParentPart == null
-                || BodyPart.ParentBody == null
-                || BodyPart.ParentBody.GetBody() == null)
-                return 0;
-
-            if (BodyPart.ParentPart == BodyPart.ParentBody.GetBody())
-                return StartingDistance;
-
-            return BodyPart.ParentPart.DistanceFromBody(++StartingDistance);
-        }
+        #endregion
     }
 }

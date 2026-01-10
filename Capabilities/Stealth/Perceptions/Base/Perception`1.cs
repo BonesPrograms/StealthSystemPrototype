@@ -43,19 +43,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public abstract T GetBestSource(GameObject Owner = null);
 
-        protected override PerceptionRating? GetPerceptionRating(GameObject Owner = null)
-        {
-            throw new NotImplementedException();
-        }
-        public override int GetScore(GameObject Owner = null)
-        {
-            throw new NotImplementedException();
-        }
+        public override bool Validate(GameObject Owner = null)
+            => (Owner ?? this.Owner) is GameObject owner
+            && owner == this.Owner;
 
-        public override int GetRadius(GameObject Owner = null)
-        {
-            throw new NotImplementedException();
-        }
+        protected override PerceptionRating? GetPerceptionRating(GameObject Owner = null)
+            => GetPerceptionRatingEvent.GetFor(Owner, this, BaseScore, BaseRadius);
+
+        public override int GetScore(GameObject Owner = null, bool ClearFirst = false)
+            => Rating?.Score ?? 0;
+
+        public override int GetRadius(GameObject Owner = null, bool ClearFirst = false)
+            => Rating?.Radius ?? 0;
 
         #region Serialization
 

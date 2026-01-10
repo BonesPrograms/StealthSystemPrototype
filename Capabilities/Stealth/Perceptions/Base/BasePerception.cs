@@ -129,8 +129,28 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public virtual string ToString(bool Short)
-            => (Short ? (GetType()?.Name?[0] ?? '?').ToString() : GetType()?.Name ?? "null?") + "[" + BaseScore + "]@R(" + BaseRadius + ")";
+        public virtual string ToString(bool Short, bool WithRoll = false)
+        {
+            string name = GetType()?.ToStringWithGenerics();
+            if (Short)
+            {
+                if (name?.IndexOf('`') is int graveIndex
+                    && graveIndex >= 0)
+                    name = name[..graveIndex].Acronymize() + name[graveIndex..];
+                else
+                    name = !name.IsNullOrEmpty()
+                        ? name[0].ToString()
+                        : "?";
+            }
+            name ??= "null?";
+            string rollString = null;
+            if (WithRoll)
+            {
+                AwarenessLevel awareness = GetAwareness(Owner, out int rollValue);
+                rollString = "(" + awareness.ToString() + ":" + rollValue + ")";
+            }
+            return name + "[" + BaseScore + ":@R:" + BaseRadius + "]" + rollString;
+        }
 
         public override string ToString()
             => ToString(false);
@@ -163,8 +183,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return Stat.RollCached("1d" + value);
         }
 
+        public virtual AwarenessLevel GetAwareness(GameObject Entity, out int Roll)
+        {
+            Roll = this.Roll(Entity ?? Owner);
+            return (AwarenessLevel)Math.Ceiling(((Roll + 1) / 20.0) - 1);
+        }
+
         public virtual AwarenessLevel GetAwareness(GameObject Entity)
-            => (AwarenessLevel)Math.Ceiling(((Roll(Entity) + 1) / 20.0) - 1);
+            => GetAwareness(Entity, out _);
 
         #region Serialization
         public virtual void Write(SerializationWriter Writer)

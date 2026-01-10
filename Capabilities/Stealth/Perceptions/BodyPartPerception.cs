@@ -60,20 +60,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         public override bool Validate(GameObject Owner = null)
-        {
-            Owner ??= this.Owner;
-            if (Owner == null)
-                return false;
-
-            if (Owner != this.Owner)
-                return false;
-
-            if (Owner.Body == null
-                || Owner.Body.GetFirstPart(SourceType, false) is null)
-                return false;
-
-            return true;
-        }
+            => (Owner ?? this.Owner) is GameObject owner
+            && base.Validate(owner)
+            && owner.Body != null
+            && owner.Body.GetFirstPart(SourceType, false) != null;
 
         #region Serialization
 

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
+using StealthSystemPrototype.Capabilities.Stealth;
+
 using XRL.World;
 using XRL.World.Parts;
 
@@ -20,7 +22,7 @@ namespace StealthSystemPrototype.Events
         public static List<GameObject> GetFor(GameObject Hider, List<GameObject> Witnesses = null)
         {
             if (!GameObject.Validate(ref Hider)
-                || FromPool(Hider) is not GetWitnessesEvent E)
+                || FromPool(Hider, Witnesses) is not GetWitnessesEvent E)
                 return null;
 
             bool proceed = true;
@@ -41,12 +43,15 @@ namespace StealthSystemPrototype.Events
         {
             Witnesses ??= Event.NewGameObjectList();
             if (GameObject.Validate(ref Witness))
-                Witnesses.Add(Witness);
+                Witnesses.AddIfNot(Witness, go => Witnesses.Contains(go));
             return this;
         }
 
         public GetWitnessesEvent AddWitness(IPart WitnessPart)
             => AddWitness(WitnessPart?.ParentObject);
+
+        public GetWitnessesEvent AddWitness(BasePerception Perception)
+            => AddWitness(Perception?.Owner);
     }
 }
 

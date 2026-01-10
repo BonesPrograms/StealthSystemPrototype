@@ -44,6 +44,7 @@ namespace XRL.World.Parts
 
         public bool HandleEvent(GetPerceptionsEvent E)
         {
+            UnityEngine.Debug.Log((ParentObject?.DebugName ?? "null") + " " + nameof(GetPerceptionsEvent));
             E.AddPerception(new Visual(ParentObject));
             E.AddPerception(new Auditory(ParentObject));
             E.AddPerception(new Olfactory(ParentObject));
@@ -57,11 +58,21 @@ namespace XRL.World.Parts
             if (ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.AddIPartPerception(heightenedSmell, PerceptionSense.Olfactory);
 
+            if (ParentObject.TryGetPart(out NightVision nightVision))
+                E.AddIPartPerception(nightVision, PerceptionSense.Visual);
+
+            if (ParentObject.TryGetPart(out DarkVision darkVision))
+                E.AddIPartPerception(darkVision, PerceptionSense.Visual);
+
+            if (ParentObject.TryGetPart(out SensePsychic sensePsychic))
+                E.AddIPartPerception(sensePsychic, PerceptionSense.Psionic);
+
             return base.HandleEvent(E);
         }
 
         public bool HandleEvent(GetPerceptionRatingEvent E)
         {
+            UnityEngine.Debug.Log((ParentObject?.DebugName ?? "null") + " " + nameof(GetPerceptionRatingEvent) + " -> " + (E.Type?.Name ?? "no type?"));
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))

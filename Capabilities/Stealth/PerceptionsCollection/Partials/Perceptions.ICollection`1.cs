@@ -16,9 +16,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         private void Add(BasePerception Item)
         {
-            if (Length >= Size)
-                Resize(Length + 1);
-
+            EnsureCapacity(Length + 1);
             Items[Length++] = Item;
             Variant++;
         }

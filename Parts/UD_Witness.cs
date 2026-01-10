@@ -34,15 +34,19 @@ namespace XRL.World.Parts
         public override bool HandleEvent(BeforeTakeActionEvent E)
         {
             if (UD_Stealth.ConstantDebugOutput && false)
-            {
-                string perceptionsString = Perceptions
-                    ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + n.ToString());
-                UnityEngine.Debug.Log(perceptionsString);
-            }
+                UnityEngine.Debug.Log(
+                    (ParentObject?.DebugName?.Strip() ?? "no one") + " " + nameof(Perceptions) + ":\n" +
+                    (Perceptions?.ToStringLines(Short: true) ?? "none??"));
+
             return base.HandleEvent(E);
         }
         public bool HandleEvent(GetWitnessesEvent E)
         {
+            UnityEngine.Debug.Log(
+                (ParentObject?.DebugName ?? "null") + " " + 
+                nameof(GetWitnessesEvent) + " -> " + 
+                nameof(Perceptions) + " (" + (Perceptions?.Count ?? 0) + ")");
+
             if (ParentObject != E.Hider
                 && !ParentObject.InSamePartyAs(E.Hider)
                 && E.Hider?.CurrentCell is Cell { InActiveZone: true } hiderCell
@@ -62,9 +66,10 @@ namespace XRL.World.Parts
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
-            string perceptionsString = Perceptions
-                ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + n.ToString());
-            E.AddEntry(this, nameof(Perceptions), perceptionsString ?? "none??");
+            E.AddEntry(
+                Part: this,
+                Name: nameof(Perceptions),
+                Value: Perceptions?.ToStringLines(Short: true, WithRolls: true) ?? "none??");
             return base.HandleEvent(E);
         }
 

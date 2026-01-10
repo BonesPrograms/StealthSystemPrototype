@@ -23,7 +23,7 @@ namespace StealthSystemPrototype.Events
         public static Perceptions GetFor(GameObject Perceiver)
         {
             if (!GameObject.Validate(ref Perceiver)
-                || FromPool(Perceiver) is not GetPerceptionsEvent E)
+                || FromPool(Perceiver, new Perceptions(Perceiver)) is not GetPerceptionsEvent E)
                 return null;
 
             bool proceed = true;
@@ -47,8 +47,19 @@ namespace StealthSystemPrototype.Events
             : BasePerception
             , new()
         {
-            Perceptions ??= new();
-            Perceptions.Add(Perception, Override);
+            UnityEngine.Debug.Log(
+                (nameof(AddPerception) + "(" + 
+                    Perciever?.DebugName?.Strip() ?? "no one") + " " + nameof(Perception) + ": " +
+                    (typeof(T)?.Name ?? "none??") +
+                ")");
+
+            Perceptions ??= new(Perciever);
+            if (Perception != null)
+            {
+                if (Perception.Owner != Perciever)
+                    Perception.Owner = Perciever;
+                Perceptions.Add(Perception, Override);
+            }
             return this;
         }
 

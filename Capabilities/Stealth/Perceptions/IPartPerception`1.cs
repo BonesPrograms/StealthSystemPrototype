@@ -58,10 +58,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public override bool Validate(GameObject Owner = null)
         {
             Owner ??= this.Owner;
-            if (Owner == null)
-                return false;
-
-            if (Owner != this.Owner)
+            if (!base.Validate(Owner))
                 return false;
 
             if (Source != null

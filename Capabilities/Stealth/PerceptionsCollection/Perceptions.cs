@@ -79,6 +79,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
+        public virtual string ToString(string Delimiter, bool Short, bool WithRolls)
+            => this.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString(Short: Short, WithRoll: WithRolls));
+
+        public virtual string ToString(bool Short, bool WithRolls = false)
+            => ToString(", ", Short, WithRolls);
+
+        public virtual string ToStringLines(bool Short = false, bool WithRolls = false)
+            => ToString("\n", Short, WithRolls);
+
+        public override string ToString()
+            => ToString(Short: false, WithRolls: false);
+
         public bool Validate(GameObject Owner = null, bool RemoveInvalid = true)
         {
             Owner ??= this.Owner;

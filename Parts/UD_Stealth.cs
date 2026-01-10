@@ -29,15 +29,20 @@ namespace XRL.World.Parts
             => Object
                 ?.GetPart<UD_Witness>()
                 ?.Perceptions
-                ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "\n" : null) + n.ToString());
+                ?.ToString(Short: true, WithRolls: true);
+
+        public string WitnessListString(List<GameObject> Witnesses, string Delimiter = "\n")
+            => (Witnesses ?? this.Witnesses)
+                ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + PerceptionString(n))
+            ?? "Total {{K|Invisibility}}!";
 
         public string WitnessListString(string Delimiter = "\n")
-            => Witnesses
-                ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + PerceptionString(n))
-            ?? "Invisible!";
+            => WitnessListString(null, Delimiter);
 
         public List<GameObject> GetWitnesses()
             => Witnesses = GetWitnessesEvent.GetFor(ParentObject);
+
+        #region Event Handling
 
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
@@ -49,28 +54,34 @@ namespace XRL.World.Parts
             if (E.Object == ParentObject
                 && ParentObject.IsPlayer())
             {
-                GetWitnesses();
-                UnityEngine.Debug.Log((ParentObject?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + WitnessListString());
+                UnityEngine.Debug.Log(
+                    (ParentObject?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + 
+                    WitnessListString(GetWitnesses(), "\n    "));
             }
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
-            GetWitnesses();
-            E.AddEntry(this, nameof(Witnesses), WitnessListString());
+            E.AddEntry(this, nameof(Witnesses), WitnessListString(GetWitnesses()));
             E.AddEntry(this, nameof(Witnesses) + " " + nameof(Witnesses.Count), Witnesses?.Count ?? 0);
             return base.HandleEvent(E);
         }
 
+        #endregion
+
         #region Wishes
+
         [WishCommand(Command = "UD_Steath debug witnesses")]
         public static void DebugWitnesses_Wish()
         {
             if (The.Player is GameObject player
                 && player.TryGetPart(out UD_Stealth stealthPart))
             {
-                stealthPart.GetWitnesses();
-                Popup.Show((player?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + stealthPart.WitnessListString());
+                ;
+                Popup.Show(
+                    Message: (player?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + 
+                        stealthPart.WitnessListString(stealthPart.GetWitnesses(), "\n{{K|----}}"),
+                    LogMessage: false);
             }
         }
         [WishCommand(Command = "UD_Steath debug toggle witnesses")]
@@ -78,6 +89,7 @@ namespace XRL.World.Parts
         {
             ConstantDebugOutput = !ConstantDebugOutput;
         }
+
         #endregion
     }
 }
