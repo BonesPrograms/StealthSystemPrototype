@@ -79,6 +79,30 @@ namespace StealthSystemPrototype.Events
             return null;
         }
 
+        public override Event GetStringyEvent()
+            => base.GetStringyEvent()
+                ?.SetParameter(nameof(Name), Name)
+                ?.SetParameter(nameof(Type), Type)
+                ?.SetParameter(nameof(Sense), Sense)
+                ?.SetParameter(nameof(BaseScore), BaseScore)
+                ?.SetParameter(nameof(Score), Score)
+                ?.SetParameter(nameof(BaseRadius), BaseRadius)
+                ?.SetParameter(nameof(Radius), Radius)
+                ?.SetParameter(nameof(ScoreClamp), ScoreClamp)
+                ?.SetParameter(nameof(RadiusClamp), RadiusClamp)
+                ;
+
+        public override void UpdateFromStringyEvent()
+        {
+            base.UpdateFromStringyEvent();
+
+            Score = StringyEvent?.GetIntParameter(nameof(Score)) ?? Score;
+
+            Radius = StringyEvent?.GetIntParameter(nameof(Score)) ?? Radius;
+
+
+        }
+
         public static PerceptionRating? GetFor<T>(
             GameObject Perceiver,
             T Perception,
@@ -87,7 +111,7 @@ namespace StealthSystemPrototype.Events
             where T : BasePerception
         {
             if (!GameObject.Validate(ref Perceiver)
-                || FromPool<T>(
+                || FromPool(
                     Perceiver: Perceiver,
                     Perception: Perception,
                     BaseScore: BaseScore, 
@@ -98,8 +122,9 @@ namespace StealthSystemPrototype.Events
             if (proceed
                 && Perceiver.HasRegisteredEvent(E.GetRegisteredEventID()))
                 proceed = Perceiver.FireEvent(E.StringyEvent);
-
-            E.UpdateFromStringyEvent(ClearStringyAfter: true);
+            
+            if (proceed)
+                E.UpdateFromStringyEvent();
 
             if (proceed
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
@@ -109,6 +134,16 @@ namespace StealthSystemPrototype.Events
                 ? new PerceptionRating(E.GetScore(), E.GetRadius())
                 : null;
         }
+        public static PerceptionRating? GetFor<T>(
+            GameObject Perceiver,
+            T Perception,
+            PerceptionRating? Rating)
+            where T : BasePerception
+            => GetFor(
+                Perceiver: Perceiver,
+                Perception: Perception,
+                BaseScore: Rating?.Score ?? BASE_PERCEPTION_SCORE,
+                BaseRadius: Rating?.Radius?? BASE_PERCEPTION_RADIUS);
 
         private static void SetClamp(
             ref Range Restraint,

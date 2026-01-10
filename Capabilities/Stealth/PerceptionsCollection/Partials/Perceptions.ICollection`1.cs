@@ -6,6 +6,8 @@ using System.Text;
 using XRL.Collections;
 using XRL.World;
 
+using static StealthSystemPrototype.Utils;
+
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public partial class Perceptions : ICollection<BasePerception>, IReadOnlyCollection<BasePerception>
@@ -25,7 +27,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             where T : BasePerception, new()
         {
             if (Items == null)
-                throw new Exception(nameof(Items) + " is null when it shouldn't be");
+                throw new InnerArrayNullException(nameof(Items));
 
             if (Contains(Item)
                 && Override)
@@ -42,6 +44,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public void Clear()
         {
             Array.Clear(Items, 0, Items.Length);
+            Items = null;
             Size = 0;
             Length = 0;
             Variant = 0;

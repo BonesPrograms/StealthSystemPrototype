@@ -25,16 +25,17 @@ namespace XRL.World.Parts
             Witnesses = null;
         }
 
-        public static string PerceptionString(GameObject Object)
-            => Object
+        public static string PerceptionString(GameObject Perceiver, GameObject Hider)
+            => Perceiver
                 ?.GetPart<UD_Witness>()
                 ?.Perceptions
-                ?.ToString(Short: true, WithRolls: true);
+                ?.ToString(Short: true, Entity: Hider);
 
         public string WitnessListString(List<GameObject> Witnesses, string Delimiter = "\n")
-            => (Witnesses ?? this.Witnesses)
-                ?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + PerceptionString(n))
-            ?? "Total {{K|Invisibility}}!";
+            => (Witnesses ?? this.Witnesses) is List<GameObject> witnessess
+                && witnessess.Count > 0
+            ? witnessess?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + PerceptionString(n, ParentObject))
+            : "Total {{K|Invisibility}}!";
 
         public string WitnessListString(string Delimiter = "\n")
             => WitnessListString(null, Delimiter);
@@ -54,9 +55,11 @@ namespace XRL.World.Parts
             if (E.Object == ParentObject
                 && ParentObject.IsPlayer())
             {
+                UnityEngine.Debug.Log("<UD_Steath debug toggle witnesses>");
                 UnityEngine.Debug.Log(
                     (ParentObject?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + 
                     WitnessListString(GetWitnesses(), "\n    "));
+                UnityEngine.Debug.Log("</UD_Steath debug toggle witnesses>");
             }
             return base.HandleEvent(E);
         }
@@ -77,11 +80,12 @@ namespace XRL.World.Parts
             if (The.Player is GameObject player
                 && player.TryGetPart(out UD_Stealth stealthPart))
             {
-                ;
-                Popup.Show(
-                    Message: (player?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + 
-                        stealthPart.WitnessListString(stealthPart.GetWitnesses(), "\n{{K|----}}"),
-                    LogMessage: false);
+                string msg = (player?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" +
+                        stealthPart.WitnessListString(stealthPart.GetWitnesses(), "\n{{K|----}}");
+                Popup.Show(msg, LogMessage: false);
+                UnityEngine.Debug.Log("<UD_Steath debug witnesses>");
+                UnityEngine.Debug.Log(msg.Strip());
+                UnityEngine.Debug.Log("</UD_Steath debug witnesses>");
             }
         }
         [WishCommand(Command = "UD_Steath debug toggle witnesses")]

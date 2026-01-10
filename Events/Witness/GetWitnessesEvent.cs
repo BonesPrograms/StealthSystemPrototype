@@ -29,7 +29,8 @@ namespace StealthSystemPrototype.Events
             if (proceed)
                 proceed = Hider.GetCurrentZone().FireEvent(E.StringyEvent);
 
-            E.UpdateFromStringyEvent(ClearStringyAfter: true);
+            if (proceed)
+                E.UpdateFromStringyEvent();
 
             if (proceed)
                 proceed = Hider.GetCurrentZone().HandleEvent(E);

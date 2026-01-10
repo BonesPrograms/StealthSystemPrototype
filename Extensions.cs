@@ -156,6 +156,16 @@ namespace StealthSystemPrototype
             return false;
         }
 
+        public static Func<T, bool> ToFunc<T>(this Predicate<T> Filter, bool ThrowIfNull = false)
+        {
+            if (Filter == null && ThrowIfNull)
+                throw new ArgumentNullException(
+                    paramName: nameof(Filter),
+                    message: "cannot be null if " + nameof(ThrowIfNull) + " is set to " + ThrowIfNull.ToString());
+
+            return Input => Filter == null || Filter(Input);
+        }
+
         #endregion
 
         #region Strings
@@ -185,24 +195,36 @@ namespace StealthSystemPrototype
 
             return output;
         }
-        public static string ThisManyTimes(this char @char, int Times = 1)
-            => @char.ToString().ThisManyTimes(Times);
+        public static string ThisManyTimes(this char Char, int Times = 1)
+            => Char.ToString().ThisManyTimes(Times);
 
+        public static string Join(this string Accumulator, string Next, string Delimiter = ", ")
+            => Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next;
 
-        public static string GenericsString(this Type[] Types)
+        public static string Join(this IEnumerable<string> Strings, string Delimiter = ", ")
+            => Strings?.Aggregate("", (a, n) => a?.Join(n, Delimiter));
+
+        public static string GenericsString(this IEnumerable<Type> Types, bool Short = false)
             => !Types.IsNullOrEmpty()
-            ? "<" + Types.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? ", " : null) + n.ToStringWithGenerics()) + ">"
+            ? "<" + 
+                Types
+                    .ToList()
+                    .ConvertAll(t => t.ToStringWithGenerics(Short))
+                    .Join("," + (!Short ? " " : null)) + 
+                ">"
             : null;
 
-        public static string ToStringWithGenerics(this Type Type)
+        public static string ToStringWithGenerics(this Type Type, bool Short = false)
         {
             if (Type == null)
                 return null;
 
-            if (Type.GetGenericArguments() is not Type[] typeGenerics)
-                return Type.Name;
+            if (Type.GetGenericArguments() is not IEnumerable<Type> typeGenerics)
+                return !Short 
+                    ? Type.Name
+                    : Type.Name.Acronymize();
 
-            return Type.Name.Split('`')[0] + typeGenerics.GenericsString();
+            return Type.Name.Split('`')[0] + typeGenerics.GenericsString(Short);
         }
 
         public static string Acronymize(this string String)
@@ -262,6 +284,16 @@ namespace StealthSystemPrototype
                 x1: OtherCell.X,
                 y1: OtherCell.Y,
                 BlackoutStops: true);
+        }
+
+        #endregion
+
+        #region Collection Manipulation
+
+        public static IEnumerable<T> OrderInPlace<T>(this IEnumerable<T> List, Comparison<T> Comparison)
+        {
+            List?.ToList()?.Sort(Comparison);
+            return List;
         }
 
         #endregion

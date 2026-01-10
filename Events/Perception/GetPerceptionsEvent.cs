@@ -31,13 +31,17 @@ namespace StealthSystemPrototype.Events
                 && Perceiver.HasRegisteredEvent(E.GetRegisteredEventID()))
                 proceed = Perceiver.FireEvent(E.StringyEvent);
 
-            E.UpdateFromStringyEvent(ClearStringyAfter: true);
+            if (proceed)
+                E.UpdateFromStringyEvent();
 
             if (proceed
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
 
-            return E.Perceptions;
+            return proceed
+                    && !E.Perceptions.IsNullOrEmpty() 
+                ? E.Perceptions
+                : null;
         }
 
         public GetPerceptionsEvent AddPerception<T>(
@@ -50,7 +54,7 @@ namespace StealthSystemPrototype.Events
             UnityEngine.Debug.Log(
                 (nameof(AddPerception) + "(" + 
                     Perciever?.DebugName?.Strip() ?? "no one") + " " + nameof(Perception) + ": " +
-                    (typeof(T)?.Name ?? "none??") +
+                    (typeof(T)?.ToStringWithGenerics() ?? "none??") +
                 ")");
 
             Perceptions ??= new(Perciever);

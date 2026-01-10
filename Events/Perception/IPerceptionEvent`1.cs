@@ -18,20 +18,21 @@ namespace StealthSystemPrototype.Events
 
         public static string RegisteredEventID => typeof(T).Name;
 
-        public Event StringyEvent;
-
         public GameObject Perciever;
 
         public BasePerception Perception;
 
         public Perceptions Perceptions;
 
+        public Event StringyEvent;
+
         public IPerceptionEvent()
         {
-            StringyEvent = null;
             Perciever = null;
             Perception = null;
             Perceptions = null;
+
+            StringyEvent = null;
         }
 
         public virtual string GetRegisteredEventID()
@@ -43,12 +44,11 @@ namespace StealthSystemPrototype.Events
         public override void Reset()
         {
             base.Reset();
-            StringyEvent?.Clear();
-            StringyEvent = null;
             Perciever = null;
             Perception = null;
-            Perceptions?.Clear();
             Perceptions = null;
+            StringyEvent?.Clear();
+            StringyEvent = null;
         }
 
         public static T FromPool(GameObject Perciever, BasePerception Perception, Perceptions Perceptions)
@@ -57,10 +57,10 @@ namespace StealthSystemPrototype.Events
                 return FromPool();
 
             T E = FromPool();
-            E.StringyEvent = E.GetStringyEvent();
             E.Perciever = Perciever;
             E.Perception = Perception;
             E.Perceptions = Perceptions;
+            E.StringyEvent = E.GetStringyEvent();
             return E;
         }
 
@@ -91,18 +91,15 @@ namespace StealthSystemPrototype.Events
         }
 
         public virtual Event GetStringyEvent()
-            => StringyEvent = GetStringyEvent(this);
+            => GetStringyEvent(this);
 
-        public virtual void UpdateFromStringyEvent(bool ClearStringyAfter = false)
+        public virtual void UpdateFromStringyEvent()
         {
             if (StringyEvent?.GetParameter(nameof(Perception)) is Perceptions perception)
                 Perceptions = perception;
 
             if (StringyEvent?.GetParameter(nameof(Perceptions)) is Perceptions perceptions)
                 Perceptions = perceptions;
-            
-            if (ClearStringyAfter)
-                StringyEvent.Clear();
         }
 
         protected static T Process(
@@ -119,7 +116,8 @@ namespace StealthSystemPrototype.Events
                     && Perciever.HasRegisteredEvent(E.GetRegisteredEventID()))
                     Success = Perciever.FireEvent(E.StringyEvent);
 
-                E.UpdateFromStringyEvent(true);
+                if (Success)
+                    E.UpdateFromStringyEvent();
 
                 if (Success
                     && Perciever.WantEvent(E.GetID(), E.GetCascadeLevel()))

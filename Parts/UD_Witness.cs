@@ -25,6 +25,8 @@ namespace XRL.World.Parts
         public void ClearPerceptions()
             => _Perceptions = null;
 
+        #region Event Handling
+
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
             || ID == BeforeTakeActionEvent.ID
@@ -42,25 +44,20 @@ namespace XRL.World.Parts
         }
         public bool HandleEvent(GetWitnessesEvent E)
         {
-            UnityEngine.Debug.Log(
-                (ParentObject?.DebugName ?? "null") + " " + 
-                nameof(GetWitnessesEvent) + " -> " + 
-                nameof(Perceptions) + " (" + (Perceptions?.Count ?? 0) + ")");
-
             if (ParentObject != E.Hider
-                && !ParentObject.InSamePartyAs(E.Hider)
-                && E.Hider?.CurrentCell is Cell { InActiveZone: true } hiderCell
-                && ParentObject.CurrentCell is Cell { InActiveZone: true } myCell
-                && hiderCell.CosmeticDistanceto(myCell.Location) is int distance
-                && Perceptions != null
-                && Perceptions
-                    ?.Aggregate(new List<int>(), delegate (List<int> Accumulator, BasePerception Next)
-                    {
-                        Accumulator.Add(Next.GetRadius());
-                        return Accumulator;
-                    }) is List<int> radii
-                && radii.Any(r => r >= distance))
-                E.AddWitness(this);
+                && !ParentObject.InSamePartyAs(E.Hider))
+            {
+                UnityEngine.Debug.Log(
+                    (ParentObject?.DebugName ?? "null") + " " +
+                    nameof(GetWitnessesEvent) + " -> " +
+                    nameof(Perceptions) + " (" + (Perceptions?.Count ?? 0) + ")");
+
+                if (Perceptions.GetAwareness(E.Hider, out BasePerception perception) > AwarenessLevel.None)
+                {
+                    UnityEngine.Debug.Log(" ".ThisManyTimes(4) + perception.ToString());
+                    E.AddWitness(perception);
+                }
+            }
                 
             return base.HandleEvent(E);
         }
@@ -69,9 +66,11 @@ namespace XRL.World.Parts
             E.AddEntry(
                 Part: this,
                 Name: nameof(Perceptions),
-                Value: Perceptions?.ToStringLines(Short: true, WithRolls: true) ?? "none??");
+                Value: Perceptions?.ToStringLines(Short: true, Entity: The.Player, UseLastRoll: true) ?? "none??");
             return base.HandleEvent(E);
         }
+
+        #endregion
 
         #region Serialization
 

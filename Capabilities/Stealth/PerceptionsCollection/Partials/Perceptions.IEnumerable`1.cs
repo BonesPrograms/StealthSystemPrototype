@@ -6,6 +6,8 @@ using System.Text;
 using XRL.Collections;
 using XRL.World;
 
+using static StealthSystemPrototype.Utils;
+
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public partial class Perceptions
@@ -40,13 +42,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             public readonly Enumerator GetEnumerator()
                 => this;
 
-            public readonly bool MoveNext()
+            public bool MoveNext()
             {
                 if (Version != Perceptions.Version)
-                    throw new InvalidOperationException("Collection was modified; enumeration operation may not execute.");
+                    throw new CollectionModifiedException(typeof(Perceptions));
 
-                if (Index < Items.Length)
-                    return false;
+                if (++Index < Perceptions.Count
+                    && Current != null)
+                    return true;
 
                 return false;
             }
@@ -54,7 +57,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             void IEnumerator.Reset()
             {
                 if (Version != Perceptions.Version)
-                    throw new InvalidOperationException("Collection was modified; enumeration operation may not execute.");
+                    throw new CollectionModifiedException(typeof(Perceptions));
 
                 Index = -1;
             }

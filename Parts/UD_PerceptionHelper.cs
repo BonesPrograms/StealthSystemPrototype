@@ -44,7 +44,6 @@ namespace XRL.World.Parts
 
         public bool HandleEvent(GetPerceptionsEvent E)
         {
-            UnityEngine.Debug.Log((ParentObject?.DebugName ?? "null") + " " + nameof(GetPerceptionsEvent));
             E.AddPerception(new Visual(ParentObject));
             E.AddPerception(new Auditory(ParentObject));
             E.AddPerception(new Olfactory(ParentObject));
@@ -67,12 +66,21 @@ namespace XRL.World.Parts
             if (ParentObject.TryGetPart(out SensePsychic sensePsychic))
                 E.AddIPartPerception(sensePsychic, PerceptionSense.Psionic);
 
+            UnityEngine.Debug.Log(
+                (ParentObject?.DebugName ?? "null") + " " + 
+                nameof(GetPerceptionsEvent) + " -> " + 
+                nameof(E.Perceptions) + " (" + (E.Perceptions?.Count ?? 0) + ")");
+
             return base.HandleEvent(E);
         }
 
         public bool HandleEvent(GetPerceptionRatingEvent E)
         {
-            UnityEngine.Debug.Log((ParentObject?.DebugName ?? "null") + " " + nameof(GetPerceptionRatingEvent) + " -> " + (E.Type?.Name ?? "no type?"));
+            UnityEngine.Debug.Log(
+                (ParentObject?.DebugName ?? "null") + " " + 
+                nameof(GetPerceptionRatingEvent) + " -> " + 
+                (E.Type?.Name ?? "no type?"));
+
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))

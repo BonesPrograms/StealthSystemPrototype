@@ -6,6 +6,7 @@ using System.Text;
 using StealthSystemPrototype.Events;
 
 using XRL.World;
+using XRL.World.Parts;
 using XRL.World.Parts.Mutation;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
@@ -39,7 +40,19 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        
+        public override int GetBonusBaseScore()
+            => base.GetBonusBaseScore()
+            + (Owner?.GetPart<Mutations>()
+                ?.MutationList
+                ?.Where(bm => bm.IsMental())
+                ?.OrderInPlace((bm1, bm2) => bm1.Level.CompareTo(bm2.Level))
+                ?.FirstOrDefault()
+                ?.Level
+                ?? 0);
+
+        public override int GetBonusBaseRadius()
+            => base.GetBonusBaseScore()
+            + Math.Min(Owner?.StatMod("Ego") ?? 0, 10);
 
         #region Serialization
 

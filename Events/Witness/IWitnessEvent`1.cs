@@ -15,17 +15,18 @@ namespace StealthSystemPrototype.Events
 
         public static string RegisteredEventID => typeof(T).Name;
 
-        public Event StringyEvent;
-
         public GameObject Hider;
 
         public List<GameObject> Witnesses;
 
+        public Event StringyEvent;
+
         public IWitnessEvent()
         {
-            StringyEvent = null;
             Hider = null;
             Witnesses = null;
+
+            StringyEvent = null;
         }
 
         public virtual string GetRegisteredEventID()
@@ -37,10 +38,10 @@ namespace StealthSystemPrototype.Events
         public override void Reset()
         {
             base.Reset();
-            StringyEvent?.Clear();
-            StringyEvent = null;
             Hider = null;
             Witnesses = null;
+            StringyEvent?.Clear();
+            StringyEvent = null;
         }
 
         public static T FromPool(GameObject Hider, List<GameObject> Witnesses = null)
@@ -49,9 +50,9 @@ namespace StealthSystemPrototype.Events
                 return FromPool();
 
             T E = FromPool();
-            E.GetStringyEvent();
             E.Hider = Hider;
             E.Witnesses = Witnesses ?? Event.NewGameObjectList();
+            E.StringyEvent = E.GetStringyEvent();
             return E;
         }
 
@@ -63,15 +64,12 @@ namespace StealthSystemPrototype.Events
                 nameof(ForEvent.Witnesses), ForEvent?.Witnesses);
 
         public virtual Event GetStringyEvent()
-            => StringyEvent = GetStringyEvent(this);
+            => GetStringyEvent(this);
 
-        public virtual void UpdateFromStringyEvent(bool ClearStringyAfter = false)
+        public virtual void UpdateFromStringyEvent()
         {
             if (StringyEvent?.GetParameter(nameof(Witnesses)) != null)
                 Witnesses = StringyEvent?.GetParameter(nameof(Witnesses)) as List<GameObject>;
-
-            if (ClearStringyAfter)
-                StringyEvent.Clear();
         }
 
         protected static T Process(GameObject Hider, List<GameObject> Witnesses, out bool Success)
@@ -84,7 +82,7 @@ namespace StealthSystemPrototype.Events
                     && Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
                     Success = Hider.FireEvent(E.StringyEvent);
 
-                E.UpdateFromStringyEvent(true);
+                E.UpdateFromStringyEvent();
 
                 if (Success
                     && Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))

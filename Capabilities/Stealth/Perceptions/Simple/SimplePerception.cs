@@ -48,14 +48,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return true;
         }
 
-        protected override PerceptionRating? GetPerceptionRating(GameObject Owner = null)
-            => GetPerceptionRatingEvent.GetFor(Owner, this, BaseScore, BaseRadius);
-
-        public override int GetScore(GameObject Owner = null, bool ClearFirst = false)
-            => Rating?.Score ?? 0;
-
-        public override int GetRadius(GameObject Owner = null, bool ClearFirst = false)
-            => Rating?.Radius ?? 0;
+        protected override PerceptionRating? GetPerceptionRating(
+            GameObject Owner = null,
+            int? BaseScore = null,
+            int? BaseRadius = null)
+            => GetPerceptionRatingEvent.GetFor(
+                    Perceiver: Owner,
+                    Perception: this,
+                    Rating: base.GetPerceptionRating(
+                        Owner: Owner,
+                        BaseScore: BaseScore ?? this.BaseScore,
+                        BaseRadius: BaseRadius ?? this.BaseRadius));
 
         #region Serialization
 
