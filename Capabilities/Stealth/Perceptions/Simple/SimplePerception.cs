@@ -26,7 +26,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Tapers = true;
         }
         public SimplePerception(GameObject Owner, PerceptionSense Sense)
-            : this(Owner, Sense, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+            : this(Owner, Sense, BASE_SCORE, BASE_RADIUS)
         {
         }
 
@@ -52,7 +52,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner = null,
             int? BaseScore = null,
             int? BaseRadius = null)
-            => GetPerceptionRatingEvent.GetFor(
+            => GetPerceptionScoreEvent.GetFor(
                     Perceiver: Owner,
                     Perception: this,
                     Rating: base.GetPerceptionRating(

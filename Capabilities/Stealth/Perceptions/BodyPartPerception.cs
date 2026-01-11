@@ -36,11 +36,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
         public BodyPartPerception(GameObject Owner, BodyPart Source, PerceptionSense Sense)
-            : this(Owner, Source, Sense, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+            : this(Owner, Source, Sense, BASE_SCORE, BASE_RADIUS)
         {
         }
         public BodyPartPerception(BodyPart Source, PerceptionSense Sense)
-            : this(Source, Sense, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+            : this(Source, Sense, BASE_SCORE, BASE_RADIUS)
         {
         }
 

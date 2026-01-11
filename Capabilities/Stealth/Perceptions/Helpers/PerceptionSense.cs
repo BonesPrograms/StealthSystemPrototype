@@ -7,13 +7,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [Serializable]
     public enum PerceptionSense : int
     {
-        None,
-        Thermal,
-        Olfactory,
-        Auditory,
-        Visual,
-        Psionic,
-        Sixth,
-        Other,
+        None, // "null"
+        Kinesthetic, // touch
+        Thermal, // temperature
+        Olfactory, // smell
+        Auditory, // hearing
+        Visual, // sight
+        Sixth, // intuition/ghosts
+        Psionic, // mental
+        Other, // sundry, probably modded.
     }
 }

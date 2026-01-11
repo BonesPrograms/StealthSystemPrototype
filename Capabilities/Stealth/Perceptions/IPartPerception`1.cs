@@ -36,7 +36,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
         public IPartPerception(GameObject Owner, T Source, PerceptionSense Sense)
-            : this(Owner, Source, Sense, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+            : this(Owner, Source, Sense, BASE_SCORE, BASE_RADIUS)
         {
         }
         public IPartPerception(T Source, PerceptionSense Sense)

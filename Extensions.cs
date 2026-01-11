@@ -4,24 +4,76 @@ using System.Linq;
 using System.Text;
 
 using XRL.World;
+using XRL.World.AI;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
+
+using StealthSystemPrototype.Capabilities.Stealth;
+
+using static StealthSystemPrototype.Utils;
+using XRL.Rules;
 
 namespace StealthSystemPrototype
 {
     public static class Extensions
     {
+        #region Clamping
+
+        #region Basic
+
         public static int Clamp(this int Value, int Min, int Max)
             => Math.Clamp(Value, Min, Max);
 
         public static int Clamp(this int Value, Range Range)
             => Value.Clamp(Range.Start.Value, Range.End.Value);
 
-        public static int ClampWithCap(this int Value, int Min, int Max, int? Cap = null)
-            => Value.Clamp(Utils.GetRangeWithOverride(Min, Max, Cap));
+        public static Index ClampIndex(this Index Value, int Min, int Max)
+            => new(Value.Value.Clamp(Min, Max));
 
-        public static int ClampWithCap(this int Value, Range Range, int? Cap = null)
-            => Value.Clamp(Utils.GetRangeWithOverride(Range, Cap));
+        public static Index ClampIndex(this Index Value, Range Range)
+            => new(Value.Value.Clamp(Range));
+
+        public static int ClampValue(this Index Value, int Min, int Max)
+            => Value.ClampIndex(Min, Max).Value;
+
+        public static int ClampValue(this Index Value, Range Range)
+            => Value.ClampIndex(Range).Value;
+
+        public static Range ClampRange(this Range Value, int Min, int Max)
+            => new(Value.Start.ClampIndex(Min, Max), Value.End.ClampIndex(Min, Max));
+
+        public static Range ClampRange(this Range Value, Range Range)
+            => new(Value.Start.ClampIndex(Range), Value.End.ClampIndex(Range));
+
+        #endregion
+        #region With Cap
+
+        public static int ClampCap(this int Value, int Min, int Max, int? Cap = null)
+            => Value.Clamp(GetRangeWithOverride(Min, Max, Cap));
+
+        public static int ClampCap(this int Value, Range Range, int? Cap = null)
+            => Value.Clamp(GetRangeWithOverride(Range, Cap));
+
+        public static Index ClampIndexCap(this Index Value, int Min, int Max, int? Cap = null)
+            => new(Value.Value.ClampCap(Min, Max, Cap));
+
+        public static Index ClampIndexCap(this Index Value, Range Range, int? Cap = null)
+            => new(Value.Value.ClampCap(Range, Cap));
+
+        public static int ClampValueCap(this Index Value, int Min, int Max, int? Cap = null)
+            => Value.ClampIndexCap(Min, Max, Cap).Value;
+
+        public static int ClampValueCap(this Index Value, Range Range, int? Cap = null)
+            => Value.ClampIndexCap(Range, Cap).Value;
+
+        public static Range ClampRangeCap(this Range Value, int Min, int Max, int? Cap = null)
+            => new(Value.Start.ClampIndexCap(Min, Max, Cap), Value.End.ClampIndexCap(Min, Max, Cap));
+
+        public static Range ClampRangeCap(this Range Value, Range Range, int? Cap = null)
+            => new(Value.Start.ClampIndexCap(Range, Cap), Value.End.ClampIndexCap(Range, Cap));
+
+        #endregion
+        #endregion
 
         #region Generic Conditionals
 
@@ -267,6 +319,40 @@ namespace StealthSystemPrototype
 
         #endregion
 
+        #region Brains & Goals
+
+        public static GoalHandler FindGoal(this Brain Brain, Type Type)
+        {
+            if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
+                return null;
+
+            for (int i = goalHandlers.Count - 1; i >= 0; i--)
+                if (goalHandlers[i].GetType() == Type)
+                    return goalHandlers[i];
+
+            return null;
+        }
+
+        public static BaseAlert FindAlert<T>(this Brain Brain, T Perception)
+            where T : BasePerception, new()
+        {
+            if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
+                return null;
+
+
+            for (int i = goalHandlers.Count - 1; i >= 0; i--)
+                if (goalHandlers[i] is Alert<T> alert)
+                    return alert;
+
+            return null;
+        }
+
+        public static BaseAlert FindAlert<T>(this Brain Brain, Alert<T> Alert)
+            where T : BasePerception, new()
+            => Brain.FindGoal(Alert.GetType()) as BaseAlert;
+
+        #endregion
+
         #region Cells
 
         public static bool HasLOSTo(this Cell Cell, Cell OtherCell)
@@ -295,6 +381,78 @@ namespace StealthSystemPrototype
             List?.ToList()?.Sort(Comparison);
             return List;
         }
+
+        #endregion
+
+        #region Math?
+
+        public static int Average(this int[] Values)
+            => !Values.IsNullOrEmpty()
+            ? Values.Aggregate(0, (a, n) => a + n) / Values.Length
+            : 0;
+
+        #endregion
+        #region Serialization
+
+        public static void WriteOptimized(this SerializationWriter Writer, Range Range)
+        {
+            Writer.WriteOptimized(Range.Start.Value);
+            Writer.WriteOptimized(Range.End.Value);
+        }
+
+        public static Range ReadOptimizedRange(this SerializationReader Reader)
+            => new(Reader.ReadOptimizedInt32(), Reader.ReadOptimizedInt32());
+
+        #endregion
+        #region Ranges
+
+        public static Range AdjustBy(this Range Range, int Value)
+            => new(Range.Start.Value + Value, Range.End.Value + Value);
+
+        public static Range AdjustBy(this Range Range, Range OtherRange)
+            => new(Range.Start.Value + OtherRange.Start.Value, Range.End.Value + OtherRange.End.Value);
+
+        public static Range AdjustByClamped(this Range Range, int Value, Range Clamp)
+            => Range.AdjustBy(Value).ClampRange(Clamp);
+
+        public static Range AdjustByClamped(this Range Range, Range OtherRange, Range Clamp)
+            => Range.AdjustBy(OtherRange).ClampRange(Clamp);
+
+        public static int Sum(this Range Range)
+            => Range.Start.Value + Range.End.Value;
+
+        public static int Average(this Range Range)
+            => Utils.Average(Range.Start.Value, Range.End.Value);
+
+        public static int Breadth(this Range Range)
+            => Range.End.Value - Range.Start.Value;
+
+        public static int Floor(this Range Range)
+            => Range.Start.Value;
+
+        public static int Ceiling(this Range Range)
+            => Range.End.Value;
+
+        public static string GetDieRollString(this Range Range)
+            => "1d" + (Range.End.Value - Range.Start.Value) + "+" + Range.Start.Value;
+
+        public static string GetDieRollRangeString(this Range Range)
+            => Range.Start.Value + "-" + Range.End.Value;
+
+        public static DieRoll GetDieRoll(this Range Range)
+            => new(DieRoll.TYPE_RANGE, Range.Start.Value, Range.End.Value);
+
+        public static int Roll(this Range Range)
+            => Stat.Roll(Range.Start.Value, Range.End.Value);
+
+        public static int Random(this Range Range)
+            => Stat.Random(Range.Start.Value, Range.End.Value);
+
+        public static int RandomCosmetic(this Range Range)
+            => Stat.RandomCosmetic(Range.Start.Value, Range.End.Value);
+
+        public static int SeededRandom(this Range Range, string Seed)
+            => Stat.SeededRandom(Seed, Range.Start.Value, Range.End.Value);
 
         #endregion
     }

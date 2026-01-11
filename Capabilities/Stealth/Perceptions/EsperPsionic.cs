@@ -34,7 +34,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
         public EsperPsionic(Esper Source)
-            : this(Source, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+            : this(Source, BASE_SCORE, BASE_RADIUS)
         {
         }
 

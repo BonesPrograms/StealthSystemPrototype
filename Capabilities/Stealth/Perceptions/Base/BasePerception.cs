@@ -7,13 +7,14 @@ using XRL.Rules;
 using XRL.World;
 
 using StealthSystemPrototype.Events;
+using static StealthSystemPrototype.Utils;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
     public abstract class BasePerception : IComposite, IComparable<BasePerception>
     {
-        #region Comparers
+        #region Helpers
 
         public class RatingComparer : IComparer<BasePerception>
         {
@@ -50,25 +51,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 return x.CompareTo(y);
             }
         }
-        public class RatingInvertedComparer : RatingComparer
-        {
-            public RatingInvertedComparer(GameObject Entity)
-                : base(Entity)
-            {
-            }
-            public override int Compare(BasePerception x, BasePerception y)
-                => base.Compare(y, x);
-        }
-
-        #endregion
 
         [Serializable]
         public struct PerceptionRating : IComposite
         {
-            public int Score;
-            public int Radius;
+            public Range Score;
+            public Radius Radius;
 
-            public PerceptionRating(int Score, int Radius)
+            public PerceptionRating(Range Score, Radius Radius)
             {
                 this.Score = Score;
                 this.Radius = Radius;
@@ -76,24 +66,26 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             public PerceptionRating(BasePerception BasePerception)
                 : this(
-                      Score: BasePerception?.BaseScore ?? BASE_PERCEPTION_SCORE,
-                      Radius: BasePerception?.BaseRadius ?? BASE_PERCEPTION_RADIUS)
+                      Score: BasePerception?.BaseScore ?? BASE_SCORE,
+                      Radius: BasePerception?.BaseRadius ?? BASE_RADIUS)
             {
             }
         }
 
+        #endregion
+
         #region Const & Static Values
 
-        public const int MIN_PERCEPTION_SCORE = 0;
-        public const int MAX_PERCEPTION_SCORE = 100;
-        public const int BASE_PERCEPTION_SCORE = 20; // AwarenessLevel.Awake
+        public const int MIN_SCORE = 0;
+        public const int MAX_SCORE = 100;
+        public static ClampedRange BASE_SCORE => new(10..30, SCORE_CLAMP); // ~10 either side of AwarenessLevel.Awake
 
-        public const int MIN_PERCEPTION_RADIUS = 0;
-        public const int MAX_PERCEPTION_RADIUS = 84; // corner to corner of a single zone.
-        public const int BASE_PERCEPTION_RADIUS = 5;
+        public const int MIN_RADIUS = 0;
+        public const int MAX_RADIUS = 84; // corner to corner of a single zone.
+        public static Radius BASE_RADIUS => new(5);
 
-        public static Range PERCEPTION_SCORE_CLAMP => new(MIN_PERCEPTION_SCORE, MAX_PERCEPTION_SCORE);
-        public static Range PERCEPTION_RADIUS_CLAMP => new(MIN_PERCEPTION_RADIUS, MAX_PERCEPTION_RADIUS);
+        public static Range SCORE_CLAMP => new(MIN_SCORE, MAX_SCORE);
+        public static Range RADIUS_CLAMP => new(MIN_RADIUS, MAX_RADIUS);
 
         #endregion
 
@@ -104,31 +96,22 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public PerceptionSense Sense;
 
         [NonSerialized]
-        private int _BaseScore;
-        public int BaseScore
-        {
-            get => _BaseScore = RestrainPerceptionScore(_BaseScore);
-            set => _BaseScore = RestrainPerceptionScore(value);
-        }
+        public ClampedRange BaseScore;
 
         [NonSerialized]
-        private int _BaseRadius;
-        public int BaseRadius
-        {
-            get => _BaseRadius = RestrainPerceptionScore(_BaseRadius);
-            set => _BaseRadius = RestrainPerceptionScore(value);
-        }
+        public Radius BaseRadius;
 
-        public bool Occludes;
+        public Radius.RadiusFlags RadiusFlags => Radius.Flags;
 
-        public bool Tapers;
+        public bool Occludes => Radius.Occludes();
 
-        [NonSerialized]
-        private PerceptionRating? _Rating;
-        protected PerceptionRating? Rating => _Rating ??= GetPerceptionRating();
+        public bool Tapers => Radius.Tapers();
 
-        public int Score => GetScore();
-        public int Radius => GetRadius();
+        private ClampedRange _Score;
+        public ClampedRange Score => _Score;
+
+        private Radius _Radius;
+        public Radius Radius => Radius;
 
         private int? LastRoll;
         private string LastEntityID;
@@ -145,8 +128,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Owner = null;
             Sense = PerceptionSense.None;
 
-            BaseScore = BASE_PERCEPTION_SCORE;
-            BaseRadius = BASE_PERCEPTION_RADIUS;
+            BaseScore = BASE_SCORE;
+            BaseRadius = BASE_RADIUS;
 
             Occludes = false;
             Tapers = false;
@@ -166,7 +149,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public BasePerception(
             GameObject Owner,
             PerceptionSense Sense,
-            int BaseScore,
+            Range BaseScore,
             int BaseRadius)
             : this(Owner)
         {
@@ -177,7 +160,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public BasePerception(
             GameObject Owner,
             PerceptionSense Sense)
-            : this(Owner, Sense, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+            : this(Owner, Sense, BASE_SCORE, BASE_RADIUS)
         {
         }
 
@@ -187,12 +170,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public abstract bool Validate(GameObject Owner = null);
 
-        protected virtual PerceptionRating? GetPerceptionRating(GameObject Owner = null, int? BaseScore = null, int? BaseRadius = null)
+        protected virtual PerceptionRating? GetPerceptionRating(GameObject Owner = null, Range? BaseScore = null, int? BaseRadius = null)
         {
             if (WantsToClearRating)
                 ClearRating();
 
-            int baseScore = (BaseScore ?? this.BaseScore) + GetBonusBaseScore();
+            Range baseScore = (BaseScore ?? this.BaseScore).AdjustByClamped(GetBonusBaseScore(), SCORE_CLAMP);
             int baseRadius = (BaseRadius ?? this.BaseRadius) + GetBonusBaseRadius();
 
             return new PerceptionRating(baseScore, baseRadius);
@@ -204,16 +187,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual int GetBonusScore() => 0;
         public virtual int GetBonusRadius() => 0;
 
-        public int GetScore(bool ClearFirst = false)
+        public Range GetScore(bool ClearFirst = false)
         {
             if (ClearFirst)
                 SetWantsToClearRating();
 
-            int score = GetBonusScore();
+            int bonusScore = GetBonusScore();
             if (Rating is PerceptionRating rating)
-                score += rating.Score;
+                bonusScore.AdjustBy(rating.Score);
 
-            return score.Clamp(PERCEPTION_SCORE_CLAMP);
+            return bonusScore.Clamp(SCORE_CLAMP);
         }
 
         public int GetRadius(bool ClearFirst = false)
@@ -225,7 +208,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (Rating is PerceptionRating rating)
                 radius += rating.Radius;
 
-            return radius.Clamp(PERCEPTION_RADIUS_CLAMP);
+            return radius.Clamp(RADIUS_CLAMP);
         }
 
         #endregion
@@ -261,33 +244,25 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public int CompareTo(BasePerception other)
         {
-            if (Utils.EitherNull(this, other, out int comparison))
+            if (EitherNull(this, other, out int comparison))
                 return comparison;
 
-            int scoreComp = Score.CompareTo(other.Score);
+            RangeComparer rangeComparer = new(Score, other.Score);
+            int scoreComp = rangeComparer.CompareAverage() + rangeComparer.CompareBreadth(Invert: true);
             if (scoreComp != 0)
                 return scoreComp;
 
             return Radius.CompareTo(other.Radius);
         }
 
-        protected static int RestrainPerceptionScore(int Score, int? Cap = null)
-            => Score.ClampWithCap(PERCEPTION_SCORE_CLAMP, Cap);
-
-        protected static int RestrainPerceptionRadius(int Radius, int? Cap = null)
-            => Radius.ClampWithCap(PERCEPTION_RADIUS_CLAMP, Cap);
-
         public void SetWantsToClearRating()
             => WantsToClearRating = true;
 
-        protected void ClearRating()
-            => _Rating = null;
-
-        public virtual int Taper(int Distance)
+        public virtual ClampedRange Taper(int Distance)
             => Tapers
-                && Math.Max(0, Distance - Radius) is int outOfRange
+                && Math.Max(0, Distance - Radius.GetValue()) is int outOfRange
                 && outOfRange > 0
-            ? Score - (int)Math.Pow(Math.Pow(2.5, outOfRange), 1.25)
+            ? Score.AdjustBy(-(int)Math.Pow(Math.Pow(2.5, outOfRange), 1.25))
             : Score;
 
         public virtual int Roll(GameObject Entity)
@@ -318,7 +293,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
 
             int distance = entityCell.CosmeticDistanceto(myCell.Location);
-            int score = Taper(distance);
+            Range score = Taper(distance);
 
             UnityEngine.Debug.Log(
                 nameof(distance) + ": " + distance + " | " +
@@ -357,13 +332,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual void Write(SerializationWriter Writer)
         {
-            Writer.WriteOptimized(_BaseScore);
-            Writer.WriteOptimized(_BaseRadius);
+            ClampedRange.WriteOptimized(Writer, BaseScore);
+            Radius.WriteOptimized(Writer, BaseRadius);
+            ClampedRange.WriteOptimized(Writer, Score);
+            Radius.WriteOptimized(Writer, Radius);
         }
         public virtual void Read(SerializationReader Reader)
         {
-            BaseScore = Reader.ReadOptimizedInt32();
-            BaseRadius = Reader.ReadOptimizedInt32();
+            BaseScore = ClampedRange.ReadOptimizedClampedRange(Reader);
+            BaseRadius = Radius.ReadOptimizedRadius(Reader);
+            _Score = ClampedRange.ReadOptimizedClampedRange(Reader);
+            _Radius = Radius.ReadOptimizedRadius(Reader);
         }
 
         #endregion

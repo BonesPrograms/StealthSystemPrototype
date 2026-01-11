@@ -12,4 +12,7 @@
     <EmbeddedResource Remove="obj\**" />
     <None Remove="obj\**" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Capabilities\Stealth\Alerts\Helpers\" />
+  </ItemGroup>
 </Project>

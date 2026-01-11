@@ -16,7 +16,7 @@ namespace XRL.World.Parts
     public class UD_PerceptionHelper 
         : IScribedPart
         , IModEventHandler<GetPerceptionsEvent>
-        , IModEventHandler<GetPerceptionRatingEvent>
+        , IModEventHandler<GetPerceptionScoreEvent>
     {
         public const string ANIMAL_BLUEPRINT = "Animal";
 
@@ -39,7 +39,7 @@ namespace XRL.World.Parts
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
             || ID == GetPerceptionsEvent.ID
-            || ID == GetPerceptionRatingEvent.ID
+            || ID == GetPerceptionScoreEvent.ID
             ;
 
         public bool HandleEvent(GetPerceptionsEvent E)
@@ -74,11 +74,11 @@ namespace XRL.World.Parts
             return base.HandleEvent(E);
         }
 
-        public bool HandleEvent(GetPerceptionRatingEvent E)
+        public bool HandleEvent(GetPerceptionScoreEvent E)
         {
             UnityEngine.Debug.Log(
                 (ParentObject?.DebugName ?? "null") + " " + 
-                nameof(GetPerceptionRatingEvent) + " -> " + 
+                nameof(GetPerceptionScoreEvent) + " -> " + 
                 (E.Type?.Name ?? "no type?"));
 
             if (E.Sense == PerceptionSense.Visual

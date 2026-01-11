@@ -89,8 +89,8 @@ namespace StealthSystemPrototype.Events
             => AddIPartPerception(
                 IPart: IPart,
                 Sense: Sense, 
-                BaseScore: BasePerception.BASE_PERCEPTION_SCORE, 
-                BaseRadius: BasePerception.BASE_PERCEPTION_RADIUS, 
+                BaseScore: BasePerception.BASE_SCORE, 
+                BaseRadius: BasePerception.BASE_RADIUS, 
                 Override: Override);
 
         public GetPerceptionsEvent AddBodyPartPerception(
@@ -114,8 +114,8 @@ namespace StealthSystemPrototype.Events
             => AddBodyPartPerception(
                 BodyPart: BodyPart,
                 Sense: Sense, 
-                BaseScore: BasePerception.BASE_PERCEPTION_SCORE, 
-                BaseRadius: BasePerception.BASE_PERCEPTION_RADIUS, 
+                BaseScore: BasePerception.BASE_SCORE, 
+                BaseRadius: BasePerception.BASE_RADIUS, 
                 Override: Override);
     }
 }

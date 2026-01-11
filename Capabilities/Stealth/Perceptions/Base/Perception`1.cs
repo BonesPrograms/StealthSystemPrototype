@@ -35,7 +35,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             _Source = Source;
         }
         public Perception(GameObject Owner, T Source, PerceptionSense Sense)
-            : this(Owner, Source, Sense, BASE_PERCEPTION_SCORE, BASE_PERCEPTION_RADIUS)
+            : this(Owner, Source, Sense, BASE_SCORE, BASE_RADIUS)
         {
         }
 
@@ -51,7 +51,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner = null,
             int? BaseScore = null,
             int? BaseRadius = null)
-            => GetPerceptionRatingEvent.GetFor(
+            => GetPerceptionScoreEvent.GetFor(
                     Perceiver: Owner,
                     Perception: this,
                     Rating: base.GetPerceptionRating(
