@@ -177,7 +177,6 @@ namespace XRL.World.Parts
                 if (facesList.Count < 1)
                     E.SetMaxScore(0);
             }
-
             return base.HandleEvent(E);
         }
         public bool HandleEvent(GetPerceptionRadiusEvent E)

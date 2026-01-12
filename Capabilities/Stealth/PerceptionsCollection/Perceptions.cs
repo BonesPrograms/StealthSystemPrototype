@@ -131,7 +131,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public void ClearRatings()
         {
             for (int i = 0; i < Count; i++)
-                Items[i].SetWantsToClearRating();
+                Items[i].ClearRating();
         }
 
         public IEnumerable<BasePerception> GetPerceptionsBestFirst(

@@ -68,6 +68,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Flags = this.Flags;
         }
 
+
+        public override string ToString()
+            => GetValue().ToString() + "(" + 
+            (IsLine() ? "L" : null) + 
+            (IsPathing() ? "P" : null) + 
+            (IsArea() ? "A" : null) + 
+            (Occludes() ? "O" : null) + 
+            (Tapers() ? "T" : null) + 
+            ")";
+
         public int GetValue()
             => Value.Clamp(Clamp);
 

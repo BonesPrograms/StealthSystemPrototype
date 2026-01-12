@@ -21,7 +21,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
         public Visual(GameObject Owner)
-            : this(Owner, BASE_SCORE, new(BASE_RADIUS, Radius.RadiusFlags.Line | Radius.RadiusFlags.Occludes | Radius.RadiusFlags.Tapers))
+            : this(Owner, BASE_SCORE, new(BASE_RADIUS, Radius.RadiusFlags.Line ^ Radius.RadiusFlags.Occludes ^ Radius.RadiusFlags.Tapers))
         {
         }
 

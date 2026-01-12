@@ -81,20 +81,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         [NonSerialized]
         public Radius BaseRadius;
 
+        protected ClampedRange _Score;
+        public ClampedRange Score => (_Score ??= GetScore(this)) ?? BaseScore;
+
+        protected Radius _Radius;
+        public Radius Radius => (_Radius ??= GetRadius(this)) ?? BaseRadius;
+
         public Radius.RadiusFlags RadiusFlags => Radius.Flags;
-
         public bool Occludes => Radius.Occludes();
-
         public bool Tapers => Radius.Tapers();
 
-        private ClampedRange _Score;
-        public ClampedRange Score => _Score ??= GetScore(this);
-
-        private Radius _Radius;
-        public Radius Radius => _Radius ??= GetRadius(this);
-
-        private int? LastRoll;
-        private string LastEntityID;
+        protected int? LastRoll;
+        protected string LastEntityID;
 
         [NonSerialized]
         protected bool WantsToClearRating;
@@ -110,6 +108,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             BaseScore = BASE_SCORE;
             BaseRadius = BASE_RADIUS;
+
+            _Score = null;
+            _Radius = null;
 
             LastRoll = null;
             LastEntityID = null;
@@ -151,7 +152,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual int GetBonusScore() => 0;
         public virtual int GetBonusRadius() => 0;
 
-        public ClampedRange GetScore<T>(T Perception = null)
+        #endregion
+
+        protected ClampedRange GetScore<T>(T Perception = null)
             where T : BasePerception
             => GetPerceptionScoreEvent.GetFor(
                     Perceiver: Owner,
@@ -159,15 +162,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     BaseScore: BaseScore.AdjustBy(GetBonusBaseScore()))
                 ?.AdjustBy(GetBonusScore());
 
-        public Radius GetRadius<T>(T Perception = null)
+        protected Radius GetRadius<T>(T Perception = null)
             where T : BasePerception
             => GetPerceptionRadiusEvent.GetFor(
                     Perceiver: Owner,
                     Perception: Perception ?? (T)this,
                     BaseRadius: BaseRadius.AdjustBy(GetBonusBaseRadius()))
                 ?.AdjustBy(GetBonusRadius());
-
-        #endregion
 
         public virtual string ToString(bool Short, GameObject Entity = null, bool UseLastRoll = false)
         {
@@ -197,6 +198,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public override string ToString()
             => ToString(false);
 
+        public void ClearScore()
+            => _Score = null;
+
+        public void ClearRadius()
+            => _Radius = null;
+
+        public void ClearRating()
+        {
+            ClearScore();
+            ClearRadius();
+        }
 
         public int CompareTo(BasePerception other)
         {
@@ -246,14 +258,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
 
             int distance = entityCell.CosmeticDistanceto(myCell.Location);
-            Range score = Taper(distance);
+            ClampedRange score = Taper(distance);
 
             UnityEngine.Debug.Log(
                 nameof(distance) + ": " + distance + " | " +
                 nameof(Tapers) + ": " + Tapers + " | " +
                 nameof(score) + ": " + score);
 
-            int roll = Stat.RollCached("1d" + score);
+            int roll = score.Roll();
 
             LastRoll = roll;
             LastEntityID = Entity.ID;
@@ -299,7 +311,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
-
         #region Operator Overloads
 
         public static bool operator <(BasePerception Op1, BasePerception Op2)

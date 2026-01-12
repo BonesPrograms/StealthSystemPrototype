@@ -15,9 +15,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         private Range Value;
         private Range Clamp;
 
+        private ClampedRange()
+        {
+            Value = default;
+            Clamp = default;
+        }
+
         public ClampedRange(Range Value, Range Clamp)
         {
-            this.Value = Value;
+            this.Value = Value.ClampRange(Clamp);
             this.Clamp = Clamp;
         }
         public ClampedRange(Range Value)
@@ -37,6 +43,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             Range = GetRange();
         }
+
+        public override string ToString()
+            => GetRange().ToString();
 
         public static Range GetRange(Range Range, Range Clamp)
             => Range.ClampRange(Clamp);
@@ -89,17 +98,19 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public DieRoll GetDieRoll()
             => new(DieRoll.TYPE_RANGE, GetRange().Start.Value, GetRange().End.Value);
 
-        public int Roll()
-            => Stat.Roll(GetRange().Start.Value, GetRange().End.Value);
+        public int Roll(bool Cosmetic = true)
+            => Cosmetic 
+            ? RandomCosmetic()
+            : Random();
 
         public int Random()
-            => Stat.Random(GetRange().Start.Value, GetRange().End.Value);
+            => GetRange().Random();
 
         public int RandomCosmetic()
-            => Stat.RandomCosmetic(GetRange().Start.Value, GetRange().End.Value);
+            => GetRange().RandomCosmetic();
 
         public int SeededRandom(string Seed)
-            => Stat.SeededRandom(Seed, GetRange().Start.Value, GetRange().End.Value);
+            => GetRange().SeededRandom(Seed);
 
         #region Serialization
 

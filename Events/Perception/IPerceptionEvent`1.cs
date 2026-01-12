@@ -94,7 +94,7 @@ namespace StealthSystemPrototype.Events
         }
 
         public virtual Event GetStringyEvent()
-            => GetStringyEvent(this);
+            => StringyEvent ??= GetStringyEvent(this);
 
         public virtual void UpdateFromStringyEvent()
         {

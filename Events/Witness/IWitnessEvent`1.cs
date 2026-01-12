@@ -64,7 +64,7 @@ namespace StealthSystemPrototype.Events
                 nameof(ForEvent.Witnesses), ForEvent?.Witnesses);
 
         public virtual Event GetStringyEvent()
-            => GetStringyEvent(this);
+            => StringyEvent ??= GetStringyEvent(this);
 
         public virtual void UpdateFromStringyEvent()
         {

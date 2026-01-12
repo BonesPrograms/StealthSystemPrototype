@@ -7,6 +7,7 @@ using XRL.World.Parts;
 
 using StealthSystemPrototype.Capabilities.Stealth;
 
+using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
 
 namespace StealthSystemPrototype.Events
@@ -32,7 +33,8 @@ namespace StealthSystemPrototype.Events
             Name = null;
             Type = null;
             Sense = PerceptionSense.None;
-            BaseScore = default;
+            BaseScore = null;
+            Score = null;
         }
 
         public override void Reset()
@@ -41,7 +43,8 @@ namespace StealthSystemPrototype.Events
             Name = null;
             Type = null;
             Sense = PerceptionSense.None;
-            BaseScore = default;
+            BaseScore = null;
+            Score = null;
         }
 
         public static GetPerceptionScoreEvent FromPool<T>(
@@ -58,6 +61,7 @@ namespace StealthSystemPrototype.Events
                 E.Sense = Perception.Sense;
                 E.BaseScore = BaseScore;
                 E.Score = BaseScore;
+                E.StringyEvent = E.GetStringyEvent();
             }
             return null;
         }
@@ -84,6 +88,11 @@ namespace StealthSystemPrototype.Events
             ClampedRange BaseScore)
             where T : BasePerception
         {
+            UnityEngine.Debug.Log(
+                CallChain(nameof(GetPerceptionScoreEvent), nameof(GetFor)) + "(" +
+                nameof(Perceiver) + ": " + (Perceiver?.DebugName ?? "no one") + ", " +
+                Perception.ToString());
+
             if (!GameObject.Validate(ref Perceiver)
                 || FromPool(
                     Perceiver: Perceiver,
@@ -103,9 +112,9 @@ namespace StealthSystemPrototype.Events
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
 
-            return proceed
-                ? E.GetScore()
-                : null;
+            UnityEngine.Debug.Log(nameof(proceed) + ": " + proceed.ToString());
+
+            return E.GetScore();
         }
 
         private static void SetClamp(
