@@ -87,11 +87,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public bool Tapers => Radius.Tapers();
 
-        private ClampedRange? _Score;
-        public ClampedRange Score => _Score ??= GetScore();
+        private ClampedRange _Score;
+        public ClampedRange Score => _Score ??= GetScore(this);
 
-        private Radius? _Radius;
-        public Radius Radius => _Radius ??= GetRadius();
+        private Radius _Radius;
+        public Radius Radius => _Radius ??= GetRadius(this);
 
         private int? LastRoll;
         private string LastEntityID;
@@ -151,20 +151,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual int GetBonusScore() => 0;
         public virtual int GetBonusRadius() => 0;
 
-        public ClampedRange GetScore()
-        {
-            int bonusScore = GetBonusScore();
+        public ClampedRange GetScore<T>(T Perception = null)
+            where T : BasePerception
+            => GetPerceptionScoreEvent.GetFor(
+                    Perceiver: Owner,
+                    Perception: Perception ?? (T)this,
+                    BaseScore: BaseScore.AdjustBy(GetBonusBaseScore()))
+                ?.AdjustBy(GetBonusScore());
 
-
-            return bonusScore.Clamp(SCORE_CLAMP);
-        }
-
-        public Radius GetRadius()
-        {
-            int bonusRadius = GetBonusRadius();
-
-            return bonusRadius.Clamp(RADIUS_CLAMP);
-        }
+        public Radius GetRadius<T>(T Perception = null)
+            where T : BasePerception
+            => GetPerceptionRadiusEvent.GetFor(
+                    Perceiver: Owner,
+                    Perception: Perception ?? (T)this,
+                    BaseRadius: BaseRadius.AdjustBy(GetBonusBaseRadius()))
+                ?.AdjustBy(GetBonusRadius());
 
         #endregion
 

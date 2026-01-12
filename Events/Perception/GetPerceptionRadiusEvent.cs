@@ -78,7 +78,7 @@ namespace StealthSystemPrototype.Events
             Radius = StringyEvent?.GetParameter<Radius>(nameof(Radius)) ?? Radius;
         }
 
-        public static Radius? GetFor<T>(
+        public static Radius GetFor<T>(
             GameObject Perceiver,
             T Perception,
             Radius BaseRadius)

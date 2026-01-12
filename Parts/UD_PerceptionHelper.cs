@@ -15,9 +15,7 @@ namespace XRL.World.Parts
     [Serializable]
     public class UD_PerceptionHelper 
         : IScribedPart
-        , IModEventHandler<GetPerceptionsEvent>
-        , IModEventHandler<GetPerceptionScoreEvent>
-        , IModEventHandler<GetPerceptionRadiusEvent>
+        , IPerceptionEventHandler
     {
         public const string ANIMAL_BLUEPRINT = "Animal";
 
@@ -33,18 +31,85 @@ namespace XRL.World.Parts
                 })
             ?.ToList();
 
+        public static List<int> ClearPerceptionsMinEvents => new()
+        {
+            RegenerateDefaultEquipmentEvent.ID,
+            ImplantedEvent.ID,
+            UnimplantedEvent.ID,
+        };
+        public static List<string> ClearPerceptionsStringyEvents => new()
+        {
+            "MutationAdded",
+        };
+
+        public UD_Witness WitnessPart => ParentObject?.GetPart<UD_Witness>();
+
         public UD_PerceptionHelper()
         {
         }
 
+        #region Event Handling
+
+        private static bool IsClearPerceptionsMinEvent(int ID)
+            => !ClearPerceptionsMinEvents.IsNullOrEmpty()
+            && ClearPerceptionsMinEvents.Contains(ID);
+
+        private static bool IsClearPerceptionsStringyEvent(string ID)
+            => !ClearPerceptionsStringyEvents.IsNullOrEmpty()
+            && ClearPerceptionsStringyEvents.Contains(ID);
+
+        private bool ProcessMutationAddedEvent(MinEvent E)
+        {
+            if (!IsClearPerceptionsMinEvent(E.ID))
+                return false;
+
+            WitnessPart?.ClearPerceptions();
+            return true;
+        }
+        private bool ClearPerceptions(Event E)
+        {
+            if (!IsClearPerceptionsStringyEvent(E.ID))
+                return false;
+
+            WitnessPart?.ClearPerceptions();
+            return true;
+        }
+
+        public override void Register(GameObject Object, IEventRegistrar Registrar)
+        {
+            foreach (string stringyEvent in ClearPerceptionsStringyEvents ?? new())
+                Registrar.Register(stringyEvent);
+
+            base.Register(Object, Registrar);
+        }
+        public override bool FireEvent(Event E)
+        {
+            ClearPerceptions(E);
+            return base.FireEvent(E);
+        }
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
+            || IsClearPerceptionsMinEvent(ID)
             || ID == GetPerceptionsEvent.ID
             || ID == GetPerceptionScoreEvent.ID
             || ID == GetPerceptionRadiusEvent.ID
             ;
-
-        public bool HandleEvent(GetPerceptionsEvent E)
+        public override bool HandleEvent(RegenerateDefaultEquipmentEvent E)
+        {
+            ProcessMutationAddedEvent(E);
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(ImplantedEvent E)
+        {
+            ProcessMutationAddedEvent(E);
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(UnimplantedEvent E)
+        {
+            ProcessMutationAddedEvent(E);
+            return base.HandleEvent(E);
+        }
+        public virtual bool HandleEvent(GetPerceptionsEvent E)
         {
             E.AddPerception(new Visual(ParentObject));
             E.AddPerception(new Auditory(ParentObject));
@@ -154,5 +219,7 @@ namespace XRL.World.Parts
             }
             return base.HandleEvent(E);
         }
+
+        #endregion
     }
 }

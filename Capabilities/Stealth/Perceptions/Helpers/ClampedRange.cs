@@ -8,7 +8,7 @@ using XRL.World;
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public struct ClampedRange : IComposite
+    public class ClampedRange : IComposite
     {
         public static ClampedRange Empty => new(0..0, 0..0);
 
@@ -33,72 +33,72 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
 
-        public readonly void Deconstruct(out Range Range)
+        public void Deconstruct(out Range Range)
         {
-            Range = this.GetRange();
+            Range = GetRange();
         }
 
         public static Range GetRange(Range Range, Range Clamp)
             => Range.ClampRange(Clamp);
 
-        public readonly Range GetRange()
+        public Range GetRange()
             => GetRange(Value, Clamp);
 
-        public readonly ClampedRange SetValue(Range Value)
+        public ClampedRange SetValue(Range Value)
             => new(Value, Clamp);
 
-        public readonly ClampedRange SetClamp(Range Clamp)
+        public ClampedRange SetClamp(Range Clamp)
             => new(Value, Clamp);
 
-        public readonly ClampedRange AdjustClamp(Range Clamp)
+        public ClampedRange AdjustClamp(Range Clamp)
             => new(Value, Clamp);
 
-        public readonly ClampedRange AdjustBy(int Amount)
+        public ClampedRange AdjustBy(int Amount)
             => new(Value.AdjustBy(Amount).ClampRange(Clamp), this);
 
-        public readonly ClampedRange AdjustBy(Range OtherRange)
+        public ClampedRange AdjustBy(Range OtherRange)
             => new(Value.AdjustBy(OtherRange), this);
 
-        public readonly ClampedRange AdjustClampBy(int Amount)
+        public ClampedRange AdjustClampBy(int Amount)
             => new(this, Value.AdjustBy(Amount).ClampRange(Clamp));
 
-        public readonly ClampedRange AdjustClampBy(Range OtherRange)
+        public ClampedRange AdjustClampBy(Range OtherRange)
             => new(this, Clamp.AdjustBy(OtherRange));
 
-        public readonly int Sum()
+        public int Sum()
             => GetRange().Sum();
 
-        public readonly int Average()
+        public int Average()
             => GetRange().Average();
 
-        public readonly int Breadth()
+        public int Breadth()
             => GetRange().Breadth();
 
-        public readonly int Floor()
+        public int Floor()
             => GetRange().Floor();
 
-        public readonly int Ceiling()
+        public int Ceiling()
             => GetRange().Ceiling();
 
-        public readonly string GetDieRollString()
+        public string GetDieRollString()
             => "1d" + (GetRange().End.Value - GetRange().Start.Value) + "+" + GetRange().Start.Value;
 
-        public readonly string GetDieRollRangeString()
+        public string GetDieRollRangeString()
             => GetRange().Start.Value + "-" + GetRange().End.Value;
 
-        public readonly DieRoll GetDieRoll()
+        public DieRoll GetDieRoll()
             => new(DieRoll.TYPE_RANGE, GetRange().Start.Value, GetRange().End.Value);
 
-        public readonly int Roll()
+        public int Roll()
             => Stat.Roll(GetRange().Start.Value, GetRange().End.Value);
 
-        public readonly int Random()
+        public int Random()
             => Stat.Random(GetRange().Start.Value, GetRange().End.Value);
 
-        public readonly int RandomCosmetic()
+        public int RandomCosmetic()
             => Stat.RandomCosmetic(GetRange().Start.Value, GetRange().End.Value);
 
-        public readonly int SeededRandom(string Seed)
+        public int SeededRandom(string Seed)
             => Stat.SeededRandom(Seed, GetRange().Start.Value, GetRange().End.Value);
 
         #region Serialization
@@ -131,7 +131,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return new(value, clamp);
         }
 
-        public readonly void Write(SerializationWriter Writer)
+        public void Write(SerializationWriter Writer)
         {
             WriteOptimized(Writer, Value, Clamp);
         }

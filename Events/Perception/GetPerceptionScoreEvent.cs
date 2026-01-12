@@ -78,7 +78,7 @@ namespace StealthSystemPrototype.Events
             Score = StringyEvent?.GetParameter<ClampedRange>(nameof(Score)) ?? Score;
         }
 
-        public static ClampedRange? GetFor<T>(
+        public static ClampedRange GetFor<T>(
             GameObject Perceiver,
             T Perception,
             ClampedRange BaseScore)

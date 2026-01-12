@@ -7,7 +7,7 @@ using XRL.World;
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public struct Radius : IComposite, IComparable<Radius>
+    public class Radius : IComposite, IComparable<Radius>
     {
         public static Radius Empty => new(0, 0..0, 0);
 
@@ -21,6 +21,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Occludes,
             Tapers,
         }
+
+        private static RadiusFlags[] _RadiusFlagValues;
+        public static RadiusFlags[] RadiusFlagValues => _RadiusFlagValues ??= Enum.GetValues(typeof(RadiusFlags)) as RadiusFlags[] 
+            ?? new RadiusFlags[0];
+
 
         private int Value;
         private Range Clamp;
@@ -57,59 +62,49 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
 
-        public readonly void Deconstruct(out int Radius, out RadiusFlags Flags)
+        public void Deconstruct(out int Radius, out RadiusFlags Flags)
         {
             Radius = GetValue();
             Flags = this.Flags;
         }
 
-        public readonly int GetValue()
+        public int GetValue()
             => Value.Clamp(Clamp);
 
-        public readonly int GetValueCap(int? Cap = null)
+        public int GetValueCap(int? Cap = null)
             => Value.ClampCap(Clamp, Cap);
 
-        public readonly bool IsLine()
+        public bool IsLine()
             => Flags.HasFlag(RadiusFlags.Line);
 
-        public readonly bool IsPathing()
+        public bool IsPathing()
             => Flags.HasFlag(RadiusFlags.Pathing);
 
-        public readonly bool IsArea()
+        public bool IsArea()
             => Flags.HasFlag(RadiusFlags.Area);
 
-        public readonly bool Occludes()
+        public bool Occludes()
             => Flags.HasFlag(RadiusFlags.Occludes);
 
-        public readonly bool Tapers()
+        public bool Tapers()
             => Flags.HasFlag(RadiusFlags.Tapers);
 
-        public readonly Radius AdjustBy(int Amount)
+        public Radius AdjustBy(int Amount)
             => new(Amount, this);
 
         #region Comparison
 
-        public readonly int CompareValueTo(Radius other)
+        public int CompareValueTo(Radius other)
             => Value - other.Value;
 
-        private static int CompareBools(bool x, bool y)
-        {
-            if (x == y)
-                return 0;
-            if (x && !y)
-                return 1;
-            if (!x && y)
-                return -1;
-            return 0;
-        }
-        public readonly int CompareLineTo(Radius other)
+        public int CompareLineTo(Radius other)
             => Flags.CompareTo(other.Flags);
 
         public int CompareTo(Radius other)
         {
             int flagComp = 0;
-            foreach (RadiusFlags flag in Enum.GetValues(typeof(RadiusFlags)) ?? new RadiusFlags[0])
-                flagComp += CompareBools(Flags.HasFlag(flag), other.Flags.HasFlag(flag));
+            foreach (RadiusFlags flag in RadiusFlagValues)
+                flagComp += Flags.HasFlag(flag).CompareTo(other.Flags.HasFlag(flag));
 
             int valueCOmp = Value - other.Value;
 
@@ -142,14 +137,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Clamp = Reader.ReadOptimizedRange();
             Flags = (RadiusFlags)Reader.ReadOptimizedInt32();
         }
-
         public static Radius ReadOptimizedRadius(SerializationReader Reader)
         {
             ReadOptimizedRadius(Reader, out int value, out Range clamp, out RadiusFlags flags);
             return new(value, clamp, flags);
         }
 
-        public readonly void Write(SerializationWriter Writer)
+        public void Write(SerializationWriter Writer)
         {
             WriteOptimized(Writer, Value, Clamp, Flags);
         }

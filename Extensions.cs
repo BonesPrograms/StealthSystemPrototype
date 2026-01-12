@@ -74,7 +74,6 @@ namespace StealthSystemPrototype
 
         #endregion
         #endregion
-
         #region Generic Conditionals
 
         public static bool EqualIncludingBothNull<T>(this T Operand1, T Operand2)
@@ -219,7 +218,6 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-
         #region Strings
 
         public static string ToLiteral(this string String, bool Quotes = false)
@@ -290,7 +288,6 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-
         #region Anatomy
 
         public static IEnumerable<BodyPart> LoopPart(this Body Body, string RequiredType, Predicate<BodyPart> Filter)
@@ -318,7 +315,6 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-
         #region Brains & Goals
 
         public static GoalHandler FindGoal(this Brain Brain, Type Type)
@@ -352,7 +348,6 @@ namespace StealthSystemPrototype
             => Brain.FindGoal(Alert.GetType()) as BaseAlert;
 
         #endregion
-
         #region Cells
 
         public static bool HasLOSTo(this Cell Cell, Cell OtherCell)
@@ -373,7 +368,6 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-
         #region Collection Manipulation
 
         public static IEnumerable<T> OrderInPlace<T>(this IEnumerable<T> List, Comparison<T> Comparison)
@@ -383,7 +377,6 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-
         #region Math?
 
         public static int Average(this int[] Values)
@@ -453,6 +446,11 @@ namespace StealthSystemPrototype
 
         public static int SeededRandom(this Range Range, string Seed)
             => Stat.SeededRandom(Seed, Range.Start.Value, Range.End.Value);
+
+        #endregion
+        #region Comparison
+
+        // nuffin yet.
 
         #endregion
     }
