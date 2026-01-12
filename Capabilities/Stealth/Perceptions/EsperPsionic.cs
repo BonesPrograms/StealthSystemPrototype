@@ -19,17 +19,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public EsperPsionic()
             : base()
         {
-            Occludes = true;
-            Tapers = true;
             Sense = PerceptionSense.Psionic;
         }
-        public EsperPsionic(GameObject Owner, Esper Source, int BaseScore, int BaseRadius)
+        public EsperPsionic(GameObject Owner, Esper Source, ClampedRange BaseScore, Radius BaseRadius)
             : base(Owner, Source, PerceptionSense.Psionic, BaseScore, BaseRadius)
         {
-            Occludes = true;
-            Tapers = true;
         }
-        public EsperPsionic(Esper Source, int BaseScore, int BaseRadius)
+        public EsperPsionic(Esper Source, ClampedRange BaseScore, Radius BaseRadius)
             : this(Source?.ParentObject, Source, BaseScore, BaseRadius)
         {
         }

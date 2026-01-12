@@ -52,26 +52,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-        [Serializable]
-        public struct PerceptionRating : IComposite
-        {
-            public Range Score;
-            public Radius Radius;
-
-            public PerceptionRating(Range Score, Radius Radius)
-            {
-                this.Score = Score;
-                this.Radius = Radius;
-            }
-
-            public PerceptionRating(BasePerception BasePerception)
-                : this(
-                      Score: BasePerception?.BaseScore ?? BASE_SCORE,
-                      Radius: BasePerception?.BaseRadius ?? BASE_RADIUS)
-            {
-            }
-        }
-
         #endregion
 
         #region Const & Static Values
@@ -107,11 +87,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public bool Tapers => Radius.Tapers();
 
-        private ClampedRange _Score;
-        public ClampedRange Score => _Score;
+        private ClampedRange? _Score;
+        public ClampedRange Score => _Score ??= GetScore();
 
-        private Radius _Radius;
-        public Radius Radius => Radius;
+        private Radius? _Radius;
+        public Radius Radius => _Radius ??= GetRadius();
 
         private int? LastRoll;
         private string LastEntityID;
@@ -131,11 +111,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             BaseScore = BASE_SCORE;
             BaseRadius = BASE_RADIUS;
 
-            Occludes = false;
-            Tapers = false;
-
-            _Rating = null;
-
             LastRoll = null;
             LastEntityID = null;
 
@@ -149,8 +124,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public BasePerception(
             GameObject Owner,
             PerceptionSense Sense,
-            Range BaseScore,
-            int BaseRadius)
+            ClampedRange BaseScore,
+            Radius BaseRadius)
             : this(Owner)
         {
             this.Sense = Sense;
@@ -170,45 +145,25 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public abstract bool Validate(GameObject Owner = null);
 
-        protected virtual PerceptionRating? GetPerceptionRating(GameObject Owner = null, Range? BaseScore = null, int? BaseRadius = null)
-        {
-            if (WantsToClearRating)
-                ClearRating();
-
-            Range baseScore = (BaseScore ?? this.BaseScore).AdjustByClamped(GetBonusBaseScore(), SCORE_CLAMP);
-            int baseRadius = (BaseRadius ?? this.BaseRadius) + GetBonusBaseRadius();
-
-            return new PerceptionRating(baseScore, baseRadius);
-        }
-
         public virtual int GetBonusBaseScore() => 0;
         public virtual int GetBonusBaseRadius() => 0;
 
         public virtual int GetBonusScore() => 0;
         public virtual int GetBonusRadius() => 0;
 
-        public Range GetScore(bool ClearFirst = false)
+        public ClampedRange GetScore()
         {
-            if (ClearFirst)
-                SetWantsToClearRating();
-
             int bonusScore = GetBonusScore();
-            if (Rating is PerceptionRating rating)
-                bonusScore.AdjustBy(rating.Score);
+
 
             return bonusScore.Clamp(SCORE_CLAMP);
         }
 
-        public int GetRadius(bool ClearFirst = false)
+        public Radius GetRadius()
         {
-            if (ClearFirst)
-                SetWantsToClearRating();
+            int bonusRadius = GetBonusRadius();
 
-            int radius = GetBonusRadius();
-            if (Rating is PerceptionRating rating)
-                radius += rating.Radius;
-
-            return radius.Clamp(RADIUS_CLAMP);
+            return bonusRadius.Clamp(RADIUS_CLAMP);
         }
 
         #endregion
@@ -254,9 +209,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return Radius.CompareTo(other.Radius);
         }
-
-        public void SetWantsToClearRating()
-            => WantsToClearRating = true;
 
         public virtual ClampedRange Taper(int Distance)
             => Tapers

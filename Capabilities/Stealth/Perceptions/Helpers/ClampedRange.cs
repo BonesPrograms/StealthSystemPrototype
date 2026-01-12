@@ -10,6 +10,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [Serializable]
     public struct ClampedRange : IComposite
     {
+        public static ClampedRange Empty => new(0..0, 0..0);
+
         private Range Value;
         private Range Clamp;
 

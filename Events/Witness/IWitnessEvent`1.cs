@@ -72,7 +72,10 @@ namespace StealthSystemPrototype.Events
                 Witnesses = StringyEvent?.GetParameter(nameof(Witnesses)) as List<GameObject>;
         }
 
-        protected static T Process(GameObject Hider, List<GameObject> Witnesses, out bool Success)
+        protected static T Process(
+            GameObject Hider,
+            List<GameObject> Witnesses,
+            out bool Success)
         {
             Success = true;
             T E = FromPool(Hider, Witnesses);

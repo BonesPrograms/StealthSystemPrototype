@@ -51,7 +51,10 @@ namespace StealthSystemPrototype.Events
             StringyEvent = null;
         }
 
-        public static T FromPool(GameObject Perciever, BasePerception Perception, Perceptions Perceptions)
+        public static T FromPool(
+            GameObject Perciever,
+            BasePerception Perception,
+            Perceptions Perceptions)
         {
             if (Perciever == null)
                 return FromPool();

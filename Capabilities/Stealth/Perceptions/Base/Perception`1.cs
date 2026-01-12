@@ -29,12 +29,20 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             _Source = null;
         }
-        public Perception(GameObject Owner, T Source, PerceptionSense Sense, int BaseScore, int BaseRadius)
+        public Perception(
+            GameObject Owner,
+            T Source,
+            PerceptionSense Sense,
+            ClampedRange BaseScore,
+            Radius BaseRadius)
             : base(Owner, Sense, BaseScore, BaseRadius)
         {
             _Source = Source;
         }
-        public Perception(GameObject Owner, T Source, PerceptionSense Sense)
+        public Perception(
+            GameObject Owner,
+            T Source,
+            PerceptionSense Sense)
             : this(Owner, Source, Sense, BASE_SCORE, BASE_RADIUS)
         {
         }
@@ -47,17 +55,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => (Owner ?? this.Owner) is GameObject owner
             && owner == this.Owner;
 
-        protected override PerceptionRating? GetPerceptionRating(
-            GameObject Owner = null,
-            int? BaseScore = null,
-            int? BaseRadius = null)
-            => GetPerceptionScoreEvent.GetFor(
-                    Perceiver: Owner,
-                    Perception: this,
-                    Rating: base.GetPerceptionRating(
-                        Owner: Owner,
-                        BaseScore: BaseScore ?? this.BaseScore,
-                        BaseRadius: BaseRadius ?? this.BaseRadius));
 
         #region Serialization
 

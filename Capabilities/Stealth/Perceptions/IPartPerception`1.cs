@@ -27,15 +27,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             : base()
         {
         }
-        public IPartPerception(GameObject Owner, T Source, PerceptionSense Sense, int BaseScore, int BaseRadius)
+        public IPartPerception(
+            GameObject Owner,
+            T Source,
+            PerceptionSense Sense,
+            ClampedRange BaseScore,
+            Radius BaseRadius)
             : base(Owner, Source, Sense, BaseScore, BaseRadius)
         {
         }
-        public IPartPerception(T Source, PerceptionSense Sense, int BaseScore, int BaseRadius)
+        public IPartPerception(
+            T Source,
+            PerceptionSense Sense,
+            ClampedRange BaseScore,
+            Radius BaseRadius)
             : base(Source?.ParentObject, Source, Sense, BaseScore, BaseRadius)
         {
         }
-        public IPartPerception(GameObject Owner, T Source, PerceptionSense Sense)
+        public IPartPerception(
+            GameObject Owner,
+            T Source,
+            PerceptionSense Sense)
             : this(Owner, Source, Sense, BASE_SCORE, BASE_RADIUS)
         {
         }

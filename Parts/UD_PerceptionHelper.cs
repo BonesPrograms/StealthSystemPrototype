@@ -17,6 +17,7 @@ namespace XRL.World.Parts
         : IScribedPart
         , IModEventHandler<GetPerceptionsEvent>
         , IModEventHandler<GetPerceptionScoreEvent>
+        , IModEventHandler<GetPerceptionRadiusEvent>
     {
         public const string ANIMAL_BLUEPRINT = "Animal";
 
@@ -40,6 +41,7 @@ namespace XRL.World.Parts
             => base.WantEvent(ID, Cascade)
             || ID == GetPerceptionsEvent.ID
             || ID == GetPerceptionScoreEvent.ID
+            || ID == GetPerceptionRadiusEvent.ID
             ;
 
         public bool HandleEvent(GetPerceptionsEvent E)
@@ -73,7 +75,6 @@ namespace XRL.World.Parts
 
             return base.HandleEvent(E);
         }
-
         public bool HandleEvent(GetPerceptionScoreEvent E)
         {
             UnityEngine.Debug.Log(
@@ -84,22 +85,16 @@ namespace XRL.World.Parts
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
-            {
                 E.SetMinScore(40);
-                E.SetMinRadius(E.BaseRadius + 2);
-            }
+
             if (E.Sense == PerceptionSense.Olfactory
                 && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
-            {
                 E.SetMinScore(40);
-                E.SetMinRadius(E.BaseRadius + 2);
-            }
+
             if (E.Sense == PerceptionSense.Olfactory
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
-            {
                 E.AdjustScore(2 * heightenedSmell.Level);
-                E.SetMinRadius(E.BaseRadius + 2 * heightenedSmell.Level);
-            }
+
             if (E.Sense.EqualsAny(
                 new PerceptionSense[]
                 {
@@ -107,23 +102,55 @@ namespace XRL.World.Parts
                     PerceptionSense.Auditory,
                     PerceptionSense.Olfactory,
                 })
-                && E.Type.InheritsFrom(typeof(SimplePerception)))
+                && E.Type.InheritsFrom(typeof(SimplePerception))
+                && ParentObject.Body is Body body
+                && body.LoopPart(SimplePerception.FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
             {
-                if (ParentObject.Body is Body body
-                    && body.LoopPart(SimplePerception.FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
+                if (facesList.Count > 1)
+                    E.AdjustScore(15);
+                else
+                if (facesList.Count < 1)
+                    E.SetMaxScore(0);
+            }
+
+            return base.HandleEvent(E);
+        }
+        public bool HandleEvent(GetPerceptionRadiusEvent E)
+        {
+            UnityEngine.Debug.Log(
+                (ParentObject?.DebugName ?? "null") + " " + 
+                nameof(GetPerceptionRadiusEvent) + " -> " + 
+                (E.Type?.Name ?? "no type?"));
+
+            if (E.Sense == PerceptionSense.Visual
+                && ParentObject.RequirePart<Mutations>() is var mutations
+                && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
+                E.SetMinRadius(E.BaseRadius.GetValue() + 2);
+
+            if (E.Sense == PerceptionSense.Olfactory
+                && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
+                E.SetMinRadius(E.BaseRadius.GetValue() + 2);
+
+            if (E.Sense == PerceptionSense.Olfactory
+                && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
+                E.SetMinRadius(E.BaseRadius.GetValue() + Math.Min(heightenedSmell.Level, 5));
+
+            if (E.Sense.EqualsAny(
+                new PerceptionSense[]
                 {
-                    if (facesList.Count > 1)
-                    {
-                        E.AdjustScore(15);
-                        E.SetMinRadius(E.Radius + 2);
-                    }
-                    else
-                    if (facesList.Count < 1)
-                    {
-                        E.SetMaxScore(0);
-                        E.SetMaxRadius(0);
-                    }
-                }
+                    PerceptionSense.Visual,
+                    PerceptionSense.Auditory,
+                    PerceptionSense.Olfactory,
+                })
+                && E.Type.InheritsFrom(typeof(SimplePerception))
+                && ParentObject.Body is Body body
+                && body.LoopPart(SimplePerception.FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
+            {
+                if (facesList.Count > 1)
+                    E.SetMinRadius(E.Radius.GetValue() + 2);
+                else
+                if (facesList.Count < 1)
+                    E.SetMaxRadius(0);
             }
             return base.HandleEvent(E);
         }

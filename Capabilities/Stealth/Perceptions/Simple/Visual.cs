@@ -16,25 +16,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             Sense = PerceptionSense.Visual;
         }
-        public Visual(GameObject Owner, int BaseScore, int BaseRadius)
+        public Visual(GameObject Owner, ClampedRange BaseScore, Radius BaseRadius)
             : base(Owner, PerceptionSense.Visual, BaseScore, BaseRadius)
         {
         }
         public Visual(GameObject Owner)
-            : this(Owner, BASE_SCORE, BASE_RADIUS)
+            : this(Owner, BASE_SCORE, new(BASE_RADIUS, Radius.RadiusFlags.Line | Radius.RadiusFlags.Occludes | Radius.RadiusFlags.Tapers))
         {
         }
 
         #endregion
 
-        protected override PerceptionRating? GetPerceptionRating(GameObject Owner, int? BaseScore = null, int? BaseRadius = null)
-            => base.GetPerceptionRating(Owner, BaseScore, BaseRadius);
 
-        public override int GetScore(GameObject Owner, bool ClearFirst = false)
-            => base.GetScore(Owner, ClearFirst);
-
-        public override int GetRadius(GameObject Owner, bool ClearFirst = false)
-            => base.GetRadius(Owner, ClearFirst);
 
         #region Serialization
 

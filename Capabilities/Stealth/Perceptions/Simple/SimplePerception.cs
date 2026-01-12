@@ -16,14 +16,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public SimplePerception()
             : base()
         {
-            Occludes = true;
-            Tapers = true;
         }
-        public SimplePerception(GameObject Owner, PerceptionSense Sense, int BaseScore, int BaseRadius)
+        public SimplePerception(GameObject Owner, PerceptionSense Sense, ClampedRange BaseScore, Radius BaseRadius)
             : base(Owner, Sense, BaseScore, BaseRadius)
         {
-            Occludes = true;
-            Tapers = true;
         }
         public SimplePerception(GameObject Owner, PerceptionSense Sense)
             : this(Owner, Sense, BASE_SCORE, BASE_RADIUS)
@@ -47,18 +43,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return true;
         }
-
-        protected override PerceptionRating? GetPerceptionRating(
-            GameObject Owner = null,
-            int? BaseScore = null,
-            int? BaseRadius = null)
-            => GetPerceptionScoreEvent.GetFor(
-                    Perceiver: Owner,
-                    Perception: this,
-                    Rating: base.GetPerceptionRating(
-                        Owner: Owner,
-                        BaseScore: BaseScore ?? this.BaseScore,
-                        BaseRadius: BaseRadius ?? this.BaseRadius));
 
         #region Serialization
 

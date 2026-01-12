@@ -9,7 +9,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [Serializable]
     public struct Radius : IComposite, IComparable<Radius>
     {
-        public static Radius Empty => new(0, Range.All, 0);
+        public static Radius Empty => new(0, 0..0, 0);
 
         [Flags]
         [Serializable]
@@ -40,6 +40,22 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             : this(Value, BasePerception.RADIUS_CLAMP, 0)
         {
         }
+        public Radius(Radius Source)
+            : this(Source.Value, Source.Clamp, Source.Flags)
+        {
+        }
+        public Radius(Radius Source, Range Clamp)
+            : this(Source.Value, Clamp, Source.Flags)
+        {
+        }
+        public Radius(int Value, Radius Source)
+            : this(Value, Source.Clamp, Source.Flags)
+        {
+        }
+        public Radius(Radius Source, RadiusFlags Flags)
+            : this(Source.Value, Source.Clamp, Source.Flags)
+        {
+        }
 
         public readonly void Deconstruct(out int Radius, out RadiusFlags Flags)
         {
@@ -68,8 +84,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public readonly bool Tapers()
             => Flags.HasFlag(RadiusFlags.Tapers);
 
-        public static explicit operator int(Radius Operand)
-            => Operand.GetValue();
+        public readonly Radius AdjustBy(int Amount)
+            => new(Amount, this);
 
         #region Comparison
 
@@ -141,6 +157,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             ReadOptimizedRadius(Reader, out Value, out Clamp, out Flags);
         }
+
+        #endregion
+        #region Conversion
+
+        public static explicit operator int(Radius Operand)
+            => Operand.GetValue();
 
         #endregion
     }
