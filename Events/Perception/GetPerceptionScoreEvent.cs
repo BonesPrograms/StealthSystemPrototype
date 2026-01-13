@@ -23,9 +23,9 @@ namespace StealthSystemPrototype.Events
 
         public PerceptionSense Sense;
 
-        public ClampedRange BaseScore;
+        public ClampedBreadth BaseScore;
 
-        public ClampedRange Score;
+        public ClampedBreadth Score;
 
         public GetPerceptionScoreEvent()
             : base()
@@ -50,7 +50,7 @@ namespace StealthSystemPrototype.Events
         public static GetPerceptionScoreEvent FromPool<T>(
             GameObject Perceiver,
             T Perception,
-            ClampedRange BaseScore)
+            ClampedBreadth BaseScore)
             where T : BasePerception
         {
             if (Perception == null
@@ -79,17 +79,17 @@ namespace StealthSystemPrototype.Events
         {
             base.UpdateFromStringyEvent();
 
-            if (StringyEvent?.GetParameter(nameof(BaseScore)) is ClampedRange baseScore)
+            if (StringyEvent?.GetParameter(nameof(BaseScore)) is ClampedBreadth baseScore)
                 BaseScore = baseScore;
 
-            if (StringyEvent?.GetParameter(nameof(Score)) is ClampedRange score)
+            if (StringyEvent?.GetParameter(nameof(Score)) is ClampedBreadth score)
                 Score = score;
         }
 
-        public static ClampedRange GetFor<T>(
+        public static ClampedBreadth GetFor<T>(
             GameObject Perceiver,
             T Perception,
-            ClampedRange BaseScore)
+            ClampedBreadth BaseScore)
             where T : BasePerception
         {
             UnityEngine.Debug.Log(
@@ -120,7 +120,7 @@ namespace StealthSystemPrototype.Events
         }
 
         private static void SetClamp(
-            ref ClampedRange Score,
+            ref ClampedBreadth Score,
             Range BaseClamp,
             int? Min = null,
             int? Max = null)
@@ -150,7 +150,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionScoreEvent SetMaxScore(int MaxScore)
             => SetScore(null, MaxScore);
 
-        public ClampedRange GetScore()
+        public ClampedBreadth GetScore()
             => new(Score, SCORE_CLAMP);
     }
 }

@@ -21,11 +21,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             Sense = PerceptionSense.Psionic;
         }
-        public EsperPsionic(GameObject Owner, Esper Source, ClampedRange BaseScore, Radius BaseRadius)
+        public EsperPsionic(GameObject Owner, Esper Source, ClampedBreadth BaseScore, Radius BaseRadius)
             : base(Owner, Source, PerceptionSense.Psionic, BaseScore, BaseRadius)
         {
         }
-        public EsperPsionic(Esper Source, ClampedRange BaseScore, Radius BaseRadius)
+        public EsperPsionic(Esper Source, ClampedBreadth BaseScore, Radius BaseRadius)
             : this(Source?.ParentObject, Source, BaseScore, BaseRadius)
         {
         }

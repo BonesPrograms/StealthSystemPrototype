@@ -57,7 +57,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public const int MIN_SCORE = 0;
         public const int MAX_SCORE = 100;
-        public static ClampedRange BASE_SCORE => new(10..30, SCORE_CLAMP); // ~10 either side of AwarenessLevel.Awake
+        public static ClampedBreadth BASE_SCORE => new(10..30, SCORE_CLAMP); // ~10 either side of AwarenessLevel.Awake
 
         public const int MIN_RADIUS = 0;
         public const int MAX_RADIUS = 84; // corner to corner of a single zone.
@@ -79,13 +79,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public PerceptionSense Sense;
 
         [NonSerialized]
-        public ClampedRange BaseScore;
+        public ClampedBreadth BaseScore;
 
         [NonSerialized]
         public Radius BaseRadius;
 
-        protected ClampedRange _Score;
-        public ClampedRange Score => _Score ??= GetScore(this);
+        protected ClampedBreadth _Score;
+        public ClampedBreadth Score => _Score ??= GetScore(this);
 
         protected Radius _Radius;
         public Radius Radius => _Radius ??= GetRadius(this);
@@ -128,7 +128,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public BasePerception(
             GameObject Owner,
             PerceptionSense Sense,
-            ClampedRange BaseScore,
+            ClampedBreadth BaseScore,
             Radius BaseRadius)
             : this(Owner)
         {
@@ -157,7 +157,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        protected ClampedRange GetScore<T>(T Perception = null)
+        protected ClampedBreadth GetScore<T>(T Perception = null)
             where T : BasePerception
             => GetPerceptionScoreEvent.GetFor(
                     Perceiver: Owner,
@@ -215,7 +215,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return Radius.CompareTo(other.Radius);
         }
 
-        public virtual ClampedRange Taper(int Distance)
+        public virtual ClampedBreadth Taper(int Distance)
         {
             if (Math.Max(0, Radius.GetValue() - Distance) is int outOfRange
                 && outOfRange > 0)
@@ -223,7 +223,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 if (Tapers)
                     return Score.AdjustBy(-(int)Math.Pow(Math.Pow(2.5, outOfRange), 1.25));
                 else
-                    return ClampedRange.Empty;
+                    return ClampedBreadth.Empty;
             }
             return Score;
         }
@@ -261,7 +261,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
 
             int distance = entityCell.CosmeticDistanceto(myCell.Location);
-            ClampedRange score = Taper(distance);
+            ClampedBreadth score = Taper(distance);
 
             int roll = score.Roll();
 
@@ -300,16 +300,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual void Write(SerializationWriter Writer)
         {
-            ClampedRange.WriteOptimized(Writer, BaseScore);
+            ClampedBreadth.WriteOptimized(Writer, BaseScore);
             Radius.WriteOptimized(Writer, BaseRadius);
-            ClampedRange.WriteOptimized(Writer, Score);
+            ClampedBreadth.WriteOptimized(Writer, Score);
             Radius.WriteOptimized(Writer, Radius);
         }
         public virtual void Read(SerializationReader Reader)
         {
-            BaseScore = ClampedRange.ReadOptimizedClampedRange(Reader);
+            BaseScore = ClampedBreadth.ReadOptimizedClampedRange(Reader);
             BaseRadius = Radius.ReadOptimizedRadius(Reader);
-            _Score = ClampedRange.ReadOptimizedClampedRange(Reader);
+            _Score = ClampedBreadth.ReadOptimizedClampedRange(Reader);
             _Radius = Radius.ReadOptimizedRadius(Reader);
         }
 

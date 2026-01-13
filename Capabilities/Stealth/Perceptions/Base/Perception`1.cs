@@ -33,7 +33,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner,
             T Source,
             PerceptionSense Sense,
-            ClampedRange BaseScore,
+            ClampedBreadth BaseScore,
             Radius BaseRadius)
             : base(Owner, Sense, BaseScore, BaseRadius)
         {

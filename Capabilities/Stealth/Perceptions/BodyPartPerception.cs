@@ -30,7 +30,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner,
             BodyPart Source,
             PerceptionSense Sense,
-            ClampedRange BaseScore,
+            ClampedBreadth BaseScore,
             Radius BaseRadius)
             : base(Owner, Source, Sense, BaseScore, BaseRadius)
         {
@@ -39,7 +39,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public BodyPartPerception(
             BodyPart Source,
             PerceptionSense Sense,
-            ClampedRange BaseScore,
+            ClampedBreadth BaseScore,
             Radius BaseRadius)
             : this(Source?.ParentBody?.ParentObject, Source, Sense, BaseScore, BaseRadius)
         {

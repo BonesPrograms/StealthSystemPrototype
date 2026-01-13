@@ -466,6 +466,24 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+        #region Breadths
+
+        public static DieRoll GetDieRoll(this Breadth Breadth)
+            => new(DieRoll.TYPE_RANGE, Breadth.Min, Breadth.Max);
+
+        public static int Roll(this Breadth Breadth)
+            => Stat.Roll(Breadth.Min, Breadth.Max);
+
+        public static int Random(this Breadth Breadth)
+            => Stat.Random(Breadth.Min, Breadth.Max);
+
+        public static int RandomCosmetic(this Breadth Breadth)
+            => Stat.RandomCosmetic(Breadth.Min, Breadth.Max);
+
+        public static int SeededRandom(this Breadth Breadth, string Seed)
+            => Stat.SeededRandom(Seed, Breadth.Min, Breadth.Max);
+
+        #endregion
         #region Comparison
 
         // nuffin yet.

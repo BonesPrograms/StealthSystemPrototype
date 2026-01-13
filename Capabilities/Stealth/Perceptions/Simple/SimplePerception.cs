@@ -17,7 +17,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             : base()
         {
         }
-        public SimplePerception(GameObject Owner, PerceptionSense Sense, ClampedRange BaseScore, Radius BaseRadius)
+        public SimplePerception(GameObject Owner, PerceptionSense Sense, ClampedBreadth BaseScore, Radius BaseRadius)
             : base(Owner, Sense, BaseScore, BaseRadius)
         {
         }
