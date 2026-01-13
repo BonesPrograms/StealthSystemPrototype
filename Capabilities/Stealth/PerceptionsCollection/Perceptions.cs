@@ -32,6 +32,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public bool WantFieldReflection => false;
 
+        protected BasePerception LastBestRoll;
+
+        protected string LastBestRollEntityID;
+
         #region Constructors
 
         public Perceptions()
@@ -41,6 +45,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             EnsureCapacity(DefaultCapacity);
             Length = 0;
             Variant = 0;
+
+            LastBestRoll = null;
+            LastBestRollEntityID = null;
         }
         public Perceptions(int Capacity)
             : this()
@@ -86,14 +93,24 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public virtual string ToString(string Delimiter, bool Short, GameObject Entity, bool UseLastRoll = false)
-            => Items.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString(Short: Short, Entity: Entity, UseLastRoll: UseLastRoll));
+        public virtual string ToString(string Delimiter, bool Short, GameObject Entity, bool UseLastRoll = false, bool BestRollOnly = false)
+        {
+            if (Items == null)
+                MetricsManager.LogException(CallChain(nameof(Perceptions), nameof(ToString)), new InnerArrayNullException(nameof(Items)), "game_mod_exception");
 
-        public virtual string ToString(bool Short, GameObject Entity = null, bool UseLastRoll = false)
-            => ToString(", ", Short, Entity, UseLastRoll);
+            if (BestRollOnly
+                && LastBestRoll != null
+                && Entity?.ID == LastBestRollEntityID)
+                return LastBestRoll.ToString(Short: Short, Entity: Entity, UseLastRoll: UseLastRoll);
 
-        public virtual string ToStringLines(bool Short = false, GameObject Entity = null, bool UseLastRoll = false)
-            => ToString("\n", Short, Entity, UseLastRoll);
+            return this?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString(Short: Short, Entity: Entity, UseLastRoll: UseLastRoll));
+        }
+
+        public virtual string ToString(bool Short, GameObject Entity = null, bool UseLastRoll = false, bool BestRollOnly = false)
+            => ToString(", ", Short, Entity, UseLastRoll, BestRollOnly);
+
+        public virtual string ToStringLines(bool Short = false, GameObject Entity = null, bool UseLastRoll = false, bool BestRollOnly = false)
+            => ToString("\n", Short, Entity, UseLastRoll, BestRollOnly);
 
         public override string ToString()
             => ToString(Short: false, Entity: null);
@@ -179,13 +196,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public BasePerception GetHighestRatedPerceptionFor(GameObject Entity)
             => GetHighestRatedPerceptionFor(Entity, true);
 
-        public virtual int Roll(GameObject Entity, out BasePerception Perception)
+        public virtual int Roll(GameObject Entity, out BasePerception Perception, bool UseLastBestRoll = false)
         {
             int highest = -1;
-            Perception = null;
+            Perception = (UseLastBestRoll && Entity?.ID == LastBestRollEntityID) ? LastBestRoll : null;
 
             if (Entity == null)
                 throw new ArgumentNullException(nameof(Entity), nameof(Roll) + " requires a " + nameof(GameObject) + " to perceive.");
+
+            if (Perception != null)
+                return Perception.Roll(Entity);
 
             for (int i = 0; i < Length; i++)
             {
@@ -193,29 +213,32 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 if (roll > highest)
                 {
                     highest = roll;
-                    Perception = Items[i];
+                    Perception = LastBestRoll = Items[i];
                 }
             }
+
+            LastBestRollEntityID = Entity.ID;
+
             return highest;
         }
         public virtual int Roll(GameObject Entity)
             => Roll(Entity, out _);
 
-        public virtual AwarenessLevel GetAwareness(GameObject Entity, out int Roll, out BasePerception Perception)
+        public virtual AwarenessLevel GetAwareness(GameObject Entity, out int Roll, out BasePerception Perception, bool UseLastBestRoll = false)
         {
             if (Entity == null)
                 throw new ArgumentNullException(nameof(Entity), nameof(GetAwareness) + " requires a " + nameof(GameObject) + " to perceive.");
 
-            Roll = this.Roll(Entity, out Perception);
+            Roll = this.Roll(Entity, out Perception, UseLastBestRoll);
 
-            return Perception.GetAwareness(Entity, UseLastRoll: true);
+            return Perception.GetAwareness(Entity, UseLastRoll: UseLastBestRoll);
         }
 
-        public virtual AwarenessLevel GetAwareness(GameObject Entity, out BasePerception Perception)
-            => GetAwareness(Entity, out _, out Perception);
+        public virtual AwarenessLevel GetAwareness(GameObject Entity, out BasePerception Perception, bool UseLastBestRoll = false)
+            => GetAwareness(Entity, out _, out Perception, UseLastBestRoll);
 
-        public virtual AwarenessLevel GetAwareness(GameObject Entity)
-            => GetAwareness(Entity, out _, out _);
+        public virtual AwarenessLevel GetAwareness(GameObject Entity, bool UseLastBestRoll = false)
+            => GetAwareness(Entity, out _, out _, UseLastBestRoll);
 
         #region Container Helpers
 

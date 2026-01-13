@@ -53,17 +53,17 @@ namespace StealthSystemPrototype.Events
             ClampedRange BaseScore)
             where T : BasePerception
         {
-            if (Perception != null
-                && FromPool(Perceiver) is GetPerceptionScoreEvent E)
-            {
-                E.Name = Perception.GetType().Name;
-                E.Type = Perception.GetType();
-                E.Sense = Perception.Sense;
-                E.BaseScore = BaseScore;
-                E.Score = BaseScore;
-                E.StringyEvent = E.GetStringyEvent();
-            }
-            return null;
+            if (Perception == null
+                || FromPool(Perceiver) is not GetPerceptionScoreEvent E)
+                return null;
+
+            E.Name = Perception.GetType().Name;
+            E.Type = Perception.GetType();
+            E.Sense = Perception.Sense;
+            E.BaseScore = BaseScore;
+            E.Score = BaseScore;
+            E.StringyEvent = E.GetStringyEvent();
+            return E;
         }
 
         public override Event GetStringyEvent()
@@ -79,7 +79,11 @@ namespace StealthSystemPrototype.Events
         {
             base.UpdateFromStringyEvent();
 
-            Score = StringyEvent?.GetParameter<ClampedRange>(nameof(Score)) ?? Score;
+            if (StringyEvent?.GetParameter(nameof(BaseScore)) is ClampedRange baseScore)
+                BaseScore = baseScore;
+
+            if (StringyEvent?.GetParameter(nameof(Score)) is ClampedRange score)
+                Score = score;
         }
 
         public static ClampedRange GetFor<T>(
@@ -111,8 +115,6 @@ namespace StealthSystemPrototype.Events
             if (proceed
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
-
-            UnityEngine.Debug.Log(nameof(proceed) + ": " + proceed.ToString());
 
             return E.GetScore();
         }

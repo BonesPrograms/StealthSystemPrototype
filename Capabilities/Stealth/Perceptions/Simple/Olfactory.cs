@@ -21,7 +21,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
         public Olfactory(GameObject Owner)
-            : this(Owner, BASE_SCORE, new(BASE_RADIUS, Radius.RadiusFlags.Pathing ^ Radius.RadiusFlags.Area ^ Radius.RadiusFlags.Tapers))
+            : this(Owner, BASE_SCORE, new(BASE_RADIUS, OlfactoryFlag))
         {
         }
 

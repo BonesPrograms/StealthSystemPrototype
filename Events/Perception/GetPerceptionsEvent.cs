@@ -53,15 +53,15 @@ namespace StealthSystemPrototype.Events
         {
             UnityEngine.Debug.Log(
                 (nameof(AddPerception) + "(" + 
-                    Perciever?.DebugName?.Strip() ?? "no one") + " " + nameof(Perception) + ": " +
-                    (typeof(T)?.ToStringWithGenerics() ?? "none??") +
+                    Perceiver?.DebugName?.Strip() ?? "no one") + ", " + 
+                    nameof(Perception) + ": " + (typeof(T)?.ToStringWithGenerics() ?? "none??") +
                 ")");
 
-            Perceptions ??= new(Perciever);
+            Perceptions ??= new(Perceiver);
             if (Perception != null)
             {
-                if (Perception.Owner != Perciever)
-                    Perception.Owner = Perciever;
+                if (Perception.Owner != Perceiver)
+                    Perception.Owner = Perceiver;
                 Perceptions.Add(Perception, Override);
             }
             return this;

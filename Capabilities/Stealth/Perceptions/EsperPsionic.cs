@@ -30,7 +30,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
         public EsperPsionic(Esper Source)
-            : this(Source, BASE_SCORE, BASE_RADIUS)
+            : base(Source, PerceptionSense.Psionic, Radius.RadiusFlags.Line | Radius.RadiusFlags.Area | Radius.RadiusFlags.Diffuses)
         {
         }
 

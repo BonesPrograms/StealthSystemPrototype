@@ -53,17 +53,17 @@ namespace StealthSystemPrototype.Events
             Radius BaseRadius)
             where T : BasePerception
         {
-            if (Perception != null
-                && FromPool(Perceiver) is GetPerceptionRadiusEvent E)
-            {
-                E.Name = Perception.GetType().Name;
-                E.Type = Perception.GetType();
-                E.Sense = Perception.Sense;
-                E.BaseRadius = BaseRadius;
-                E.Radius = BaseRadius;
-                E.StringyEvent = E.GetStringyEvent();
-            }
-            return null;
+            if (Perception == null
+                || FromPool(Perceiver) is not GetPerceptionRadiusEvent E)
+                return null;
+
+            E.Name = Perception.GetType().Name;
+            E.Type = Perception.GetType();
+            E.Sense = Perception.Sense;
+            E.BaseRadius = BaseRadius;
+            E.Radius = BaseRadius;
+            E.StringyEvent = E.GetStringyEvent();
+            return E;
         }
 
         public override Event GetStringyEvent()
@@ -79,7 +79,12 @@ namespace StealthSystemPrototype.Events
         {
             base.UpdateFromStringyEvent();
 
-            Radius = StringyEvent?.GetParameter<Radius>(nameof(Radius)) ?? Radius;
+            if (StringyEvent?.GetParameter(nameof(BaseRadius)) is Radius baseRadius
+                )
+                BaseRadius = baseRadius;
+
+            if (StringyEvent?.GetParameter(nameof(Radius)) is Radius radius)
+                Radius = radius;
         }
 
         public static Radius GetFor<T>(
@@ -111,8 +116,6 @@ namespace StealthSystemPrototype.Events
             if (proceed
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
-
-            UnityEngine.Debug.Log(nameof(proceed) + ": " + proceed.ToString());
 
             return E.GetRadius();
         }

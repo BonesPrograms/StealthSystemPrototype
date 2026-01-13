@@ -26,19 +26,36 @@ namespace XRL.World.Parts
         }
 
         public static string PerceptionString(GameObject Perceiver, GameObject Hider)
-            => Perceiver
+            => Perceiver.MiniDebugName() + ": " +
+            Perceiver
                 ?.GetPart<UD_Witness>()
                 ?.Perceptions
-                ?.ToString(Short: true, Entity: Hider);
+                ?.ToString(Short: true, Entity: Hider, UseLastRoll: true, BestRollOnly: true);
 
-        public string WitnessListString(List<GameObject> Witnesses, string Delimiter = "\n")
+        private string ProcWitness(
+            string Accumulator,
+            GameObject Next,
+            string Delimiter = "\n",
+            Func<string, string> ProcItem = null)
+        {
+            if (!Accumulator.IsNullOrEmpty())
+                Accumulator += Delimiter;
+
+            string nextString = PerceptionString(Next, ParentObject);
+            if (ProcItem != null)
+                nextString = ProcItem(nextString);
+
+            return Accumulator + nextString;
+        }
+
+        public string WitnessListString(List<GameObject> Witnesses, string Delimiter = "\n", Func<string, string> ProcItem = null)
             => (Witnesses ?? this.Witnesses) is List<GameObject> witnessess
                 && witnessess.Count > 0
-            ? witnessess?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + PerceptionString(n, ParentObject))
+            ? witnessess?.Aggregate("", (a, n) => ProcWitness(a, n, Delimiter, ProcItem))
             : "Total {{K|Invisibility}}!";
 
-        public string WitnessListString(string Delimiter = "\n")
-            => WitnessListString(null, Delimiter);
+        public string WitnessListString(string Delimiter = "\n", Func<string, string> ProcItem = null)
+            => WitnessListString(null, Delimiter, ProcItem);
 
         public List<GameObject> GetWitnesses()
             => Witnesses = GetWitnessesEvent.GetFor(ParentObject);
@@ -57,8 +74,8 @@ namespace XRL.World.Parts
             {
                 UnityEngine.Debug.Log("<UD_Steath debug toggle witnesses>");
                 UnityEngine.Debug.Log(
-                    (ParentObject?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" + 
-                    WitnessListString(GetWitnesses(), "\n    "));
+                    ParentObject.MiniDebugName() + " Witnesses:\n" + 
+                    WitnessListString(GetWitnesses(), "\n", s => " ".ThisManyTimes(4) + s));
                 UnityEngine.Debug.Log("</UD_Steath debug toggle witnesses>");
             }
             return base.HandleEvent(E);
@@ -80,12 +97,12 @@ namespace XRL.World.Parts
             if (The.Player is GameObject player
                 && player.TryGetPart(out UD_Stealth stealthPart))
             {
-                string msg = (player?.DebugName?.Strip() ?? "no one") + " Witnesses:\n" +
-                        stealthPart.WitnessListString(stealthPart.GetWitnesses(), "\n{{K|----}}");
-                Popup.Show(msg, LogMessage: false);
+                string msg = player.MiniDebugName() + " Witnesses:\n" +
+                        stealthPart.WitnessListString(stealthPart.GetWitnesses(), "\n", s => "{{K|" + "-".ThisManyTimes(4) + "}}" + s);
                 UnityEngine.Debug.Log("<UD_Steath debug witnesses>");
-                UnityEngine.Debug.Log(msg.Strip());
+                UnityEngine.Debug.Log(msg.Strip().Replace("----", "    "));
                 UnityEngine.Debug.Log("</UD_Steath debug witnesses>");
+                Popup.Show(msg, LogMessage: false);
             }
         }
         [WishCommand(Command = "UD_Steath debug toggle witnesses")]

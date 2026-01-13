@@ -18,7 +18,7 @@ namespace StealthSystemPrototype.Events
 
         public static string RegisteredEventID => typeof(T).Name;
 
-        public GameObject Perciever;
+        public GameObject Perceiver;
 
         public BasePerception Perception;
 
@@ -28,7 +28,7 @@ namespace StealthSystemPrototype.Events
 
         public IPerceptionEvent()
         {
-            Perciever = null;
+            Perceiver = null;
             Perception = null;
             Perceptions = null;
 
@@ -44,7 +44,7 @@ namespace StealthSystemPrototype.Events
         public override void Reset()
         {
             base.Reset();
-            Perciever = null;
+            Perceiver = null;
             Perception = null;
             Perceptions = null;
             StringyEvent?.Clear();
@@ -56,11 +56,11 @@ namespace StealthSystemPrototype.Events
             BasePerception Perception,
             Perceptions Perceptions)
         {
-            if (Perciever == null)
-                return FromPool();
-
-            T E = FromPool();
-            E.Perciever = Perciever;
+            if (Perciever == null
+                || FromPool() is not T E)
+                return null;
+            
+            E.Perceiver = Perciever;
             E.Perception = Perception;
             E.Perceptions = Perceptions;
             E.StringyEvent = E.GetStringyEvent();
@@ -82,7 +82,7 @@ namespace StealthSystemPrototype.Events
                 return Event.New(RegisteredEventID);
 
             var @event = Event.New(ForEvent.GetRegisteredEventID(),
-                nameof(ForEvent.Perciever), ForEvent?.Perciever);
+                nameof(ForEvent.Perceiver), ForEvent?.Perceiver);
 
             if (ForEvent.Perception != null)
                 @event.AddParameter(nameof(ForEvent.Perception), ForEvent?.Perception);

@@ -220,6 +220,9 @@ namespace StealthSystemPrototype
         #endregion
         #region Strings
 
+        public static string MiniDebugName(this GameObject Object)
+            => (Object?.ID ?? "#") + ":" + (Object?.GetReferenceDisplayName(Short: true)?.Strip() ?? "no one");
+
         public static string ToLiteral(this string String, bool Quotes = false)
         {
             if (String.IsNullOrEmpty())
@@ -274,7 +277,12 @@ namespace StealthSystemPrototype
                     ? Type.Name
                     : Type.Name.Acronymize();
 
-            return Type.Name.Split('`')[0] + typeGenerics.GenericsString(Short);
+            string name = Type.Name.Split('`')[0];
+
+            if (Short)
+                name = name.Acronymize();
+
+            return name + typeGenerics.GenericsString(Short);
         }
 
         public static string Acronymize(this string String)
@@ -400,10 +408,10 @@ namespace StealthSystemPrototype
         #region Ranges
 
         public static Range AdjustBy(this Range Range, int Value)
-            => new(Range.Start.Value + Value, Range.End.Value + Value);
+            => new(Math.Max(0, Range.Start.Value + Value), Math.Max(0, Range.End.Value + Value));
 
         public static Range AdjustBy(this Range Range, Range OtherRange)
-            => new(Range.Start.Value + OtherRange.Start.Value, Range.End.Value + OtherRange.End.Value);
+            => new(Math.Max(0, Range.Start.Value + OtherRange.Start.Value), Math.Max(0, Range.End.Value + OtherRange.End.Value));
 
         public static Range AdjustByClamped(this Range Range, int Value, Range Clamp)
             => Range.AdjustBy(Value).ClampRange(Clamp);
@@ -418,7 +426,7 @@ namespace StealthSystemPrototype
             => Utils.Average(Range.Start.Value, Range.End.Value);
 
         public static int Breadth(this Range Range)
-            => Range.End.Value - Range.Start.Value;
+            => Math.Max(0, Range.End.Value - Range.Start.Value);
 
         public static int Floor(this Range Range)
             => Range.Start.Value;
@@ -427,7 +435,7 @@ namespace StealthSystemPrototype
             => Range.End.Value;
 
         public static string GetDieRollString(this Range Range)
-            => "1d" + (Range.End.Value - Range.Start.Value) + "+" + Range.Start.Value;
+            => "1d" + Range.Breadth() + "+" + Range.Start.Value;
 
         public static string GetDieRollRangeString(this Range Range)
             => Range.Start.Value + "-" + Range.End.Value;
@@ -446,6 +454,16 @@ namespace StealthSystemPrototype
 
         public static int SeededRandom(this Range Range, string Seed)
             => Stat.SeededRandom(Seed, Range.Start.Value, Range.End.Value);
+
+        public static IEnumerable<int> GetValues(this Range Range, int Offset = 0, int Step = 1)
+        {
+            if (Range.Equals(Range.All)
+                || Range.Equals(default))
+                yield break;
+
+            for (int i = Offset + Range.Start.Value; i < Offset + Range.End.Value; i++)
+                yield return i * Step;
+        }
 
         #endregion
         #region Comparison

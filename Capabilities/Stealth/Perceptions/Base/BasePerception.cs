@@ -53,7 +53,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
-
         #region Const & Static Values
 
         public const int MIN_SCORE = 0;
@@ -66,6 +65,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public static Range SCORE_CLAMP => new(MIN_SCORE, MAX_SCORE);
         public static Range RADIUS_CLAMP => new(MIN_RADIUS, MAX_RADIUS);
+
+        public static Radius.RadiusFlags VisualFlag => Radius.RadiusFlags.Line | Radius.RadiusFlags.Occludes | Radius.RadiusFlags.Diffuses;
+        public static Radius.RadiusFlags AuditoryFlag => Radius.RadiusFlags.Area | Radius.RadiusFlags.Pathing | Radius.RadiusFlags.Diffuses;
+        public static Radius.RadiusFlags OlfactoryFlag => Radius.RadiusFlags.Area | Radius.RadiusFlags.Pathing | Radius.RadiusFlags.Diffuses;
 
         #endregion
 
@@ -82,14 +85,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public Radius BaseRadius;
 
         protected ClampedRange _Score;
-        public ClampedRange Score => (_Score ??= GetScore(this)) ?? BaseScore;
+        public ClampedRange Score => _Score ??= GetScore(this);
 
         protected Radius _Radius;
-        public Radius Radius => (_Radius ??= GetRadius(this)) ?? BaseRadius;
+        public Radius Radius => _Radius ??= GetRadius(this);
 
         public Radius.RadiusFlags RadiusFlags => Radius.Flags;
         public bool Occludes => Radius.Occludes();
-        public bool Tapers => Radius.Tapers();
+        public bool Tapers => Radius.Diffuses();
 
         protected int? LastRoll;
         protected string LastEntityID;
@@ -170,29 +173,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     BaseRadius: BaseRadius.AdjustBy(GetBonusBaseRadius()))
                 ?.AdjustBy(GetBonusRadius());
 
+        public virtual string GetName(bool Short = false)
+            => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
+
         public virtual string ToString(bool Short, GameObject Entity = null, bool UseLastRoll = false)
         {
-            string name = GetType()?.ToStringWithGenerics();
-
-            if (Short)
-            {
-                name = GetType()?.Name;
-                if (name?.IndexOf("`") is int graveIndex
-                    && graveIndex >= 0)
-                    name = name[..graveIndex].Acronymize() + name[graveIndex..];
-                else
-                    name = !name.IsNullOrEmpty()
-                        ? name.Acronymize()
-                        : "?";
-            }
-            name ??= "null?";
             string rollString = null;
             if (Entity != null)
             {
                 AwarenessLevel awareness = GetAwareness(Entity, out int rollValue, UseLastRoll);
                 rollString = "(" + awareness.ToString() + ":" + rollValue + ")";
             }
-            return name + "[" + BaseScore + ":@R:" + BaseRadius + "]" + rollString;
+            return GetName(Short) + "[" + BaseScore + ":@R:" + BaseRadius + "]" + rollString;
         }
 
         public override string ToString()
@@ -224,33 +216,44 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         public virtual ClampedRange Taper(int Distance)
-            => Tapers
-                && Math.Max(0, Distance - Radius.GetValue()) is int outOfRange
-                && outOfRange > 0
-            ? Score.AdjustBy(-(int)Math.Pow(Math.Pow(2.5, outOfRange), 1.25))
-            : Score;
+        {
+            if (Math.Max(0, Radius.GetValue() - Distance) is int outOfRange
+                && outOfRange > 0)
+            {
+                if (Tapers)
+                    return Score.AdjustBy(-(int)Math.Pow(Math.Pow(2.5, outOfRange), 1.25));
+                else
+                    return ClampedRange.Empty;
+            }
+            return Score;
+        }
 
-        public virtual int Roll(GameObject Entity)
+        public virtual int Roll(GameObject Entity, bool UseLastRoll = false)
         {
             if (Entity == null)
                 throw new ArgumentNullException(nameof(Entity), nameof(Roll) + " requires a " + nameof(GameObject) + " to perceive.");
 
+            if (UseLastRoll
+                && Entity.ID == LastEntityID
+                && LastRoll is int lastRoll)
+                return lastRoll;
+
             if (Entity?.CurrentCell is not Cell { InActiveZone: true } entityCell)
             {
-                UnityEngine.Debug.Log(Entity.DebugName + " not in active zone.");
+                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + Entity.DebugName + " not in active zone.");
                 return 0;
             }
 
             if (Owner?.CurrentCell is not Cell { InActiveZone: true } myCell)
             {
-                UnityEngine.Debug.Log(Owner.DebugName + " not in active zone.");
+                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + Owner.DebugName + " not in active zone.");
                 return 0;
             }
 
             if (Occludes
                 && !entityCell.HasLOSTo(myCell))
             {
-                UnityEngine.Debug.Log(
+                UnityEngine.Debug.Log(" ".ThisManyTimes(4) +
                     Owner.GetReferenceDisplayName(Stripped: true, Short: true) + 
                     " does not have LOS to " + 
                     Entity.GetReferenceDisplayName(Stripped: true, Short: true));
@@ -260,17 +263,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             int distance = entityCell.CosmeticDistanceto(myCell.Location);
             ClampedRange score = Taper(distance);
 
-            UnityEngine.Debug.Log(
-                nameof(distance) + ": " + distance + " | " +
-                nameof(Tapers) + ": " + Tapers + " | " +
-                nameof(score) + ": " + score);
-
             int roll = score.Roll();
 
             LastRoll = roll;
             LastEntityID = Entity.ID;
 
-            UnityEngine.Debug.Log(nameof(roll) + ": " + roll);
+            UnityEngine.Debug.Log(" ".ThisManyTimes(4) +
+                GetName() + "(" +
+                nameof(roll) + ": " + roll + " | " +
+                nameof(distance) + ": " + distance + " | " +
+                nameof(Tapers) + ": " + Tapers + " | " +
+                nameof(score) + ": " + score + ")");
 
             return roll;
         }

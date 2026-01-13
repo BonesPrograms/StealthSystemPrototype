@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 using XRL.World;
@@ -15,17 +16,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         [Serializable]
         public enum RadiusFlags : int
         {
-            Line,
-            Pathing,
-            Area,
-            Occludes,
-            Tapers,
+            None = 0,
+            Line = 1,
+            Area = 2,
+            Pathing = 4,
+            Occludes = 8,
+            Diffuses = 16,
         }
 
         private static RadiusFlags[] _RadiusFlagValues;
         public static RadiusFlags[] RadiusFlagValues => _RadiusFlagValues ??= Enum.GetValues(typeof(RadiusFlags)) as RadiusFlags[] 
             ?? new RadiusFlags[0];
-
 
         private int Value;
         private Range Clamp;
@@ -38,11 +39,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             this.Flags = Flags;
         }
         public Radius(int Value, Range Clamp)
-            : this(Value, Clamp, 0)
+            : this(Value, Clamp, RadiusFlags.Line)
         {
         }
         public Radius(int Value)
-            : this(Value, BasePerception.RADIUS_CLAMP, 0)
+            : this(Value, BasePerception.RADIUS_CLAMP, RadiusFlags.Line)
         {
         }
         public Radius(Radius Source)
@@ -58,7 +59,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
         public Radius(Radius Source, RadiusFlags Flags)
-            : this(Source.Value, Source.Clamp, Source.Flags)
+            : this(Source.Value, Source.Clamp, Flags)
         {
         }
 
@@ -68,14 +69,30 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Flags = this.Flags;
         }
 
+        private static string FlagString(RadiusFlags FlagValue)
+            => RadiusFlagValues.Contains(FlagValue)
+            ? FlagValue.ToString().Acronymize()
+            : "?";
+
+        protected static string FlagStrings(RadiusFlags Flags, string Accumulator, RadiusFlags FlagValue)
+            => (FlagValue == RadiusFlags.None
+                    && Flags != FlagValue)
+                || !Flags.HasFlag(FlagValue)
+            ? Accumulator
+            : Accumulator + FlagString(FlagValue);
+
+        protected string FlagStrings(string Accumulator, RadiusFlags FlagValue)
+            => FlagStrings(Flags, Accumulator, FlagValue);
+
+        public string FlagsString()
+            => RadiusFlagValues
+                ?.Aggregate("", FlagStrings)
+            ?? "?";
+
 
         public override string ToString()
-            => GetValue().ToString() + "(" + 
-            (IsLine() ? "L" : null) + 
-            (IsPathing() ? "P" : null) + 
-            (IsArea() ? "A" : null) + 
-            (Occludes() ? "O" : null) + 
-            (Tapers() ? "T" : null) + 
+            => GetValue().ToString() + "(" +
+            FlagsString() +
             ")";
 
         public int GetValue()
@@ -96,8 +113,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public bool Occludes()
             => Flags.HasFlag(RadiusFlags.Occludes);
 
-        public bool Tapers()
-            => Flags.HasFlag(RadiusFlags.Tapers);
+        public bool Diffuses()
+            => Flags.HasFlag(RadiusFlags.Diffuses);
 
         public Radius AdjustBy(int Amount)
             => new(Amount, this);

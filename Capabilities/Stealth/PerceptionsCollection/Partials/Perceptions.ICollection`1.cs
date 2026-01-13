@@ -29,15 +29,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (Items == null)
                 throw new InnerArrayNullException(nameof(Items));
 
-            if (Contains(Item)
-                && Override)
+            if (Override
+                || !Contains(Item))
             {
                 Remove(Item);
                 Add(Item);
-            }
-            else
-            {
-                Add(Item);
+
+                if (Item.Owner != Owner)
+                    Item.Owner = Owner;
             }
         }
 

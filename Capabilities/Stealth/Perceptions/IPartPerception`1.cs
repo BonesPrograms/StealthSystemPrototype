@@ -47,12 +47,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IPartPerception(
             GameObject Owner,
             T Source,
-            PerceptionSense Sense)
-            : this(Owner, Source, Sense, BASE_SCORE, BASE_RADIUS)
+            PerceptionSense Sense,
+            Radius.RadiusFlags RadiusFlags = Radius.RadiusFlags.Line)
+            : this(Owner, Source, Sense, BASE_SCORE, new(BASE_RADIUS, RadiusFlags))
         {
         }
-        public IPartPerception(T Source, PerceptionSense Sense)
-            : base(Source?.ParentObject, Source, Sense)
+        public IPartPerception(
+            T Source,
+            PerceptionSense Sense,
+            Radius.RadiusFlags RadiusFlags = Radius.RadiusFlags.Line)
+            : this(Source?.ParentObject, Source, Sense, RadiusFlags)
         {
         }
 

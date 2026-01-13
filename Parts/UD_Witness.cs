@@ -54,7 +54,7 @@ namespace XRL.World.Parts
 
                 if (Perceptions.GetAwareness(E.Hider, out BasePerception perception) > AwarenessLevel.None)
                 {
-                    UnityEngine.Debug.Log(" ".ThisManyTimes(4) + perception.ToString());
+                    UnityEngine.Debug.Log(" ".ThisManyTimes(4) + perception.ToString(Short: true));
                     E.AddWitness(perception);
                 }
             }
