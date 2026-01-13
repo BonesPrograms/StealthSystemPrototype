@@ -68,6 +68,11 @@ namespace StealthSystemPrototype
             : this(Source.Min, Max)
         {
         }
+        public Breadth(Range Range)
+        {
+            Min = (Range.Start.IsFromEnd ? -Range.Start.Value : Range.Start.Value);
+            Max = (Range.End.IsFromEnd ? Min + Range.End.Value : Range.End.Value);
+        }
         public Breadth(int Value, Range Range)
         {
             Min = Value + (Range.Start.IsFromEnd ? -Range.Start.Value : Range.Start.Value);
