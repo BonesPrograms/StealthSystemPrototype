@@ -122,12 +122,12 @@ namespace StealthSystemPrototype.Events
 
         private static void SetClamp(
             ref Radius Radius,
-            Range BaseClamp,
+            InclusiveRange BaseClamp,
             int? Min = null,
             int? Max = null)
             => Radius = new(
                 Source: Radius,
-                Clamp: (Min ?? BaseClamp.Start.Value)..(Max ?? BaseClamp.End.Value));
+                Clamp: new InclusiveRange(Min ?? BaseClamp.Min, Max ?? BaseClamp.Max));
 
         private GetPerceptionRadiusEvent SetRadius(int? Min = null, int? Max = null)
         {

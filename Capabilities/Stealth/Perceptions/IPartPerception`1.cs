@@ -31,7 +31,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner,
             T Source,
             PerceptionSense Sense,
-            ClampedBreadth BaseScore,
+            ClampedInclusiveRange BaseScore,
             Radius BaseRadius)
             : base(Owner, Source, Sense, BaseScore, BaseRadius)
         {
@@ -39,7 +39,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IPartPerception(
             T Source,
             PerceptionSense Sense,
-            ClampedBreadth BaseScore,
+            ClampedInclusiveRange BaseScore,
             Radius BaseRadius)
             : base(Source?.ParentObject, Source, Sense, BaseScore, BaseRadius)
         {

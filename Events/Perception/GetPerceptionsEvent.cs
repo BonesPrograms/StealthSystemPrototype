@@ -70,7 +70,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionsEvent AddIPartPerception<T>(
             T IPart,
             PerceptionSense Sense,
-            ClampedBreadth BaseScore,
+            ClampedInclusiveRange BaseScore,
             Radius BaseRadius,
             bool Override = true)
             where T : IPart, new()
@@ -96,7 +96,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionsEvent AddBodyPartPerception(
             BodyPart BodyPart,
             PerceptionSense Sense,
-            ClampedBreadth BaseScore,
+            ClampedInclusiveRange BaseScore,
             Radius BaseRadius,
             bool Override = true)
             => AddPerception(

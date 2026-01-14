@@ -24,19 +24,19 @@ namespace StealthSystemPrototype
         public static int Clamp(this int Value, int Min, int Max)
             => Math.Clamp(Value, Min, Max);
 
-        public static int Clamp(this int Value, Range Range)
-            => Value.Clamp(Range.Start.Value, Range.End.Value);
+        public static int Clamp(this int Value, InclusiveRange Range)
+            => Value.Clamp(Range.Min, Range.Max);
 
         public static Index ClampIndex(this Index Value, int Min, int Max)
             => new(Value.Value.Clamp(Min, Max));
 
-        public static Index ClampIndex(this Index Value, Range Range)
+        public static Index ClampIndex(this Index Value, InclusiveRange Range)
             => new(Value.Value.Clamp(Range));
 
         public static int ClampValue(this Index Value, int Min, int Max)
             => Value.ClampIndex(Min, Max).Value;
 
-        public static int ClampValue(this Index Value, Range Range)
+        public static int ClampValue(this Index Value, InclusiveRange Range)
             => Value.ClampIndex(Range).Value;
 
         public static Range ClampRange(this Range Value, int Min, int Max)
@@ -405,55 +405,30 @@ namespace StealthSystemPrototype
             => new(Reader.ReadOptimizedInt32(), Reader.ReadOptimizedInt32());
 
         #endregion
+        #region Indices
+
+        public static int GetIntValue(this Index Index)
+            => !Index.IsFromEnd
+            ? Index.Value
+            : -Index.Value;
+
+        #endregion
         #region Ranges
 
-        public static Range AdjustBy(this Range Range, int Value)
-            => new(Math.Max(0, Range.Start.Value + Value), Math.Max(0, Range.End.Value + Value));
-
-        public static Range AdjustBy(this Range Range, Range OtherRange)
-            => new(Math.Max(0, Range.Start.Value + OtherRange.Start.Value), Math.Max(0, Range.End.Value + OtherRange.End.Value));
-
-        public static Range AdjustByClamped(this Range Range, int Value, Range Clamp)
-            => Range.AdjustBy(Value).ClampRange(Clamp);
-
-        public static Range AdjustByClamped(this Range Range, Range OtherRange, Range Clamp)
-            => Range.AdjustBy(OtherRange).ClampRange(Clamp);
-
         public static int Sum(this Range Range)
-            => Range.Start.Value + Range.End.Value;
+            => new InclusiveRange(Range).Sum();
 
         public static int Average(this Range Range)
-            => Utils.Average(Range.Start.Value, Range.End.Value);
+            => new InclusiveRange(Range).Average();
 
         public static int Breadth(this Range Range)
-            => Math.Max(0, Range.End.Value - Range.Start.Value);
+            => new InclusiveRange(Range).Breadth();
 
         public static int Floor(this Range Range)
-            => Range.Start.Value;
+            => new InclusiveRange(Range).Min;
 
         public static int Ceiling(this Range Range)
-            => Range.End.Value;
-
-        public static string GetDieRollString(this Range Range)
-            => "1d" + Range.Breadth() + "+" + Range.Start.Value;
-
-        public static string GetDieRollRangeString(this Range Range)
-            => Range.Start.Value + "-" + Range.End.Value;
-
-        public static DieRoll GetDieRoll(this Range Range)
-            => new(DieRoll.TYPE_RANGE, Range.Start.Value, Range.End.Value);
-
-        public static int Roll(this Range Range)
-            => Stat.Roll(Range.Start.Value, Range.End.Value);
-
-        public static int Random(this Range Range)
-            => Stat.Random(Range.Start.Value, Range.End.Value);
-
-        public static int RandomCosmetic(this Range Range)
-            => Stat.RandomCosmetic(Range.Start.Value, Range.End.Value);
-
-        public static int SeededRandom(this Range Range, string Seed)
-            => Stat.SeededRandom(Seed, Range.Start.Value, Range.End.Value);
+            => new InclusiveRange(Range).Max;
 
         public static IEnumerable<int> GetValues(this Range Range, int Offset = 0, int Step = 1)
         {
@@ -466,21 +441,21 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-        #region Breadths
+        #region InclusiveRanges
 
-        public static DieRoll GetDieRoll(this Breadth Breadth)
+        public static DieRoll GetDieRoll(this InclusiveRange Breadth)
             => new(DieRoll.TYPE_RANGE, Breadth.Min, Breadth.Max);
 
-        public static int Roll(this Breadth Breadth)
+        public static int Roll(this InclusiveRange Breadth)
             => Stat.Roll(Breadth.Min, Breadth.Max);
 
-        public static int Random(this Breadth Breadth)
+        public static int Random(this InclusiveRange Breadth)
             => Stat.Random(Breadth.Min, Breadth.Max);
 
-        public static int RandomCosmetic(this Breadth Breadth)
+        public static int RandomCosmetic(this InclusiveRange Breadth)
             => Stat.RandomCosmetic(Breadth.Min, Breadth.Max);
 
-        public static int SeededRandom(this Breadth Breadth, string Seed)
+        public static int SeededRandom(this InclusiveRange Breadth, string Seed)
             => Stat.SeededRandom(Seed, Breadth.Min, Breadth.Max);
 
         #endregion

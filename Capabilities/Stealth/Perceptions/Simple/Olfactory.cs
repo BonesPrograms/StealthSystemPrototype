@@ -16,7 +16,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             Sense = PerceptionSense.Olfactory;
         }
-        public Olfactory(GameObject Owner, ClampedBreadth BaseScore, Radius BaseRadius)
+        public Olfactory(GameObject Owner, ClampedInclusiveRange BaseScore, Radius BaseRadius)
             : base(Owner, PerceptionSense.Olfactory, BaseScore, BaseRadius)
         {
         }

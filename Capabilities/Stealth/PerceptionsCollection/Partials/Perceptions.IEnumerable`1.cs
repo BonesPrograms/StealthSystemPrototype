@@ -20,11 +20,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             , IEnumerator
             , IDisposable
         {
-            private readonly Perceptions Perceptions;
+            private Perceptions Perceptions;
 
-            private readonly BasePerception[] Items;
+            private BasePerception[] Items;
 
-            private readonly int Version;
+            private int Version;
 
             private int Index;
 
@@ -34,7 +34,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             public Enumerator(Perceptions Perceptions)
             {
                 this.Perceptions = Perceptions;
-                Items = Perceptions.Items;
+                Items = new BasePerception[Perceptions.Items.Length];
+                Perceptions.CopyTo(Items, 0);
                 Version = Perceptions.Version;
                 Index = -1;
             }
@@ -47,11 +48,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 if (Version != Perceptions.Version)
                     throw new CollectionModifiedException(typeof(Perceptions));
 
-                if (++Index < Perceptions.Count
-                    && Current != null)
-                    return true;
-
-                return false;
+                return ++Index < Perceptions.Count
+                    && Current != null;
             }
 
             void IEnumerator.Reset()
@@ -64,7 +62,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             public void Dispose()
             {
-                Index = -1;
+                Perceptions = null;
+                Array.Clear(Items, 0, Items.Length);
+                Items = null;
+                Index = default;
+                Version = default;
             }
         }
 

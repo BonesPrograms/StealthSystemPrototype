@@ -23,9 +23,9 @@ namespace StealthSystemPrototype.Events
 
         public PerceptionSense Sense;
 
-        public ClampedBreadth BaseScore;
+        public ClampedInclusiveRange BaseScore;
 
-        public ClampedBreadth Score;
+        public ClampedInclusiveRange Score;
 
         public GetPerceptionScoreEvent()
             : base()
@@ -50,7 +50,7 @@ namespace StealthSystemPrototype.Events
         public static GetPerceptionScoreEvent FromPool<T>(
             GameObject Perceiver,
             T Perception,
-            ClampedBreadth BaseScore)
+            ClampedInclusiveRange BaseScore)
             where T : BasePerception
         {
             if (Perception == null
@@ -79,17 +79,17 @@ namespace StealthSystemPrototype.Events
         {
             base.UpdateFromStringyEvent();
 
-            if (StringyEvent?.GetParameter(nameof(BaseScore)) is ClampedBreadth baseScore)
+            if (StringyEvent?.GetParameter(nameof(BaseScore)) is ClampedInclusiveRange baseScore)
                 BaseScore = baseScore;
 
-            if (StringyEvent?.GetParameter(nameof(Score)) is ClampedBreadth score)
+            if (StringyEvent?.GetParameter(nameof(Score)) is ClampedInclusiveRange score)
                 Score = score;
         }
 
-        public static ClampedBreadth GetFor<T>(
+        public static ClampedInclusiveRange GetFor<T>(
             GameObject Perceiver,
             T Perception,
-            ClampedBreadth BaseScore)
+            ClampedInclusiveRange BaseScore)
             where T : BasePerception
         {
             UnityEngine.Debug.Log(
@@ -120,13 +120,11 @@ namespace StealthSystemPrototype.Events
         }
 
         private static void SetClamp(
-            ref ClampedBreadth Score,
-            Range BaseClamp,
+            ref ClampedInclusiveRange Score,
+            InclusiveRange BaseClamp,
             int? Min = null,
             int? Max = null)
-            => Score = new(
-                Value: (Min ?? BaseClamp.Start.Value)..(Max ?? BaseClamp.End.Value),
-                Clamp: Score);
+            => Score = Score.SetClamp(new InclusiveRange(Min ?? BaseClamp.Min, Max ?? BaseClamp.Max));
 
         private GetPerceptionScoreEvent SetScore(int? Min = null, int? Max = null)
         {
@@ -150,7 +148,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionScoreEvent SetMaxScore(int MaxScore)
             => SetScore(null, MaxScore);
 
-        public ClampedBreadth GetScore()
+        public ClampedInclusiveRange GetScore()
             => new(Score, SCORE_CLAMP);
     }
 }

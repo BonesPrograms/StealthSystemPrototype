@@ -29,39 +29,49 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             ?? new RadiusFlags[0];
 
         private int Value;
-        private Range Clamp;
+        private InclusiveRange Clamp;
         public RadiusFlags Flags;
+        private DoubleDiffuser DiffusionSequence;
 
-        public Radius(int Value, Range Clamp, RadiusFlags Flags)
+        #region Constructors
+
+        public Radius(int Value, InclusiveRange Clamp, RadiusFlags Flags, DoubleDiffuser DiffusionSequence = null)
         {
             this.Value = Value;
             this.Clamp = Clamp;
             this.Flags = Flags;
+            this.DiffusionSequence = DiffusionSequence;
         }
-        public Radius(int Value, Range Clamp)
-            : this(Value, Clamp, RadiusFlags.Line)
+        public Radius(int Value, InclusiveRange Clamp, DoubleDiffuser DiffusionSequence = null)
+            : this(Value, Clamp, RadiusFlags.Line, DiffusionSequence)
         {
         }
-        public Radius(int Value)
-            : this(Value, BasePerception.RADIUS_CLAMP, RadiusFlags.Line)
+        public Radius(int Value, DoubleDiffuser DiffusionSequence = null)
+            : this(Value, BasePerception.RADIUS_CLAMP, RadiusFlags.Line, DiffusionSequence)
         {
         }
         public Radius(Radius Source)
-            : this(Source.Value, Source.Clamp, Source.Flags)
+            : this(Source.Value, Source.Clamp, Source.Flags, Source.DiffusionSequence)
         {
         }
-        public Radius(Radius Source, Range Clamp)
-            : this(Source.Value, Clamp, Source.Flags)
+        public Radius(Radius Source, InclusiveRange Clamp)
+            : this(Source.Value, Clamp, Source.Flags, Source.DiffusionSequence)
         {
         }
         public Radius(int Value, Radius Source)
-            : this(Value, Source.Clamp, Source.Flags)
+            : this(Value, Source.Clamp, Source.Flags, Source.DiffusionSequence)
         {
         }
         public Radius(Radius Source, RadiusFlags Flags)
-            : this(Source.Value, Source.Clamp, Flags)
+            : this(Source.Value, Source.Clamp, Flags, Source.DiffusionSequence)
         {
         }
+        public Radius(Radius Source, DoubleDiffuser DiffusionSequence = null)
+            : this(Source.Value, Source.Clamp, Source.Flags, DiffusionSequence)
+        {
+        }
+
+        #endregion
 
         public void Deconstruct(out int Radius, out RadiusFlags Flags)
         {
@@ -97,9 +107,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public int GetValue()
             => Value.Clamp(Clamp);
-
-        public int GetValueCap(int? Cap = null)
-            => Value.ClampCap(Clamp, Cap);
 
         public bool IsLine()
             => Flags.HasFlag(RadiusFlags.Line);
@@ -138,17 +145,26 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return valueCOmp + flagComp;
         }
 
+        public double[] Diffusions()
+            => Diffuses()
+                && DiffusionSequence?.SetSteps(GetValue()) != null
+            ? DiffusionSequence[..]
+            : new double[GetValue() - 1].Select(d => 1.0).ToArray();
+
+        public double GetDiffusion(int Distance)
+            => Diffusions()[Distance.Clamp(0, GetValue() - 1)];
+
         #endregion
         #region Serialization
 
         public static void WriteOptimized(
             SerializationWriter Writer,
             int Value,
-            Range Clamp,
+            InclusiveRange Clamp,
             RadiusFlags Flags)
         {
             Writer.WriteOptimized(Value);
-            Writer.WriteOptimized(Clamp);
+            Clamp.WriteOptimized(Writer);
             Writer.WriteOptimized((int)Flags);
         }
         public static void WriteOptimized(SerializationWriter Writer, Radius Radius)
@@ -157,7 +173,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public static void ReadOptimizedRadius(
             SerializationReader Reader,
             out int Value,
-            out Range Clamp,
+            out InclusiveRange Clamp,
             out RadiusFlags Flags)
         {
             Value = Reader.ReadOptimizedInt32();
@@ -166,7 +182,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
         public static Radius ReadOptimizedRadius(SerializationReader Reader)
         {
-            ReadOptimizedRadius(Reader, out int value, out Range clamp, out RadiusFlags flags);
+            ReadOptimizedRadius(Reader, out int value, out InclusiveRange clamp, out RadiusFlags flags);
             return new(value, clamp, flags);
         }
 
