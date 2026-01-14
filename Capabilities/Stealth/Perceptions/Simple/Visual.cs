@@ -26,9 +26,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
-
-
-
         #region Serialization
 
         public override void Write(SerializationWriter Writer)

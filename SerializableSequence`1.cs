@@ -111,18 +111,18 @@ namespace StealthSystemPrototype
             Steps = ..;
             StartValue = default;
         }
-        public SerializableSequence(T StartValue, InclusiveRange Steps)
+        public SerializableSequence(InclusiveRange Steps, T StartValue)
             : this()
         {
             this.StartValue = StartValue;
             this.Steps = Steps;
         }
         public SerializableSequence(int Steps, T StartValue)
-            : this(StartValue, 0..Steps)
+            : this(0..Steps, StartValue)
         {
         }
         public SerializableSequence(SerializableSequence<T> Source)
-            : this(Source.StartValue, Source.Steps)
+            : this(Source.Steps, Source.StartValue)
         {
         }
 
@@ -172,6 +172,9 @@ namespace StealthSystemPrototype
             this.StartValue = StartValue;
             return this;
         }
+
+        #region IReadOnlyDicitonary<int, T>
+
         public bool ContainsKey(int Key)
             => Steps.Contains(Key);
 
@@ -185,6 +188,8 @@ namespace StealthSystemPrototype
             }
             return false;
         }
+
+        #endregion
 
         public IEnumerable<T> GetStepValues()
             => this;
@@ -222,13 +227,13 @@ namespace StealthSystemPrototype
 
         public virtual void Write(SerializationWriter Writer)
         {
-            Steps.WriteOptimized(Writer);
             WriteStartValue(Writer, StartValue);
+            Steps.WriteOptimized(Writer);
         }
         public virtual void Read(SerializationReader Reader)
         {
-            Steps = InclusiveRange.ReadOptimizedInclusiveRange(Reader);
             ReadStartValue(Reader, out StartValue);
+            Steps = InclusiveRange.ReadOptimizedInclusiveRange(Reader);
         }
 
         #endregion

@@ -6,23 +6,31 @@ using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
-    public class DoubleDiffuser : SerializableSequence<double>
+    public abstract class BaseDoubleDiffuser : SerializableSequence<double>
     {
         public double Amount;
 
         #region Constructors
 
-        public DoubleDiffuser(double Amount, double StartValue, InclusiveRange Steps)
-            : base(StartValue, Steps)
+        public BaseDoubleDiffuser()
+            : base()
+        {
+        }
+        public BaseDoubleDiffuser(InclusiveRange Steps, double StartValue)
+            : base(Steps, StartValue)
+        {
+        }
+        public BaseDoubleDiffuser(double Amount, InclusiveRange Steps, double StartValue)
+            : this(Steps, StartValue)
         {
             this.Amount = Amount;
         }
+        public BaseDoubleDiffuser(double Amount, InclusiveRange Steps)
+            : this(Amount, Steps, 1.0)
+        {
+        }
 
         #endregion
-
-        public override double Step(double LastValue, int Step)
-            => Math.Pow(Amount, Step) * LastValue;
-
         #region Serialization
 
         public override void WriteStartValue(SerializationWriter Writer, double StartValue)
@@ -44,7 +52,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             base.Read(Reader);
 
-            Amount = Reader.Read();
+            Amount = Reader.ReadDouble();
         }
 
         #endregion

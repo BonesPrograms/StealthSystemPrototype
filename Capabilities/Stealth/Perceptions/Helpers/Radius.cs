@@ -5,12 +5,16 @@ using System.Text;
 
 using XRL.World;
 
+using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
+
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
     public class Radius : IComposite, IComparable<Radius>
     {
         public static Radius Empty => new(0, 0..0, 0);
+
+        public static BaseDoubleDiffuser DefaultDiffuser = new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
 
         [Flags]
         [Serializable]
@@ -31,22 +35,22 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         private int Value;
         private InclusiveRange Clamp;
         public RadiusFlags Flags;
-        private DoubleDiffuser DiffusionSequence;
+        private BaseDoubleDiffuser DiffusionSequence;
 
         #region Constructors
 
-        public Radius(int Value, InclusiveRange Clamp, RadiusFlags Flags, DoubleDiffuser DiffusionSequence = null)
+        public Radius(int Value, InclusiveRange Clamp, RadiusFlags Flags, BaseDoubleDiffuser DiffusionSequence = null)
         {
             this.Value = Value;
             this.Clamp = Clamp;
             this.Flags = Flags;
-            this.DiffusionSequence = DiffusionSequence;
+            this.DiffusionSequence = DiffusionSequence ?? DefaultDiffuser;
         }
-        public Radius(int Value, InclusiveRange Clamp, DoubleDiffuser DiffusionSequence = null)
+        public Radius(int Value, InclusiveRange Clamp, BaseDoubleDiffuser DiffusionSequence = null)
             : this(Value, Clamp, RadiusFlags.Line, DiffusionSequence)
         {
         }
-        public Radius(int Value, DoubleDiffuser DiffusionSequence = null)
+        public Radius(int Value, BaseDoubleDiffuser DiffusionSequence = null)
             : this(Value, BasePerception.RADIUS_CLAMP, RadiusFlags.Line, DiffusionSequence)
         {
         }
@@ -66,7 +70,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             : this(Source.Value, Source.Clamp, Flags, Source.DiffusionSequence)
         {
         }
-        public Radius(Radius Source, DoubleDiffuser DiffusionSequence = null)
+        public Radius(Radius Source, BaseDoubleDiffuser DiffusionSequence = null)
             : this(Source.Value, Source.Clamp, Source.Flags, DiffusionSequence)
         {
         }
@@ -126,6 +130,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public Radius AdjustBy(int Amount)
             => new(Amount, this);
 
+        public double[] Diffusions()
+            => Diffuses()
+                && DiffusionSequence?.SetSteps(GetValue()) != null
+            ? DiffusionSequence[..]
+            : new double[GetValue() - 1].Select(d => 1.0).ToArray();
+
+        public double GetDiffusion(int Distance)
+            => Diffusions()[Distance.Clamp(0, GetValue() - 1)];
+
         #region Comparison
 
         public int CompareValueTo(Radius other)
@@ -144,15 +157,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return valueCOmp + flagComp;
         }
-
-        public double[] Diffusions()
-            => Diffuses()
-                && DiffusionSequence?.SetSteps(GetValue()) != null
-            ? DiffusionSequence[..]
-            : new double[GetValue() - 1].Select(d => 1.0).ToArray();
-
-        public double GetDiffusion(int Distance)
-            => Diffusions()[Distance.Clamp(0, GetValue() - 1)];
 
         #endregion
         #region Serialization
