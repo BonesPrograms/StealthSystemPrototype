@@ -20,9 +20,12 @@ namespace XRL.World.Parts
 
         public List<GameObject> Witnesses;
 
+        public List<AwarenessLevel> WitnessesAwarenessLevels;
+
         public UD_Stealth()
         {
             Witnesses = null;
+            WitnessesAwarenessLevels = null;
         }
 
         public static string PerceptionString(GameObject Perceiver, GameObject Hider)
@@ -58,7 +61,19 @@ namespace XRL.World.Parts
             => WitnessListString(null, Delimiter, ProcItem);
 
         public List<GameObject> GetWitnesses()
-            => Witnesses = GetWitnessesEvent.GetFor(ParentObject);
+        {
+            Witnesses = GetWitnessesEvent.GetFor(ParentObject);
+            Witnesses?.ForEach(delegate (GameObject witness)
+            {
+                if (witness.TryGetPart(out UD_Witness witnessPart)
+                    && witnessPart.BestPerception?.GetAwareness(ParentObject) is AwarenessLevel witnessAwareness)
+                {
+                    WitnessesAwarenessLevels ??= new();
+                    WitnessesAwarenessLevels.Add(witnessAwareness);
+                }
+            });
+            return Witnesses;
+        }
 
         #region Event Handling
 
@@ -86,9 +101,23 @@ namespace XRL.World.Parts
             E.AddEntry(this, nameof(Witnesses) + " " + nameof(Witnesses.Count), Witnesses?.Count ?? 0);
             return base.HandleEvent(E);
         }
+        public override bool Render(RenderEvent E)
+        {
+            if (ConstantDebugOutput
+                && ParentObject.IsPlayer())
+            {
+                if (WitnessesAwarenessLevels.IsNullOrEmpty()
+                    || WitnessesAwarenessLevels.All(l => l < AwarenessLevel.Awake))
+                    E.ApplyColors("K", "w", 9999, 9999);
+                else
+                if (!WitnessesAwarenessLevels.IsNullOrEmpty()
+                    && WitnessesAwarenessLevels.Any(l => l > AwarenessLevel.None))
+                    E.ApplyColors("w", "W", 9999, 9999);
+            }
+            return base.Render(E);
+        }
 
         #endregion
-
         #region Wishes
 
         [WishCommand(Command = "UD_Steath debug witnesses")]
@@ -97,7 +126,7 @@ namespace XRL.World.Parts
             if (The.Player is GameObject player
                 && player.TryGetPart(out UD_Stealth stealthPart))
             {
-                string msg = player.MiniDebugName() + " Witnesses:\n" +
+                string msg = player.MiniDebugName() + "'s Witnesses:\n" +
                         stealthPart.WitnessListString(stealthPart.GetWitnesses(), "\n", s => "{{K|" + "-".ThisManyTimes(4) + "}}" + s);
                 UnityEngine.Debug.Log("<UD_Steath debug witnesses>");
                 UnityEngine.Debug.Log(msg.Strip().Replace("----", "    "));

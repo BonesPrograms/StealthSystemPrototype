@@ -30,29 +30,29 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner,
             BodyPart Source,
             PerceptionSense Sense,
-            ClampedInclusiveRange BaseScore,
+            ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : base(Owner, Source, Sense, BaseScore, BaseRadius)
+            : base(Owner, Source, Sense, BaseDieRoll, BaseRadius)
         {
             SourceType = Source.Type;
         }
         public BodyPartPerception(
             BodyPart Source,
             PerceptionSense Sense,
-            ClampedInclusiveRange BaseScore,
+            ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : this(Source?.ParentBody?.ParentObject, Source, Sense, BaseScore, BaseRadius)
+            : this(Source?.ParentBody?.ParentObject, Source, Sense, BaseDieRoll, BaseRadius)
         {
         }
         public BodyPartPerception(
             GameObject Owner,
             BodyPart Source,
             PerceptionSense Sense)
-            : this(Owner, Source, Sense, BASE_SCORE, BASE_RADIUS)
+            : this(Owner, Source, Sense, BASE_DIE_ROLL, BASE_RADIUS)
         {
         }
         public BodyPartPerception(BodyPart Source, PerceptionSense Sense)
-            : this(Source, Sense, BASE_SCORE, BASE_RADIUS)
+            : this(Source, Sense, BASE_DIE_ROLL, BASE_RADIUS)
         {
         }
 

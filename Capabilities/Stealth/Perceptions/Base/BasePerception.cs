@@ -8,6 +8,7 @@ using XRL.World;
 
 using StealthSystemPrototype.Events;
 using static StealthSystemPrototype.Utils;
+using XRL.World.AI.Pathfinding;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -55,37 +56,41 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #endregion
         #region Const & Static Values
 
-        public const int MIN_SCORE = 0;
-        public const int MAX_SCORE = 100;
-        public static ClampedInclusiveRange BASE_SCORE => new(10..30, SCORE_CLAMP); // ~10 either side of AwarenessLevel.Awake
+        public const int MIN_DIE_ROLL = 0;
+        public const int MAX_DIE_ROLL = 100;
+        public static ClampedDieRoll BASE_DIE_ROLL => new(30..50, DIE_ROLL_CLAMP); // ~10 either side of AwarenessLevel.Suspect
 
         public const int MIN_RADIUS = 0;
         public const int MAX_RADIUS = 84; // corner to corner of a single zone.
-        public static Radius BASE_RADIUS => new(5);
+        public static Radius BASE_RADIUS => new(10, RADIUS_CLAMP, Radius.DefaultDiffuser);
 
-        public static InclusiveRange SCORE_CLAMP => new(MIN_SCORE, MAX_SCORE);
+        public static InclusiveRange DIE_ROLL_CLAMP => new(MIN_DIE_ROLL, MAX_DIE_ROLL);
         public static InclusiveRange RADIUS_CLAMP => new(MIN_RADIUS, MAX_RADIUS);
 
         public static Radius.RadiusFlags VisualFlag => Radius.RadiusFlags.Line | Radius.RadiusFlags.Occludes | Radius.RadiusFlags.Diffuses;
         public static Radius.RadiusFlags AuditoryFlag => Radius.RadiusFlags.Area | Radius.RadiusFlags.Pathing | Radius.RadiusFlags.Diffuses;
         public static Radius.RadiusFlags OlfactoryFlag => Radius.RadiusFlags.Area | Radius.RadiusFlags.Pathing | Radius.RadiusFlags.Diffuses;
+        public static Radius.RadiusFlags PsionicFlag => Radius.RadiusFlags.Line | Radius.RadiusFlags.Area | Radius.RadiusFlags.Diffuses;
 
         #endregion
 
         #region Instance PropFields
+
+        public string Name => GetName();
+        public string ShortName => GetName(true);
 
         public GameObject Owner;
 
         public PerceptionSense Sense;
 
         [NonSerialized]
-        public ClampedInclusiveRange BaseScore;
+        public ClampedDieRoll BaseDieRoll;
 
         [NonSerialized]
         public Radius BaseRadius;
 
-        protected ClampedInclusiveRange _Score;
-        public ClampedInclusiveRange Score => _Score ??= GetScore(this);
+        protected ClampedDieRoll _DieRoll;
+        public ClampedDieRoll DieRoll => _DieRoll ??= GetDieRoll(this);
 
         protected Radius _Radius;
         public Radius Radius => _Radius ??= GetRadius(this);
@@ -109,10 +114,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Owner = null;
             Sense = PerceptionSense.None;
 
-            BaseScore = BASE_SCORE;
+            BaseDieRoll = BASE_DIE_ROLL;
             BaseRadius = BASE_RADIUS;
 
-            _Score = null;
+            _DieRoll = null;
             _Radius = null;
 
             LastRoll = null;
@@ -128,18 +133,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public BasePerception(
             GameObject Owner,
             PerceptionSense Sense,
-            ClampedInclusiveRange BaseScore,
+            ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
             : this(Owner)
         {
             this.Sense = Sense;
-            this.BaseScore = BaseScore;
+            this.BaseDieRoll = BaseDieRoll;
             this.BaseRadius = BaseRadius;
         }
         public BasePerception(
             GameObject Owner,
             PerceptionSense Sense)
-            : this(Owner, Sense, BASE_SCORE, BASE_RADIUS)
+            : this(Owner, Sense, BASE_DIE_ROLL, BASE_RADIUS)
         {
         }
 
@@ -149,21 +154,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public abstract bool Validate(GameObject Owner = null);
 
-        public virtual int GetBonusBaseScore() => 0;
+        public virtual int GetBonusBaseDieRoll() => 0;
         public virtual int GetBonusBaseRadius() => 0;
 
-        public virtual int GetBonusScore() => 0;
+        public virtual int GetBonusDieRoll() => 0;
         public virtual int GetBonusRadius() => 0;
 
         #endregion
 
-        protected ClampedInclusiveRange GetScore<T>(T Perception = null)
+        protected ClampedDieRoll GetDieRoll<T>(T Perception = null)
             where T : BasePerception
-            => GetPerceptionScoreEvent.GetFor(
+            => GetPerceptionDieRollEvent.GetFor(
                     Perceiver: Owner,
                     Perception: Perception ?? (T)this,
-                    BaseScore: BaseScore.AdjustBy(GetBonusBaseScore()))
-                ?.AdjustBy(GetBonusScore());
+                    BaseDieRoll: BaseDieRoll.AdjustBy(GetBonusBaseDieRoll()))
+                ?.AdjustBy(GetBonusDieRoll());
 
         protected Radius GetRadius<T>(T Perception = null)
             where T : BasePerception
@@ -184,21 +189,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 AwarenessLevel awareness = GetAwareness(Entity, out int rollValue, UseLastRoll);
                 rollString = "(" + awareness.ToString() + ":" + rollValue + ")";
             }
-            return GetName(Short) + "[" + BaseScore + ":@R:" + BaseRadius + "]" + rollString;
+            return GetName(Short) + "[" + BaseDieRoll + ":@R:" + BaseRadius + "]" + rollString;
         }
 
         public override string ToString()
             => ToString(false);
 
-        public void ClearScore()
-            => _Score = null;
+        public void ClearDieRoll()
+            => _DieRoll = null;
 
         public void ClearRadius()
             => _Radius = null;
 
         public void ClearRating()
         {
-            ClearScore();
+            ClearDieRoll();
             ClearRadius();
         }
 
@@ -207,51 +212,78 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (EitherNull(this, other, out int comparison))
                 return comparison;
 
-            int scoreComp = Score.GetInclusiveRange().CompareAverage(other.Score.GetInclusiveRange()) - Score.GetInclusiveRange().CompareBreadth(other.Score.GetInclusiveRange());
-            if (scoreComp != 0)
-                return scoreComp;
+            int dieRollComp = (DieRoll.Average() - other.DieRoll.Average()) - (other.DieRoll.Breadth() - DieRoll.Breadth());
+            if (dieRollComp != 0)
+                return dieRollComp;
 
             return Radius.CompareTo(other.Radius);
         }
 
-        public virtual int Roll(GameObject Entity, bool UseLastRoll = false)
+        public bool CheckInRadius(GameObject Entity, out int Distance, out FindPath PerceptionPath)
         {
+            PerceptionPath = null;
+            Distance = default;
+
             if (Entity == null)
                 throw new ArgumentNullException(nameof(Entity), nameof(Roll) + " requires a " + nameof(GameObject) + " to perceive.");
+
+            if (Entity?.CurrentCell is not Cell { InActiveZone: true } entityCell)
+            {
+                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + Entity.DebugName + " not in active zone.");
+                return false;
+            }
+
+            if (Owner?.CurrentCell is not Cell { InActiveZone: true } myCell)
+            {
+                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + Owner.DebugName + " not in active zone.");
+                return false;
+            }
+
+            bool any = false;
+            Distance = entityCell.CosmeticDistanceto(myCell.Location);
+            int radiusValue = Radius.EffectiveValue;
+
+            if (Radius.IsLine())
+            {
+                if (!Occludes
+                    || entityCell.HasLOSTo(myCell))
+                    any = radiusValue >= Distance || any;
+                else
+                    UnityEngine.Debug.Log(" ".ThisManyTimes(4) +
+                        Owner.MiniDebugName() +
+                        " does not have LOS to " +
+                        Entity.MiniDebugName());
+            }
+            if (Radius.IsArea())
+            {
+                if (myCell.GetCellsInACosmeticCircle(Radius).Contains(entityCell))
+                    any = (!Occludes || entityCell.HasLOSTo(myCell)) || any;
+            }
+            if (Radius.IsPathing())
+            {
+                PerceptionPath = new(myCell, entityCell);
+                if (PerceptionPath.Steps is List<Cell> pathSteps)
+                    any = pathSteps.Count >= radiusValue || any;
+            }
+            return any;
+        }
+
+        public virtual int Roll(GameObject Entity, bool UseLastRoll = false)
+        {
+            if (!CheckInRadius(Entity, out int distance, out FindPath perceptionPath))
+                return 0;
 
             if (UseLastRoll
                 && Entity.ID == LastEntityID
                 && LastRoll is int lastRoll)
                 return lastRoll;
 
-            if (Entity?.CurrentCell is not Cell { InActiveZone: true } entityCell)
-            {
-                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + Entity.DebugName + " not in active zone.");
-                return 0;
-            }
-
-            if (Owner?.CurrentCell is not Cell { InActiveZone: true } myCell)
-            {
-                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + Owner.DebugName + " not in active zone.");
-                return 0;
-            }
-
-            if (Occludes
-                && !entityCell.HasLOSTo(myCell))
-            {
-                UnityEngine.Debug.Log(" ".ThisManyTimes(4) +
-                    Owner.GetReferenceDisplayName(Stripped: true, Short: true) + 
-                    " does not have LOS to " + 
-                    Entity.GetReferenceDisplayName(Stripped: true, Short: true));
-                return 0;
-            }
-
-            int distance = entityCell.CosmeticDistanceto(myCell.Location);
-
-            int roll = Score.Roll();
+            int roll = DieRoll.Roll();
 
             LastRoll = roll;
             LastEntityID = Entity.ID;
+
+            double diffusion = Radius.GetDiffusion(distance);
 
             roll = (int)(roll * Radius.GetDiffusion(distance));
 
@@ -259,8 +291,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 GetName() + "(" +
                 nameof(roll) + ": " + roll + " | " +
                 nameof(distance) + ": " + distance + " | " +
-                nameof(Diffuses) + ": " + Radius.GetDiffusion(distance) + " | " +
-                nameof(Score) + ": " + Score + ")");
+                nameof(Diffuses) + ": " + Diffuses.ToString() + ", " + String.Format("{0:0.000}", diffusion) + " (" + distance.Clamp(new(Radius.GetValue())) + "/" + (Radius.Diffusions()?.Count() ?? 0) + ") | " +
+                nameof(DieRoll) + ": " + DieRoll + ")");
+
+            UnityEngine.Debug.Log(" ".ThisManyTimes(8) +
+                Radius.GetDiffusionDebug());
 
             return roll;
         }
@@ -287,16 +322,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual void Write(SerializationWriter Writer)
         {
-            ClampedInclusiveRange.WriteOptimized(Writer, BaseScore);
+            ClampedDieRoll.WriteOptimized(Writer, BaseDieRoll);
             Radius.WriteOptimized(Writer, BaseRadius);
-            ClampedInclusiveRange.WriteOptimized(Writer, Score);
+            ClampedDieRoll.WriteOptimized(Writer, DieRoll);
             Radius.WriteOptimized(Writer, Radius);
         }
         public virtual void Read(SerializationReader Reader)
         {
-            BaseScore = ClampedInclusiveRange.ReadOptimizedClampedRange(Reader);
+            BaseDieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
             BaseRadius = Radius.ReadOptimizedRadius(Reader);
-            _Score = ClampedInclusiveRange.ReadOptimizedClampedRange(Reader);
+            _DieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
             _Radius = Radius.ReadOptimizedRadius(Reader);
         }
 

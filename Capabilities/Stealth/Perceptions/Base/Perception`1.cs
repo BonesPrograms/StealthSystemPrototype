@@ -33,9 +33,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner,
             T Source,
             PerceptionSense Sense,
-            ClampedInclusiveRange BaseScore,
+            ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : base(Owner, Sense, BaseScore, BaseRadius)
+            : base(Owner, Sense, BaseDieRoll, BaseRadius)
         {
             _Source = Source;
         }
@@ -43,7 +43,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner,
             T Source,
             PerceptionSense Sense)
-            : this(Owner, Source, Sense, BASE_SCORE, BASE_RADIUS)
+            : this(Owner, Source, Sense, BASE_DIE_ROLL, BASE_RADIUS)
         {
         }
 

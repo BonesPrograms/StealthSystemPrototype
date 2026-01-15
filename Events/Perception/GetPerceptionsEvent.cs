@@ -70,7 +70,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionsEvent AddIPartPerception<T>(
             T IPart,
             PerceptionSense Sense,
-            ClampedInclusiveRange BaseScore,
+            ClampedDieRoll BaseScore,
             Radius BaseRadius,
             bool Override = true)
             where T : IPart, new()
@@ -78,32 +78,77 @@ namespace StealthSystemPrototype.Events
                 Perception: new IPartPerception<T>(
                     Source: IPart,
                     Sense: Sense, 
-                    BaseScore: BaseScore, 
+                    BaseDieRoll: BaseScore, 
                     BaseRadius: BaseRadius), 
                 Override: Override);
 
-        public GetPerceptionsEvent AddIPartPerception<T>(T IPart,
+        public GetPerceptionsEvent AddIPartPerception<T>(
+            T IPart,
             PerceptionSense Sense,
             bool Override = true)
             where T : IPart, new()
             => AddIPartPerception(
                 IPart: IPart,
                 Sense: Sense, 
-                BaseScore: BasePerception.BASE_SCORE, 
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
                 BaseRadius: BasePerception.BASE_RADIUS, 
+                Override: Override);
+
+        public GetPerceptionsEvent AddVisualIPartPerception<T>(
+            T IPart,
+            bool Override = true)
+            where T : IPart, new()
+            => AddIPartPerception(
+                IPart: IPart,
+                Sense: PerceptionSense.Visual, 
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.VisualFlag), 
+                Override: Override);
+
+        public GetPerceptionsEvent AddAuditoryIPartPerception<T>(
+            T IPart,
+            bool Override = true)
+            where T : IPart, new()
+            => AddIPartPerception(
+                IPart: IPart,
+                Sense: PerceptionSense.Auditory, 
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.AuditoryFlag), 
+                Override: Override);
+
+        public GetPerceptionsEvent AddOlfactoryIPartPerception<T>(
+            T IPart,
+            bool Override = true)
+            where T : IPart, new()
+            => AddIPartPerception(
+                IPart: IPart,
+                Sense: PerceptionSense.Olfactory, 
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.OlfactoryFlag), 
+                Override: Override);
+
+        public GetPerceptionsEvent AddPsionicIPartPerception<T>(
+            T IPart,
+            bool Override = true)
+            where T : IPart, new()
+            => AddIPartPerception(
+                IPart: IPart,
+                Sense: PerceptionSense.Psionic, 
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.PsionicFlag), 
                 Override: Override);
 
         public GetPerceptionsEvent AddBodyPartPerception(
             BodyPart BodyPart,
             PerceptionSense Sense,
-            ClampedInclusiveRange BaseScore,
+            ClampedDieRoll BaseScore,
             Radius BaseRadius,
             bool Override = true)
             => AddPerception(
                 Perception: new BodyPartPerception(
                     Source: BodyPart,
                     Sense: Sense, 
-                    BaseScore: BaseScore, 
+                    BaseDieRoll: BaseScore, 
                     BaseRadius: BaseRadius), 
                 Override: Override);
 
@@ -114,7 +159,7 @@ namespace StealthSystemPrototype.Events
             => AddBodyPartPerception(
                 BodyPart: BodyPart,
                 Sense: Sense, 
-                BaseScore: BasePerception.BASE_SCORE, 
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
                 BaseRadius: BasePerception.BASE_RADIUS, 
                 Override: Override);
     }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 
+using XRL.Rules;
 using XRL.World;
 
 using static StealthSystemPrototype.Utils;
@@ -12,7 +13,7 @@ using static StealthSystemPrototype.Utils;
 namespace StealthSystemPrototype
 {
     /// <summary>
-    /// Represents an inclusive range of values that are greater than or equal to the assigned <see cref="Min"/> and less than or equal to the <see cref="Max"/>.
+    /// Represents the range of values that starts with the assigned <see cref="Start"/> and less than or equal to the <see cref="Length"/>.
     /// </summary>
     [Serializable]
     public struct InclusiveRange : IComposite, IEquatable<InclusiveRange>, IComparable<InclusiveRange>, IEnumerable<int>
@@ -36,8 +37,8 @@ namespace StealthSystemPrototype
             public Enumerator(InclusiveRange Source)
             {
                 InclusiveRange = Source;
-                Min = Source.Min;
-                Max = Source.Max;
+                Min = Source.Start;
+                Max = Source.Length;
                 Index = Min - 1;
                 Offset = 0;
                 Step = 1;
@@ -45,8 +46,8 @@ namespace StealthSystemPrototype
             public Enumerator(InclusiveRange Source, int Offset, int Step = 1)
             {
                 InclusiveRange = Source;
-                Min = Source.Min;
-                Max = Source.Max;
+                Min = Source.Start;
+                Max = Source.Length;
                 Index = Min - 1;
                 this.Offset = Offset;
                 this.Step = Step;
@@ -54,10 +55,10 @@ namespace StealthSystemPrototype
 
             public bool MoveNext()
             {
-                if (Min != InclusiveRange.Min
-                    || Max != InclusiveRange.Max)
+                if (Min != InclusiveRange.Start
+                    || Max != InclusiveRange.Length)
                     throw new CollectionModifiedException(typeof(InclusiveRange));
-                return ++Index <= InclusiveRange.Max;
+                return ++Index <= InclusiveRange.Length;
             }
 
             public void Reset()
@@ -79,51 +80,78 @@ namespace StealthSystemPrototype
         public static InclusiveRange Empty => new(0, 0);
 
         [NonSerialized]
-        public int Min;
+        public int Start;
         [NonSerialized]
-        public int Max;
+        public int Length;
 
-        public InclusiveRange(int Min, int Max)
+        public int Min
         {
-            this.Min = Min;
-            this.Max = Max;
-            CheckThrowArgumentOutOfRangeException();
+            readonly get => Math.Min(Start, Start + Length);
+            set
+            {
+                if (Min == Start)
+                    Start = value;
+                else
+                    Length += value - Min;
+            }
         }
-        /// <summary>
-        /// Constructs a new <see cref="InclusiveRange"/> with <see cref="Min"/> and <see cref="Max"/> values representing the breadth between 0 and the passed <paramref name="Value"/>.
-        /// </summary>
-        /// <remarks>
-        /// A positive <paramref name="Value"/> (eg. 6) will result in a <see cref="Min"/> value of 0 and a <see cref="Max"/> value of <paramref name="Value"/> (6);<br />
-        /// A negative <paramref name="Value"/> (eg. -12) will result in a <see cref="Min"/> value of <paramref name="Value"/> (-12) and a <see cref="Max"/> value of 0;
-        /// </remarks>
-        /// <param name="Value"></param>
+        public int Max
+        {
+            readonly get => Math.Max(Start, Start + Length);
+            set
+            {
+                if (Max == Start + Length)
+                    Length -= value;
+                else
+                    Length = Min - value;
+            }
+        }
+
+        public InclusiveRange(int Start, int Length)
+        {
+            this.Start = Start;
+            this.Length = Length;
+        }
         public InclusiveRange(int Value)
             : this(Math.Min(Value, 0), Math.Max(0, Value))
         {
         }
         public InclusiveRange(InclusiveRange Source)
-            : this(Source.Min, Source.Max)
+            : this(Source.Start, Source.Length)
         {
         }
         public InclusiveRange(int Min, InclusiveRange Source)
-            : this(Min, Source.Max)
+            : this(Min, Source.Length)
         {
         }
         public InclusiveRange(InclusiveRange Source, int Max)
-            : this(Source.Min, Max)
+            : this(Source.Start, Max)
         {
         }
+        /// <summary>
+        /// Constructs a new <see cref="InclusiveRange"/> with <see cref="Start"/> and <see cref="Length"/> values representing the breadth between 0 and the passed <paramref name="Value"/>.
+        /// </summary>
+        /// <remarks>
+        /// A positive <paramref name="Value"/> (eg. 6) will result in a <see cref="Start"/> value of 0 and a <see cref="Length"/> value of <paramref name="Value"/> (6);<br />
+        /// A negative <paramref name="Value"/> (eg. -12) will result in a <see cref="Start"/> value of <paramref name="Value"/> (-12) and a <see cref="Length"/> value of 0;
+        /// </remarks>
+        /// <param name="Value"></param>
         public InclusiveRange(Range Range)
             :this()
         {
-            GetValuesFromRange(Range, out Min, out Max);
-            CheckThrowArgumentOutOfRangeException();
+            GetValuesFromRange(Range, out Start, out Length);
         }
         public InclusiveRange(int Value, Range Range)
             : this()
         {
-            GetValuesFromRange(Range, out Min, out Max, Value);
-            CheckThrowArgumentOutOfRangeException();
+            GetValuesFromRange(Range, out Start, out Length);
+            Start += Value;
+            Length += Value;
+        }
+        public InclusiveRange(DieRoll DieRoll)
+            : this()
+        {
+            GetValuesFromDieRoll(DieRoll, out Start, out Length);
         }
         public InclusiveRange(string Value)
             : this()
@@ -136,129 +164,123 @@ namespace StealthSystemPrototype
             if (Value.Contains(".."))
                 splitString = "..";
 
-            ArgumentException argEx = new("Failed to parse argument \"" + Value + "\" into valid " + nameof(Min) + " and " + nameof(Max) + " values.", nameof(Value));
-
-            if (!splitString.IsNullOrEmpty())
+            if (new DieRoll(Value) is var dieRoll)
             {
-                if (Value.Split(splitString) is not string[] values
-                    || !int.TryParse(values[0], out Min)
-                    || !int.TryParse(values[0], out Max))
+                GetValuesFromDieRoll(dieRoll, out Start, out Length);
+            }
+            else
+            {
+                ArgumentException argEx = new("Failed to parse argument \"" + Value + "\" into valid " + nameof(Start) + " and " + nameof(Length) + " values.", nameof(Value));
+
+                if (!splitString.IsNullOrEmpty())
+                {
+                    if (Value.Split(splitString) is not string[] values
+                        || !int.TryParse(values[0], out Start)
+                        || !int.TryParse(values[0], out Length))
+                        throw argEx;
+                }
+                else
+                if (int.TryParse(Value, out int value))
+                {
+                    Start = Math.Min(value, 0);
+                    Length = Math.Max(0, value);
+                }
+                else
                     throw argEx;
             }
-            else
-            if (int.TryParse(Value, out int value))
-            {
-                Min = Math.Min(value, 0);
-                Max = Math.Max(0, value);
-            }
-            else
-                throw argEx;
-        }
-
-        private readonly void CheckThrowArgumentOutOfRangeException()
-        {
-            if (Min > Max)
-                throw new ArgumentOutOfRangeException(nameof(Min), "cannot be greater than " + nameof(Max) + ".");
         }
 
         public readonly void Deconstruct(out int Min, out int Max)
         {
-            Min = this.Min;
-            Max = this.Max;
+            Min = this.Start;
+            Max = this.Length;
         }
 
         private readonly string ExceptionStringBetween(bool Inclusive = false)
-            => nameof(Min) + " (" + Min + ") and " + nameof(Max) + " (" + Min + ")" + (Inclusive ? ", inclusive (" + Breadth() + ")." : null);
+            => nameof(Start) + " (" + Start + ") and " + nameof(Length) + " (" + Start + ")" + (Inclusive ? ", inclusive (" + Breadth() + ")." : null);
 
         public readonly int this[int Index]
-        {
-            get
-            {
-                if (Index < 0
-                    || Index > Breadth())
-                    throw new ArgumentOutOfRangeException(nameof(Index), "must be between 0 and the difference between " + ExceptionStringBetween(Inclusive: true));
-                return Min + Index;
-            }
-        }
+            => (GetValues()?.ToArray() ?? new int[0])[Index];
 
         public readonly int this[Index Index]
-        {
-            get
-            {
-                if (Index.Value < 0
-                    || Index.Value > Breadth())
-                    throw new ArgumentOutOfRangeException(nameof(Index), "must be between 0 and the difference between " + ExceptionStringBetween(Inclusive: true));
-
-                return !Index.IsFromEnd
-                    ? Min + Index.Value
-                    : Max - Index.Value;
-            }
-        }
+            => (GetValues()?.ToArray() ?? new int[0])[Index];
 
         public readonly IEnumerable<int> this[Range Range]
-        {
-            get
-            {
-                if (Range.Start.Value > Breadth()
-                    || Range.End.Value > Breadth())
-                    throw new ArgumentOutOfRangeException(nameof(Range), "must be between 0 and the difference between " + ExceptionStringBetween(Inclusive: true));
-                int start = this[Range.Start];
-                int end = this[Range.End];
-                for (int i = 0; i < end - start; i++)
-                    yield return i + start;
-            }
-        }
+            => (GetValues()?.ToArray() ?? new int[0])[Range];
 
         /// <summary>
-        /// Gets a <paramref name="Min"/> and <paramref name="Max"/> from a <see cref="Range"/> and optional <paramref name="StartingValue"/>, treating <see cref="Range.Start"/> as the starting point (plus <paramref name="StartingValue"/> if one is passed), then using <see cref="Range.End"/> to determine the relative breadth of the resultant <paramref name="Min"/> and <paramref name="Max"/> values. Where a given <see cref="Index.IsFromEnd"/>, its Value will be treated as a negative.
+        /// Gets a <paramref name="Start"/> and <paramref name="Length"/> value from a <see cref="Range"/>, treating <see cref="Range.Start"/> as the starting point (plus <paramref name="StartingValue"/> if one is passed), then using <see cref="Range.End"/> to determine the relative breadth of the resultant <paramref name="Start"/> and <paramref name="Length"/> values. Where a given <see cref="Index.IsFromEnd"/>, its Value will be treated as a negative.
         /// </summary>
         /// <remarks>
-        /// A <see cref="Range"/> with ^6 assigned to <see cref="Range.Start"/> and ^12 assigned to <see cref="Range.End"/> will start with -6 for the first value and wants -12 relative to that (-18) for its second value. <paramref name="Min"/> must always be less than <paramref name="Max"/>, so <paramref name="Min"/> is assigned -18, and <paramref name="Max"/> is assigned -6.
+        /// A <see cref="Range"/> with ^6 assigned to <see cref="Range.Start"/> and ^12 assigned to <see cref="Range.End"/> will start with -6 for the first value and wants -12 relative to that (-18) for its second value. <paramref name="Start"/> must always be less than <paramref name="Length"/>, so <paramref name="Start"/> is assigned -18, and <paramref name="Length"/> is assigned -6.
         /// </remarks>
-        /// <param name="Range">The <see cref="Range"/> from which <paramref name="Min"/> and <paramref name="Max"/> value will be derived.</param>
-        /// <param name="Min">The smaller of the two derived values.</param>
-        /// <param name="Max">The larger of the two derived values.</param>
-        /// <param name="StartingValue">An optional amount to add to <paramref name="Range"/>'s <see cref="Range.Start"/> value before deriving the breadth of the values.</param>
-        public static void GetValuesFromRange(Range Range, out int Min, out int Max, int StartingValue = 0)
+        /// <param name="Range">The <see cref="Range"/> from which <paramref name="Start"/> and <paramref name="Length"/> value will be derived.</param>
+        /// <param name="Start">An <see cref="int"/> representation of <see cref="Range.Start"/>. When <see cref="Range.Start.IsFromEnd"/>, this value will be negative.</param>
+        /// <param name="Length">The difference between <param name="Start"> and an <see cref="int"/> representation of <see cref="Range.End"/>. When <see cref="Range.End.IsFromEnd"/>, <see cref="Range.End.Value"/> will be treated as a negative.</param>
+        public static void GetValuesFromRange(Range Range, out int Start, out int Length)
         {
-            int startPoint = StartingValue + Range.Start.GetIntValue();
-            int endPoint = startPoint + Range.End.GetIntValue();
-            Min = Math.Min(startPoint, endPoint);
-            Max = Math.Max(startPoint, endPoint);
+            GetMinMax(out int min, out int max,
+                new int[]
+                {
+                    Range.Start.GetIntValue(),
+                    Range.End.GetIntValue()
+                });
+
+            Start = min;
+            Length = max - Start;
         }
         /// <summary>
-        /// Gets an <see cref="InclusiveRange"/> with <see cref="Min"/> and <see cref="Max"/> values derived from a passed <see cref="Range"/> and optional <paramref name="StartingValue"/>, treating <see cref="Range.Start"/> as the starting point (plus <paramref name="StartingValue"/> if one is passed), then using <see cref="Range.End"/> to determine the relative breadth of the resultant <see cref="InclusiveRange"/>. Where a given <see cref="Index.IsFromEnd"/>, its Value will be treated as a negative.
+        /// Gets an <see cref="InclusiveRange"/> with <see cref="Start"/> and <see cref="Length"/> values derived from a passed <see cref="Range"/> and optional <paramref name="StartingValue"/>, treating <see cref="Range.Start"/> as the starting point (plus <paramref name="StartingValue"/> if one is passed), then using <see cref="Range.End"/> to determine the relative breadth of the resultant <see cref="InclusiveRange"/>. Where a given <see cref="Index.IsFromEnd"/>, its Value will be treated as a negative.
         /// </summary>
         /// <remarks>
         /// See <seealso cref="GetValuesFromRange"/> for implementation of method that derives the mentioned values.
         /// </remarks>
-        /// <param name="Range">The <see cref="Range"/> from which <see cref="Min"/> and <see cref="Max"/> value will be derived.</param>
+        /// <param name="Range">The <see cref="Range"/> from which <see cref="Start"/> and <see cref="Length"/> value will be derived.</param>
         /// <param name="StartingValue">An optional amount to add to <paramref name="Range"/>'s <see cref="Range.Start"/> value before deriving the breadth of the values.</param>
-        /// <returns>An <see cref="InclusiveRange"/> with <see cref="Min"/> and <see cref="Max"/> values derived from the passed <see cref="Range"/></returns>
-        public static InclusiveRange GetFromRange(Range Range, int StartingValue = 0)
+        /// <returns>An <see cref="InclusiveRange"/> with <see cref="Start"/> and <see cref="Length"/> values derived from the passed <see cref="Range"/></returns>
+        public static InclusiveRange GetFromRange(Range Range)
         {
-            GetValuesFromRange(Range, out int min, out int max, StartingValue);
+            GetValuesFromRange(Range, out int min, out int max);
             return new(min, max);
         }
 
+        public static void GetValuesFromDieRoll(DieRoll DieRoll, out int Start, out int Length)
+        {
+            if (DieRoll.IsConstantOnlyRangeType())
+            {
+                Start = DieRoll.LeftValue;
+                Length = DieRoll.RightValue - Start;
+            }
+            else
+            {
+                Start = DieRoll.Min();
+                Length = DieRoll.Max() - Start;
+            }
+        }
+        public static InclusiveRange GetFromDieRoll(DieRoll DieRoll)
+        {
+            GetValuesFromDieRoll(DieRoll, out int start, out int length);
+            return new InclusiveRange(start, length);
+        }
+
         public override readonly string ToString()
-            => Min + ".." + Max;
+            => Start + "_" + Length;
 
         public readonly bool Contains(int Value)
-            => Min <= Value
-            && Value <= Max;
+            => Start <= Value
+            && Value <= Length;
 
         public readonly InclusiveRange Clamp(int Min, int Max)
-            => new(this.Min.Clamp(Min, Max), this.Max.Clamp(Min, Max));
+            => new(this.Start.Clamp(Min, Max), this.Length.Clamp(Min, Max));
 
-        public readonly InclusiveRange Clamp(InclusiveRange Breadth)
-            => Clamp(Breadth.Min, Breadth.Max);
+        public readonly InclusiveRange Clamp(InclusiveRange OtherRange)
+            => Clamp(OtherRange.Start, OtherRange.Length);
 
         public readonly InclusiveRange AdjustBy(int Value)
-            => new(Min + Value, Max + Value);
+            => new(Start + Value, Length + Value);
 
         public readonly InclusiveRange AdjustBy(InclusiveRange OtherRange)
-            => new(Min + OtherRange.Min, Max + OtherRange.Max);
+            => new(Start + OtherRange.Start, Length + OtherRange.Length);
 
         public readonly InclusiveRange AdjustByClamped(int Value, InclusiveRange Clamp)
             => AdjustBy(Value).Clamp(Clamp);
@@ -272,12 +294,15 @@ namespace StealthSystemPrototype
                 || Equals(default))
                 yield break;
 
-            for (int i = Offset + Min; i < Offset + Max; i++)
+            for (int i = Offset + Start; i < Offset + Length; i++)
                 yield return i * Step;
         }
 
         public readonly Range ToRange()
-            => 0..Breadth();
+            => new Index(Min, Min < 0)..new Index(Max, Max < 0);
+
+        public readonly DieRoll ToDieRoll()
+            => new(DieRoll.TYPE_RANGE, Min, Max);
 
         public readonly int[] ToArray()
             => GetValues()?.ToArray() ?? new int[0];
@@ -294,25 +319,25 @@ namespace StealthSystemPrototype
             if (EitherNull(this, Other, out bool areEqual))
                 return areEqual;
 
-            return Min.Equals(Other.Min)
-                && Max.Equals(Other.Min);
+            return Start.Equals(Other.Start)
+                && Length.Equals(Other.Start);
         }
         public override readonly int GetHashCode()
-            => Min.GetHashCode()
-            ^ Max.GetHashCode();
+            => Start.GetHashCode()
+            ^ Length.GetHashCode();
 
         public readonly int Sum(bool IncludeIntermediateValues = false)
             => !IncludeIntermediateValues
-            ? Min + Max
+            ? Start + Length
             : this.Aggregate(0, (a, n) => a + n);
 
         public readonly int Average(bool IncludeIntermediateValues = false)
             => !IncludeIntermediateValues
-            ? Utils.Average(Min, Max)
+            ? Utils.Average(Start, Length)
             : Utils.Average((int[])this);
 
         public readonly int Breadth()
-            => Max - Min;
+            => Length - Start;
 
         public readonly int CompareSum(InclusiveRange Other, bool IncludeIntermediateValues = false)
             => Sum(IncludeIntermediateValues) - Other.Sum(IncludeIntermediateValues);
@@ -324,10 +349,10 @@ namespace StealthSystemPrototype
             => Breadth() - Other.Breadth();
 
         public readonly int CompareMin(InclusiveRange Other)
-            => Min - Other.Min;
+            => Start - Other.Start;
 
         public readonly int CompareMax(InclusiveRange Other)
-            => Min - Other.Min;
+            => Start - Other.Start;
 
         public readonly int CompareMinThenMax(InclusiveRange Other)
             => CompareMin(Other) is int floorComp
@@ -356,8 +381,8 @@ namespace StealthSystemPrototype
 
         public readonly void WriteOptimized(SerializationWriter Writer)
         {
-            Writer.WriteOptimized(Min);
-            Writer.WriteOptimized(Max);
+            Writer.WriteOptimized(Start);
+            Writer.WriteOptimized(Length);
         }
 
         public static void ReadOptimizedInclusiveRange(SerializationReader Reader, out int Min, out int Max)
@@ -377,7 +402,7 @@ namespace StealthSystemPrototype
         }
         public void Read(SerializationReader Reader)
         {
-            ReadOptimizedInclusiveRange(Reader, out Min, out Max);
+            ReadOptimizedInclusiveRange(Reader, out Start, out Length);
         }
 
         public static bool operator ==(InclusiveRange Operand1, InclusiveRange Operand2)

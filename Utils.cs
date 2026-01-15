@@ -40,7 +40,6 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-
         #region Comparison
 
         public class InvertComparison<T> : IComparer<T>
@@ -240,12 +239,34 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+        #region Math?
 
-        public static Range GetRangeWithOverride(int Start, int End, int? Cap = null)
-            => new(Start, Math.Max(Cap ?? End, End));
+        public static void GetMinMax(out int Min, out int Max, params int[] Ints)
+        {
+            if (Ints.IsNullOrEmpty())
+            {
+                Min = int.MinValue;
+                Max = int.MaxValue;
+            }
+            else
+            if (Ints.Length == 1)
+            {
+                Min = Ints[0];
+                Max = Ints[0];
+            }
+            else
+            {
+                Min = int.MaxValue;
+                Max = int.MinValue;
+                foreach (int value in Ints)
+                {
+                    Min = Math.Min(Min, value);
+                    Max = Math.Min(value, Max);
+                }
+            }
+        }
 
-        public static Range GetRangeWithOverride(Range Range, int? Cap = null)
-            => GetRangeWithOverride(Range.Start.Value, Range.End.Value, Cap);
+        #endregion
 
         public static int ClosestBodyPart(BodyPart BodyPart1, BodyPart BodyPart2)
             => EitherNull(BodyPart1, BodyPart2, out int comparison)

@@ -30,20 +30,20 @@ namespace StealthSystemPrototype
             public Enumerator(SerializableSequence<T> SerializableSequence)
             {
                 this.SerializableSequence = SerializableSequence;
-                Step = SerializableSequence.Steps.Min - 1;
+                Step = SerializableSequence.Steps.Start - 1;
                 LastValue = SerializableSequence.StartValue;
             }
 
             public bool MoveNext()
             {
                 LastValue = Current;
-                return ++Step <= SerializableSequence.Steps.Max;
+                return ++Step <= SerializableSequence.Steps.Length;
             }
 
             public void Reset()
             {
                 LastValue = SerializableSequence.StartValue;
-                Step = SerializableSequence.Steps.Min - 1;
+                Step = SerializableSequence.Steps.Start - 1;
             }
 
             public void Dispose()
@@ -71,20 +71,20 @@ namespace StealthSystemPrototype
             public PairEnumerator(SerializableSequence<T> SerializableSequence)
             {
                 this.SerializableSequence = SerializableSequence;
-                Step = SerializableSequence.Steps.Min - 1;
+                Step = SerializableSequence.Steps.Start - 1;
                 LastValue = SerializableSequence.StartValue;
             }
 
             public bool MoveNext()
             {
                 LastValue = Current.Value;
-                return ++Step <= SerializableSequence.Steps.Max;
+                return ++Step <= SerializableSequence.Steps.Length;
             }
 
             public void Reset()
             {
                 LastValue = SerializableSequence.StartValue;
-                Step = SerializableSequence.Steps.Min - 1;
+                Step = SerializableSequence.Steps.Start - 1;
             }
 
             public void Dispose()
@@ -97,6 +97,9 @@ namespace StealthSystemPrototype
 
         #endregion
         #region Fields & Properties
+
+        public string Name => GetName();
+        public string ShortName => GetName(true);
 
         protected InclusiveRange Steps;
         protected T StartValue;
@@ -128,45 +131,37 @@ namespace StealthSystemPrototype
 
         #endregion
 
+        public virtual string GetName(bool Short = false)
+            => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
+
+        public virtual string ToString(bool Short)
+            => GetName(Short) +
+            "(){" +
+            GetStepValues().Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "," : null) + String.Format("{0:0.000}", n)) +
+            "}";
+
+        public override string ToString()
+            => ToString(false);
+
         public T this[int Index]
-        {
-            get
-            {
-                if (!ContainsKey(Index))
-                    throw new ArgumentOutOfRangeException(nameof(Index), "Must be within the breadth of " + nameof(InclusiveRange) + " field " + nameof(Steps));
-
-                foreach (KeyValuePair<int, T> item in GetPairs())
-                    if (item.Key == Index)
-                        return item.Value;
-
-                throw new InvalidProgramException(GetType().ToStringWithGenerics() + " did not contain " + nameof(Index) + " (" + Index + ") when iterated despite " + nameof(ContainsKey) + " returning true.");
-            }
-        }
+            => (GetStepValues()?.ToArray() ?? new T[0])[Index];
 
         public T this[Index Index]
-        {
-            get
-            {
-                int index = Index.GetIntValue();
-                if (index < 0)
-                    index = Steps.Max - index;
-                else
-                    index += Steps.Min;
-
-                return this[index];
-            }
-        }
+            => (GetStepValues()?.ToArray() ?? new T[0])[Index];
 
         public T[] this[Range Range]
             => (GetStepValues()?.ToArray() ?? new T[0])[Range];
 
         public abstract T Step(T LastValue, int Step);
 
-        public virtual SerializableSequence<T> SetSteps(int Steps)
+        public virtual SerializableSequence<T> SetSteps(InclusiveRange Steps)
         {
-            this.Steps = new(this.Steps.Min, this.Steps.Min + Steps);
+            this.Steps = Steps;
             return this;
         }
+        public virtual SerializableSequence<T> SetSteps(int Steps)
+            => SetSteps(new InclusiveRange(this.Steps.Start, this.Steps.Start + Steps));
+
         public virtual SerializableSequence<T> SetStartValue(T StartValue)
         {
             this.StartValue = StartValue;

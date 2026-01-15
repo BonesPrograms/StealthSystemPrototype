@@ -16,12 +16,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             Sense = PerceptionSense.Visual;
         }
-        public Visual(GameObject Owner, ClampedInclusiveRange BaseScore, Radius BaseRadius)
-            : base(Owner, PerceptionSense.Visual, BaseScore, BaseRadius)
+        public Visual(GameObject Owner, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+            : base(Owner, PerceptionSense.Visual, BaseDieRoll, BaseRadius)
         {
         }
         public Visual(GameObject Owner)
-            : this(Owner, BASE_SCORE, new(BASE_RADIUS, VisualFlag))
+            : this(Owner, BASE_DIE_ROLL, new(BASE_RADIUS, VisualFlag))
         {
         }
 

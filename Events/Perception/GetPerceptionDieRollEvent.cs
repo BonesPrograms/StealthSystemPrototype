@@ -9,11 +9,12 @@ using StealthSystemPrototype.Capabilities.Stealth;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
+using XRL.Rules;
 
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public class GetPerceptionScoreEvent : IPerceptionEvent<GetPerceptionScoreEvent>
+    public class GetPerceptionDieRollEvent : IPerceptionEvent<GetPerceptionDieRollEvent>
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
@@ -23,18 +24,18 @@ namespace StealthSystemPrototype.Events
 
         public PerceptionSense Sense;
 
-        public ClampedInclusiveRange BaseScore;
+        public ClampedDieRoll BaseDieRoll;
 
-        public ClampedInclusiveRange Score;
+        public ClampedDieRoll DieRoll;
 
-        public GetPerceptionScoreEvent()
+        public GetPerceptionDieRollEvent()
             : base()
         {
             Name = null;
             Type = null;
             Sense = PerceptionSense.None;
-            BaseScore = null;
-            Score = null;
+            BaseDieRoll = null;
+            DieRoll = null;
         }
 
         public override void Reset()
@@ -43,25 +44,25 @@ namespace StealthSystemPrototype.Events
             Name = null;
             Type = null;
             Sense = PerceptionSense.None;
-            BaseScore = null;
-            Score = null;
+            BaseDieRoll = null;
+            DieRoll = null;
         }
 
-        public static GetPerceptionScoreEvent FromPool<T>(
+        public static GetPerceptionDieRollEvent FromPool<T>(
             GameObject Perceiver,
             T Perception,
-            ClampedInclusiveRange BaseScore)
+            ClampedDieRoll BaseDieRoll)
             where T : BasePerception
         {
             if (Perception == null
-                || FromPool(Perceiver) is not GetPerceptionScoreEvent E)
+                || FromPool(Perceiver) is not GetPerceptionDieRollEvent E)
                 return null;
 
-            E.Name = Perception.GetType().Name;
+            E.Name = Perception.Name;
             E.Type = Perception.GetType();
             E.Sense = Perception.Sense;
-            E.BaseScore = BaseScore;
-            E.Score = BaseScore;
+            E.BaseDieRoll = BaseDieRoll;
+            E.DieRoll = BaseDieRoll;
             E.StringyEvent = E.GetStringyEvent();
             return E;
         }
@@ -71,29 +72,29 @@ namespace StealthSystemPrototype.Events
                 ?.SetParameter(nameof(Name), Name)
                 ?.SetParameter(nameof(Type), Type)
                 ?.SetParameter(nameof(Sense), Sense)
-                ?.SetParameter(nameof(BaseScore), BaseScore)
-                ?.SetParameter(nameof(Score), Score)
+                ?.SetParameter(nameof(BaseDieRoll), BaseDieRoll)
+                ?.SetParameter(nameof(DieRoll), DieRoll)
                 ;
 
         public override void UpdateFromStringyEvent()
         {
             base.UpdateFromStringyEvent();
 
-            if (StringyEvent?.GetParameter(nameof(BaseScore)) is ClampedInclusiveRange baseScore)
-                BaseScore = baseScore;
+            if (StringyEvent?.GetParameter(nameof(BaseDieRoll)) is ClampedDieRoll baseDieRoll)
+                BaseDieRoll = baseDieRoll;
 
-            if (StringyEvent?.GetParameter(nameof(Score)) is ClampedInclusiveRange score)
-                Score = score;
+            if (StringyEvent?.GetParameter(nameof(DieRoll)) is ClampedDieRoll dieRoll)
+                DieRoll = dieRoll;
         }
 
-        public static ClampedInclusiveRange GetFor<T>(
+        public static ClampedDieRoll GetFor<T>(
             GameObject Perceiver,
             T Perception,
-            ClampedInclusiveRange BaseScore)
+            ClampedDieRoll BaseDieRoll)
             where T : BasePerception
         {
             UnityEngine.Debug.Log(
-                CallChain(nameof(GetPerceptionScoreEvent), nameof(GetFor)) + "(" +
+                CallChain(nameof(GetPerceptionDieRollEvent), nameof(GetFor)) + "(" +
                 nameof(Perceiver) + ": " + (Perceiver?.DebugName ?? "no one") + ", " +
                 Perception.ToString());
 
@@ -101,7 +102,7 @@ namespace StealthSystemPrototype.Events
                 || FromPool(
                     Perceiver: Perceiver,
                     Perception: Perception,
-                    BaseScore: BaseScore) is not GetPerceptionScoreEvent E)
+                    BaseDieRoll: BaseDieRoll) is not GetPerceptionDieRollEvent E)
                 return null;
 
             bool proceed = true;
@@ -116,40 +117,40 @@ namespace StealthSystemPrototype.Events
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
 
-            return E.GetScore();
+            return E.GetDieRoll();
         }
 
-        private static void SetClamp(
-            ref ClampedInclusiveRange Score,
+        private static void SetDieRollClamp(
+            ref ClampedDieRoll DieRoll,
             InclusiveRange BaseClamp,
             int? Min = null,
             int? Max = null)
-            => Score = Score.SetClamp(new InclusiveRange(Min ?? BaseClamp.Min, Max ?? BaseClamp.Max));
+            => DieRoll = DieRoll.SetClamp(new InclusiveRange(Min ?? BaseClamp.Start, Max ?? BaseClamp.Length).Clamp(BaseClamp));
 
-        private GetPerceptionScoreEvent SetScore(int? Min = null, int? Max = null)
+        private GetPerceptionDieRollEvent SetDieRollClamp(int? Min = null, int? Max = null)
         {
-            SetClamp(ref Score, SCORE_CLAMP, Min, Max);
+            SetDieRollClamp(ref DieRoll, DIE_ROLL_CLAMP, Min, Max);
             return this;
         }
 
-        public GetPerceptionScoreEvent SetMinScore(int MinScore)
-            => SetScore(MinScore, null);
+        public GetPerceptionDieRollEvent SetDieRollMin(int Min)
+            => SetDieRollClamp(Min, null);
 
-        public GetPerceptionScoreEvent SetScore(Range Score)
+        public GetPerceptionDieRollEvent SetDieRoll(DieRoll DieRoll)
         {
-            this.Score = new(Score, this.Score);
+            this.DieRoll.SetDieRoll(DieRoll);
             return this;
         }
-        public GetPerceptionScoreEvent AdjustScore(int Amount)
+        public GetPerceptionDieRollEvent AdjustDieRoll(int Amount)
         {
-            Score = Score.AdjustBy(Amount);
+            DieRoll.AdjustBy(Amount);
             return this;
         }
-        public GetPerceptionScoreEvent SetMaxScore(int MaxScore)
-            => SetScore(null, MaxScore);
+        public GetPerceptionDieRollEvent SetDieRollMax(int Max)
+            => SetDieRollClamp(null, Max);
 
-        public ClampedInclusiveRange GetScore()
-            => new(Score, SCORE_CLAMP);
+        public ClampedDieRoll GetDieRoll()
+            => DieRoll = new(DieRoll, DIE_ROLL_CLAMP);
     }
 }
 

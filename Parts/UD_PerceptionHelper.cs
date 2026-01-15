@@ -91,7 +91,7 @@ namespace XRL.World.Parts
             => base.WantEvent(ID, Cascade)
             || IsClearPerceptionsMinEvent(ID)
             || ID == GetPerceptionsEvent.ID
-            || ID == GetPerceptionScoreEvent.ID
+            || ID == GetPerceptionDieRollEvent.ID
             || ID == GetPerceptionRadiusEvent.ID
             ;
         public override bool HandleEvent(RegenerateDefaultEquipmentEvent E)
@@ -119,19 +119,19 @@ namespace XRL.World.Parts
                 E.AddPerception(new EsperPsionic(esper));
 
             if (ParentObject.TryGetPart(out HeightenedHearing heightenedHearing))
-                E.AddIPartPerception(heightenedHearing, PerceptionSense.Auditory);
+                E.AddAuditoryIPartPerception(heightenedHearing);
 
             if (ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
-                E.AddIPartPerception(heightenedSmell, PerceptionSense.Olfactory);
+                E.AddOlfactoryIPartPerception(heightenedSmell);
 
             if (ParentObject.TryGetPart(out NightVision nightVision))
-                E.AddIPartPerception(nightVision, PerceptionSense.Visual);
+                E.AddVisualIPartPerception(nightVision);
 
             if (ParentObject.TryGetPart(out DarkVision darkVision))
-                E.AddIPartPerception(darkVision, PerceptionSense.Visual);
+                E.AddVisualIPartPerception(darkVision);
 
             if (ParentObject.TryGetPart(out SensePsychic sensePsychic))
-                E.AddIPartPerception(sensePsychic, PerceptionSense.Psionic);
+                E.AddPsionicIPartPerception(sensePsychic);
 
             UnityEngine.Debug.Log(
                 (ParentObject?.DebugName ?? "null") + " " + 
@@ -140,25 +140,25 @@ namespace XRL.World.Parts
 
             return base.HandleEvent(E);
         }
-        public bool HandleEvent(GetPerceptionScoreEvent E)
+        public bool HandleEvent(GetPerceptionDieRollEvent E)
         {
             UnityEngine.Debug.Log(
                 (ParentObject?.DebugName ?? "null") + " " + 
-                nameof(GetPerceptionScoreEvent) + " -> " + 
-                (E.Type?.Name ?? "no type?"));
+                nameof(GetPerceptionDieRollEvent) + " -> " + 
+                (E.Name ?? "no type?"));
 
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
-                E.SetMinScore(40);
+                E.SetDieRollMin(40);
 
             if (E.Sense == PerceptionSense.Olfactory
                 && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
-                E.SetMinScore(40);
+                E.SetDieRollMin(40);
 
             if (E.Sense == PerceptionSense.Olfactory
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
-                E.AdjustScore(2 * heightenedSmell.Level);
+                E.AdjustDieRoll(2 * heightenedSmell.Level);
 
             if (E.Sense.EqualsAny(
                 new PerceptionSense[]
@@ -172,10 +172,10 @@ namespace XRL.World.Parts
                 && body.LoopPart(SimplePerception.FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
             {
                 if (facesList.Count > 1)
-                    E.AdjustScore(15);
+                    E.AdjustDieRoll(15);
                 else
                 if (facesList.Count < 1)
-                    E.SetMaxScore(0);
+                    E.SetDieRollMax(0);
             }
             return base.HandleEvent(E);
         }
@@ -184,7 +184,7 @@ namespace XRL.World.Parts
             UnityEngine.Debug.Log(
                 (ParentObject?.DebugName ?? "null") + " " + 
                 nameof(GetPerceptionRadiusEvent) + " -> " + 
-                (E.Type?.Name ?? "no type?"));
+                (E.Name ?? "no type?"));
 
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations

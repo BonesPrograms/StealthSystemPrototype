@@ -34,12 +34,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         private int Value;
         private InclusiveRange Clamp;
+        [NonSerialized]
         public RadiusFlags Flags;
         private BaseDoubleDiffuser DiffusionSequence;
 
+        public int EffectiveValue => GetEffectiveValue();
+
         #region Constructors
 
+        protected Radius()
+        {
+            Value = 0;
+            Clamp = default;
+            Flags = RadiusFlags.None;
+            DiffusionSequence = null;
+        }
         public Radius(int Value, InclusiveRange Clamp, RadiusFlags Flags, BaseDoubleDiffuser DiffusionSequence = null)
+            : base()
         {
             this.Value = Value;
             this.Clamp = Clamp;
@@ -105,39 +116,87 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
 
         public override string ToString()
-            => GetValue().ToString() + "(" +
+            => GetValue().ToString() + "/" + Value + "(" +
             FlagsString() +
             ")";
 
         public int GetValue()
             => Value.Clamp(Clamp);
 
-        public bool IsLine()
-            => Flags.HasFlag(RadiusFlags.Line);
+        public int GetEffectiveValue()
+            => Diffusions()
+                ?.Where(d => d > 0)
+                ?.Count()
+            ?? 0;
 
-        public bool IsPathing()
-            => Flags.HasFlag(RadiusFlags.Pathing);
+        public InclusiveRange AsInclusiveRange()
+            => new(GetValue());
 
-        public bool IsArea()
-            => Flags.HasFlag(RadiusFlags.Area);
-
-        public bool Occludes()
-            => Flags.HasFlag(RadiusFlags.Occludes);
-
-        public bool Diffuses()
-            => Flags.HasFlag(RadiusFlags.Diffuses);
+        public Radius SetValue(int Value)
+        {
+            this.Value = Value;
+            return this;
+        }
+        public Radius SetClamp(InclusiveRange Clamp)
+        {
+            this.Clamp = Clamp;
+            return this;
+        }
 
         public Radius AdjustBy(int Amount)
-            => new(Amount, this);
+            => SetValue(Value + Amount);
+
+        public Radius AdjustClampBy(int Amount)
+            => SetClamp(Clamp.AdjustBy(Amount).Clamp(Clamp));
+
+        public Radius AdjustClampBy(InclusiveRange OtherRange)
+            => SetClamp(Clamp.AdjustBy(OtherRange).Clamp(Clamp));
+
+        #region Predicates
+
+        public static bool IsLine(Radius Radius)
+            => Radius.Flags.HasFlag(RadiusFlags.Line);
+
+        public static bool IsPathing(Radius Radius)
+            => Radius.Flags.HasFlag(RadiusFlags.Pathing);
+
+        public static bool IsArea(Radius Radius)
+            => Radius.Flags.HasFlag(RadiusFlags.Area);
+
+        public static bool Occludes(Radius Radius)
+            => Radius.Flags.HasFlag(RadiusFlags.Occludes);
+
+        public static bool Diffuses(Radius Radius)
+            => Radius.Flags.HasFlag(RadiusFlags.Diffuses);
+
+        public bool IsLine()
+            => IsLine(this);
+
+        public bool IsPathing()
+            => IsPathing(this);
+
+        public bool IsArea()
+            => IsArea(this);
+
+        public bool Occludes()
+            => Occludes(this);
+
+        public bool Diffuses()
+            => Diffuses(this);
+
+        #endregion
 
         public double[] Diffusions()
             => Diffuses()
-                && DiffusionSequence?.SetSteps(GetValue()) != null
+                && DiffusionSequence?.SetSteps(GetValue() + 1) != null
             ? DiffusionSequence[..]
-            : new double[GetValue() - 1].Select(d => 1.0).ToArray();
+            : new double[GetValue() + 1].Select(d => 1.0).ToArray();
 
         public double GetDiffusion(int Distance)
-            => Diffusions()[Distance.Clamp(0, GetValue() - 1)];
+            => Diffusions()[Distance.Clamp(AsInclusiveRange())];
+
+        public string GetDiffusionDebug()
+            => DiffusionSequence.ToString(false);
 
         #region Comparison
 
@@ -165,38 +224,42 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             SerializationWriter Writer,
             int Value,
             InclusiveRange Clamp,
-            RadiusFlags Flags)
+            RadiusFlags Flags,
+            BaseDoubleDiffuser DiffusionSequence)
         {
             Writer.WriteOptimized(Value);
             Clamp.WriteOptimized(Writer);
             Writer.WriteOptimized((int)Flags);
+            DiffusionSequence.Write(Writer);
         }
         public static void WriteOptimized(SerializationWriter Writer, Radius Radius)
-            => WriteOptimized(Writer, Radius.Value, Radius.Clamp, Radius.Flags);
+            => WriteOptimized(Writer, Radius.Value, Radius.Clamp, Radius.Flags, Radius.DiffusionSequence);
 
         public static void ReadOptimizedRadius(
             SerializationReader Reader,
             out int Value,
             out InclusiveRange Clamp,
-            out RadiusFlags Flags)
+            out RadiusFlags Flags,
+            out BaseDoubleDiffuser DiffusionSequence)
         {
             Value = Reader.ReadOptimizedInt32();
             Clamp = Reader.ReadOptimizedRange();
             Flags = (RadiusFlags)Reader.ReadOptimizedInt32();
+            DiffusionSequence = Reader.ReadComposite() as BaseDoubleDiffuser;
         }
         public static Radius ReadOptimizedRadius(SerializationReader Reader)
         {
-            ReadOptimizedRadius(Reader, out int value, out InclusiveRange clamp, out RadiusFlags flags);
-            return new(value, clamp, flags);
+            ReadOptimizedRadius(Reader, out int value, out InclusiveRange clamp, out RadiusFlags flags, out BaseDoubleDiffuser DiffusionSequence);
+            return new(value, clamp, flags, DiffusionSequence);
         }
 
         public void Write(SerializationWriter Writer)
         {
-            WriteOptimized(Writer, Value, Clamp, Flags);
+            WriteOptimized(Writer, Value, Clamp, Flags, DiffusionSequence);
         }
         public void Read(SerializationReader Reader)
         {
-            ReadOptimizedRadius(Reader, out Value, out Clamp, out Flags);
+            ReadOptimizedRadius(Reader, out Value, out Clamp, out Flags, out DiffusionSequence);
         }
 
         #endregion

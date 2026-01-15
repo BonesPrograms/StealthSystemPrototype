@@ -21,23 +21,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             Sense = PerceptionSense.Psionic;
         }
-        public EsperPsionic(GameObject Owner, Esper Source, ClampedInclusiveRange BaseScore, Radius BaseRadius)
-            : base(Owner, Source, PerceptionSense.Psionic, BaseScore, BaseRadius)
+        public EsperPsionic(GameObject Owner, Esper Source, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+            : base(Owner, Source, PerceptionSense.Psionic, BaseDieRoll, BaseRadius)
         {
         }
-        public EsperPsionic(Esper Source, ClampedInclusiveRange BaseScore, Radius BaseRadius)
-            : this(Source?.ParentObject, Source, BaseScore, BaseRadius)
+        public EsperPsionic(Esper Source, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+            : this(Source?.ParentObject, Source, BaseDieRoll, BaseRadius)
         {
         }
         public EsperPsionic(Esper Source)
-            : base(Source, PerceptionSense.Psionic, Radius.RadiusFlags.Line | Radius.RadiusFlags.Area | Radius.RadiusFlags.Diffuses)
+            : base(Source, PerceptionSense.Psionic, PsionicFlag)
         {
         }
 
         #endregion
 
-        public override int GetBonusBaseScore()
-            => base.GetBonusBaseScore()
+        public override int GetBonusBaseDieRoll()
+            => base.GetBonusBaseDieRoll()
             + (Owner?.GetPart<Mutations>()
                 ?.MutationList
                 ?.Where(bm => bm.IsMental())
@@ -47,7 +47,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 ?? 0);
 
         public override int GetBonusBaseRadius()
-            => base.GetBonusBaseScore()
+            => base.GetBonusBaseDieRoll()
             + Math.Min(Owner?.StatMod("Ego") ?? 0, 10);
 
         #region Serialization

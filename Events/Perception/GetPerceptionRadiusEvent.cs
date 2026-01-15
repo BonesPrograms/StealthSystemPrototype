@@ -57,7 +57,7 @@ namespace StealthSystemPrototype.Events
                 || FromPool(Perceiver) is not GetPerceptionRadiusEvent E)
                 return null;
 
-            E.Name = Perception.GetType().Name;
+            E.Name = Perception.Name;
             E.Type = Perception.GetType();
             E.Sense = Perception.Sense;
             E.BaseRadius = BaseRadius;
@@ -125,34 +125,32 @@ namespace StealthSystemPrototype.Events
             InclusiveRange BaseClamp,
             int? Min = null,
             int? Max = null)
-            => Radius = new(
-                Source: Radius,
-                Clamp: new InclusiveRange(Min ?? BaseClamp.Min, Max ?? BaseClamp.Max));
+            => Radius.SetClamp(new InclusiveRange(Min ?? BaseClamp.Start, Max ?? BaseClamp.Length).Clamp(BaseClamp));
 
-        private GetPerceptionRadiusEvent SetRadius(int? Min = null, int? Max = null)
+        private GetPerceptionRadiusEvent SetClamp(int? Min = null, int? Max = null)
         {
-            SetClamp(ref Radius, SCORE_CLAMP, Min, Max);
+            SetClamp(ref Radius, RADIUS_CLAMP, Min, Max);
             return this;
         }
 
-        public GetPerceptionRadiusEvent SetMinRadius(int MinRadius)
-            => SetRadius(MinRadius, null);
+        public GetPerceptionRadiusEvent SetMinRadius(int Min)
+            => SetClamp(Min, null);
 
         public GetPerceptionRadiusEvent SetRadius(int Radius)
         {
-            this.Radius = new(Radius, this.Radius);
+            this.Radius.SetValue(Radius);
             return this;
         }
         public GetPerceptionRadiusEvent AdjustRadius(int Amount)
         {
-            Radius = Radius.AdjustBy(Amount);
+            Radius.AdjustBy(Amount);
             return this;
         }
-        public GetPerceptionRadiusEvent SetMaxRadius(int MaxScore)
-            => SetRadius(null, MaxScore);
+        public GetPerceptionRadiusEvent SetMaxRadius(int Max)
+            => SetClamp(null, Max);
 
         public Radius GetRadius()
-            => new(Radius, SCORE_CLAMP);
+            => Radius = new Radius(Radius, RADIUS_CLAMP).SetValue(Radius.GetValue());
     }
 }
 

@@ -4,7 +4,7 @@ namespace StealthSystemPrototype.Events
 {
     public interface IPerceptionEventHandler
         : IModEventHandler<GetPerceptionsEvent>
-        , IModEventHandler<GetPerceptionScoreEvent>
+        , IModEventHandler<GetPerceptionDieRollEvent>
         , IModEventHandler<GetPerceptionRadiusEvent>
     {
     }

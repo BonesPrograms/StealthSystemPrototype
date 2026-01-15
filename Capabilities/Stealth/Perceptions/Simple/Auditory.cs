@@ -16,12 +16,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             Sense = PerceptionSense.Auditory;
         }
-        public Auditory(GameObject Owner, ClampedInclusiveRange BaseScore, Radius BaseRadius)
-            : base(Owner, PerceptionSense.Auditory, BaseScore, BaseRadius)
+        public Auditory(GameObject Owner, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+            : base(Owner, PerceptionSense.Auditory, BaseDieRoll, BaseRadius)
         {
         }
         public Auditory(GameObject Owner)
-            : this(Owner, BASE_SCORE, new(BASE_RADIUS, AuditoryFlag))
+            : this(Owner, BASE_DIE_ROLL, new(BASE_RADIUS, AuditoryFlag))
         {
         }
 

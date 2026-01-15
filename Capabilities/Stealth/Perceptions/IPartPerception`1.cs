@@ -31,17 +31,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Owner,
             T Source,
             PerceptionSense Sense,
-            ClampedInclusiveRange BaseScore,
+            ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : base(Owner, Source, Sense, BaseScore, BaseRadius)
+            : base(Owner, Source, Sense, BaseDieRoll, BaseRadius)
         {
         }
         public IPartPerception(
             T Source,
             PerceptionSense Sense,
-            ClampedInclusiveRange BaseScore,
+            ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : base(Source?.ParentObject, Source, Sense, BaseScore, BaseRadius)
+            : base(Source?.ParentObject, Source, Sense, BaseDieRoll, BaseRadius)
         {
         }
         public IPartPerception(
@@ -49,7 +49,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             T Source,
             PerceptionSense Sense,
             Radius.RadiusFlags RadiusFlags = Radius.RadiusFlags.Line)
-            : this(Owner, Source, Sense, BASE_SCORE, new(BASE_RADIUS, RadiusFlags))
+            : this(Owner, Source, Sense, BASE_DIE_ROLL, new(BASE_RADIUS, RadiusFlags))
         {
         }
         public IPartPerception(

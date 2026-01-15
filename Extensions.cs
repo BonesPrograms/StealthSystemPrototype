@@ -7,11 +7,11 @@ using XRL.World;
 using XRL.World.AI;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
+using XRL.Rules;
 
 using StealthSystemPrototype.Capabilities.Stealth;
 
 using static StealthSystemPrototype.Utils;
-using XRL.Rules;
 
 namespace StealthSystemPrototype
 {
@@ -19,60 +19,112 @@ namespace StealthSystemPrototype
     {
         #region Clamping
 
-        #region Basic
-
         public static int Clamp(this int Value, int Min, int Max)
             => Math.Clamp(Value, Min, Max);
 
         public static int Clamp(this int Value, InclusiveRange Range)
-            => Value.Clamp(Range.Min, Range.Max);
-
-        public static Index ClampIndex(this Index Value, int Min, int Max)
-            => new(Value.Value.Clamp(Min, Max));
-
-        public static Index ClampIndex(this Index Value, InclusiveRange Range)
-            => new(Value.Value.Clamp(Range));
-
-        public static int ClampValue(this Index Value, int Min, int Max)
-            => Value.ClampIndex(Min, Max).Value;
-
-        public static int ClampValue(this Index Value, InclusiveRange Range)
-            => Value.ClampIndex(Range).Value;
-
-        public static Range ClampRange(this Range Value, int Min, int Max)
-            => new(Value.Start.ClampIndex(Min, Max), Value.End.ClampIndex(Min, Max));
-
-        public static Range ClampRange(this Range Value, Range Range)
-            => new(Value.Start.ClampIndex(Range), Value.End.ClampIndex(Range));
+            => Value.Clamp(Range.Start, Range.Length);
 
         #endregion
-        #region With Cap
+        #region Die Rolls
 
-        public static int ClampCap(this int Value, int Min, int Max, int? Cap = null)
-            => Value.Clamp(GetRangeWithOverride(Min, Max, Cap));
+        public static DieRoll AdjustDieCount(this DieRoll DieRoll, int Amount)
+        {
+            if (DieRoll.FindType(DieRoll.TYPE_DIE) == null)
+                throw new ArgumentException("Must have " + nameof(DieRoll.TYPE_DIE) + " (" + DieRoll.TYPE_DIE + ")", nameof(DieRoll));
 
-        public static int ClampCap(this int Value, Range Range, int? Cap = null)
-            => Value.Clamp(GetRangeWithOverride(Range, Cap));
+            if (DieRoll == null)
+                return null;
 
-        public static Index ClampIndexCap(this Index Value, int Min, int Max, int? Cap = null)
-            => new(Value.Value.ClampCap(Min, Max, Cap));
+            int type = DieRoll.Type;
+            if (DieRoll.LeftValue > 0)
+            {
+                DieRoll.LeftValue += Amount;
+                return DieRoll;
+            }
+            else
+            {
+                if (DieRoll.RightValue > 0)
+                    return new(type, DieRoll.Left.AdjustDieCount(Amount), DieRoll.RightValue);
+                return new(type, DieRoll.Left.AdjustDieCount(Amount), DieRoll.Right);
+            }
+        }
 
-        public static Index ClampIndexCap(this Index Value, Range Range, int? Cap = null)
-            => new(Value.Value.ClampCap(Range, Cap));
+        public static bool IsConstantOnlyRangeType(this DieRoll DieRoll)
+            => DieRoll.FindTypeWithConstantBoth(DieRoll.TYPE_RANGE) != null;
 
-        public static int ClampValueCap(this Index Value, int Min, int Max, int? Cap = null)
-            => Value.ClampIndexCap(Min, Max, Cap).Value;
+        public static DieRoll SetMin(this DieRoll DieRoll, int Min)
+        {
+            if (!DieRoll.IsConstantOnlyRangeType())
+                throw new ArgumentException("Must have " + nameof(DieRoll.TYPE_RANGE) + " (" + DieRoll.TYPE_RANGE + ")", nameof(DieRoll));
 
-        public static int ClampValueCap(this Index Value, Range Range, int? Cap = null)
-            => Value.ClampIndexCap(Range, Cap).Value;
+            DieRoll.LeftValue = Min;
+            return DieRoll;
+        }
+        public static bool TrySetMin(this DieRoll DieRoll, int Min, out DieRoll OutDieRoll)
+        {
+            OutDieRoll = null;
+            if (!DieRoll.IsConstantOnlyRangeType())
+                return false;
 
-        public static Range ClampRangeCap(this Range Value, int Min, int Max, int? Cap = null)
-            => new(Value.Start.ClampIndexCap(Min, Max, Cap), Value.End.ClampIndexCap(Min, Max, Cap));
+            OutDieRoll = DieRoll.SetMin(Min);
+            return true;
+        }
 
-        public static Range ClampRangeCap(this Range Value, Range Range, int? Cap = null)
-            => new(Value.Start.ClampIndexCap(Range, Cap), Value.End.ClampIndexCap(Range, Cap));
+        public static DieRoll SetMax(this DieRoll DieRoll, int Max)
+        {
+            if (!DieRoll.IsConstantOnlyRangeType())
+                throw new ArgumentException("Must have " + nameof(DieRoll.TYPE_RANGE) + " (" + DieRoll.TYPE_RANGE + ")", nameof(DieRoll));
 
-        #endregion
+            DieRoll.RightValue = Max;
+            return DieRoll;
+        }
+        public static bool TrySetMax(this DieRoll DieRoll, int Max, out DieRoll OutDieRoll)
+        {
+            OutDieRoll = null;
+            if (!DieRoll.IsConstantOnlyRangeType())
+                return false;
+
+            OutDieRoll = DieRoll.SetMax(Max);
+            return true;
+        }
+
+        public static DieRoll AdjustMin(this DieRoll DieRoll, int Amount)
+            => DieRoll.SetMin(DieRoll.LeftValue + Amount);
+
+        public static bool TryAdjustMin(this DieRoll DieRoll, int Amount, out DieRoll OutDieRoll)
+            => DieRoll.TrySetMin(DieRoll.LeftValue + Amount, out OutDieRoll);
+
+        public static DieRoll AdjustMax(this DieRoll DieRoll, int Amount)
+            => DieRoll.SetMax(DieRoll.RightValue + Amount);
+
+        public static bool TryAdjustMax(this DieRoll DieRoll, int Amount, out DieRoll OutDieRoll)
+            => DieRoll.TrySetMax(DieRoll.RightValue + Amount, out OutDieRoll);
+
+        public static DieRoll AdjustBy(this DieRoll DieRoll, int Amount)
+            => DieRoll.AdjustMin(Amount).AdjustMax(Amount);
+
+        public static bool TryAdjustBy(this DieRoll DieRoll, int Amount, out DieRoll OutDieRoll)
+            => DieRoll.TryAdjustMin(Amount, out OutDieRoll)
+            && OutDieRoll.TryAdjustMax(Amount, out OutDieRoll);
+
+        public static DieRoll Clamp(this DieRoll DieRoll, int Min, int Max)
+            => DieRoll.SetMin(DieRoll.LeftValue.Clamp(Min, Max))
+                .SetMax(DieRoll.RightValue.Clamp(Min, Max));
+
+        public static DieRoll Clamp(this DieRoll DieRoll, InclusiveRange Range)
+            => DieRoll.Clamp(Range.Min, Range.Max);
+
+        public static bool TryClamp(this DieRoll DieRoll, int Min, int Max, out DieRoll OutDieRoll)
+            => DieRoll.TrySetMin(DieRoll.LeftValue.Clamp(Min, Max), out OutDieRoll)
+            && OutDieRoll.TrySetMax(DieRoll.RightValue.Clamp(Min, Max), out OutDieRoll);
+
+        public static bool TryClamp(this DieRoll DieRoll, InclusiveRange Range, out DieRoll OutDieRoll)
+            => DieRoll.TryClamp(Range.Min, Range.Max, out OutDieRoll);
+
+        public static DieRoll ToDieRoll(this Range Range)
+            => new(DieRoll.TYPE_RANGE, Math.Min(Range.Start.GetIntValue(), Range.End.GetIntValue()), Math.Max(Range.Start.GetIntValue(), Range.End.GetIntValue()));
+
         #endregion
         #region Generic Conditionals
 
@@ -221,7 +273,7 @@ namespace StealthSystemPrototype
         #region Strings
 
         public static string MiniDebugName(this GameObject Object)
-            => (Object?.ID ?? "#") + ":" + (Object?.GetReferenceDisplayName(Short: true)?.Strip() ?? "no one");
+            => (Object?.ID ?? "#") + ":" + (Object?.GetReferenceDisplayName(WithoutTitles: true, Short: true)?.Strip() ?? "no one");
 
         public static string ToLiteral(this string String, bool Quotes = false)
         {
@@ -375,6 +427,35 @@ namespace StealthSystemPrototype
                 BlackoutStops: true);
         }
 
+        private static float GetXD(int x, int X)
+            => Math.Abs(x - X);
+
+        private static float GetXD2(int x, int X)
+            => GetXD(x, X) * GetXD(x, X);
+
+        private static float GetYD(int y, int Y)
+            => (float)(Math.Abs(y - Y) * 1.3333f);
+
+        private static float GetYD2(int y, int Y)
+            => GetYD(y, Y) * GetYD(y, Y);
+
+        private static float GetD(int x, int X, int y, int Y)
+            => GetXD2(x, X) + GetYD2(y, Y);
+
+        public static IEnumerable<Cell> GetCellsInACosmeticCircleSilent(this Cell Cell, int Radius)
+        {
+            int yRadius = (int)Math.Max(1.0, (double)Radius * 0.66);
+            float radiusSquared = Radius * Radius;
+            for (int x = Cell.X - Radius; x <= Cell.X + Radius; x++)
+                for (int y = Cell.Y - yRadius; y <= Cell.Y + yRadius; y++)
+                    if (GetD(x, Cell.X, y, Cell.Y) <= radiusSquared
+                        && Cell.ParentZone.GetCell(x, y) is Cell output)
+                        yield return output;
+        }
+
+        public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, Radius Radius)
+            => Cell?.GetCellsInACosmeticCircleSilent(Radius.EffectiveValue);
+
         #endregion
         #region Collection Manipulation
 
@@ -425,10 +506,10 @@ namespace StealthSystemPrototype
             => new InclusiveRange(Range).Breadth();
 
         public static int Floor(this Range Range)
-            => new InclusiveRange(Range).Min;
+            => new InclusiveRange(Range).Start;
 
         public static int Ceiling(this Range Range)
-            => new InclusiveRange(Range).Max;
+            => new InclusiveRange(Range).Length;
 
         public static IEnumerable<int> GetValues(this Range Range, int Offset = 0, int Step = 1)
         {
@@ -444,19 +525,19 @@ namespace StealthSystemPrototype
         #region InclusiveRanges
 
         public static DieRoll GetDieRoll(this InclusiveRange Breadth)
-            => new(DieRoll.TYPE_RANGE, Breadth.Min, Breadth.Max);
+            => new(DieRoll.TYPE_RANGE, Breadth.Start, Breadth.Length);
 
         public static int Roll(this InclusiveRange Breadth)
-            => Stat.Roll(Breadth.Min, Breadth.Max);
+            => Stat.Roll(Breadth.Start, Breadth.Length);
 
         public static int Random(this InclusiveRange Breadth)
-            => Stat.Random(Breadth.Min, Breadth.Max);
+            => Stat.Random(Breadth.Start, Breadth.Length);
 
         public static int RandomCosmetic(this InclusiveRange Breadth)
-            => Stat.RandomCosmetic(Breadth.Min, Breadth.Max);
+            => Stat.RandomCosmetic(Breadth.Start, Breadth.Length);
 
         public static int SeededRandom(this InclusiveRange Breadth, string Seed)
-            => Stat.SeededRandom(Seed, Breadth.Min, Breadth.Max);
+            => Stat.SeededRandom(Seed, Breadth.Start, Breadth.Length);
 
         #endregion
         #region Comparison
