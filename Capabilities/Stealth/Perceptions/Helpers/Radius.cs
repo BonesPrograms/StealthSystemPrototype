@@ -114,11 +114,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 ?.Aggregate("", FlagStrings)
             ?? "?";
 
-
         public override string ToString()
-            => GetValue().ToString() + "/" + Value + "(" +
-            FlagsString() +
-            ")";
+            => GetValue() + "(" + EffectiveValue + ")" + "/" + Value + 
+            "{" + FlagsString() + "}";
 
         public int GetValue()
             => Value.Clamp(Clamp);
@@ -188,9 +186,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public double[] Diffusions()
             => Diffuses()
-                && DiffusionSequence?.SetSteps(GetValue() + 1) != null
+                && DiffusionSequence?.SetSteps(GetValue()) != null
             ? DiffusionSequence[..]
-            : new double[GetValue() + 1].Select(d => 1.0).ToArray();
+            : new double[GetValue()].Select(d => 1.0).ToArray();
 
         public double GetDiffusion(int Distance)
             => Diffusions()[Distance.Clamp(AsInclusiveRange())];

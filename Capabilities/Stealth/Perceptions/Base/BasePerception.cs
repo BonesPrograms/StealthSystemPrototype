@@ -312,7 +312,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             else
                 Roll = this.Roll(Entity);
 
-            return (AwarenessLevel)Math.Ceiling(((Roll + 1) / 20.0) - 1);
+            return (AwarenessLevel)((int)Math.Ceiling(((Roll + 1) / 20.0) - 1)).Clamp(0, 4);
         }
 
         public virtual AwarenessLevel GetAwareness(GameObject Entity, bool UseLastRoll = false)

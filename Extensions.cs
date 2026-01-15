@@ -23,7 +23,7 @@ namespace StealthSystemPrototype
             => Math.Clamp(Value, Min, Max);
 
         public static int Clamp(this int Value, InclusiveRange Range)
-            => Value.Clamp(Range.Start, Range.Length);
+            => Value.Clamp(Range.Min, Range.Max);
 
         #endregion
         #region Die Rolls
@@ -346,6 +346,11 @@ namespace StealthSystemPrototype
 
             return String.Aggregate("", (a, n) => a + (char.IsLetter(n) && char.IsUpper(n) ? n : null));
         }
+
+        public static string WithDigits(this double D, int Digits = -1)
+            => Digits < 0
+            ? D.ToString()
+            : String.Format(WithDigitsFormat(Digits), D);
 
         #endregion
         #region Anatomy

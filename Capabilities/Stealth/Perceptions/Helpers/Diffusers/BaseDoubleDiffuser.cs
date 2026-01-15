@@ -4,6 +4,8 @@ using System.Text;
 
 using XRL.World;
 
+using static StealthSystemPrototype.Utils;
+
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public abstract class BaseDoubleDiffuser : SerializableSequence<double>
@@ -31,6 +33,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
+
+        public override string ToString(bool Short, string FormatString = null)
+        {
+            return base.ToString(Short, FormatString ?? WithDigitsFormat(2));
+        }
+
         #region Serialization
 
         public override void WriteStartValue(SerializationWriter Writer, double StartValue)

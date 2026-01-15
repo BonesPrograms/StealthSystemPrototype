@@ -202,15 +202,12 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+        #region Strings
 
-        #region Math?
-
-        public static int Average(params int[] Values)
-            => Values?.Average()
-            ?? 0;
+        public static string WithDigitsFormat(int Digits = 0)
+            => "{0:0" + (Math.Max(0, Digits) == 0 ? null : "." + "0".ThisManyTimes(Digits)) + "}";
 
         #endregion
-
         #region Generic Conditionals
 
         public static bool EitherNull<T1, T2>(T1 x, T2 y, out bool AreEqual)
@@ -240,6 +237,10 @@ namespace StealthSystemPrototype
 
         #endregion
         #region Math?
+
+        public static int Average(params int[] Values)
+            => Values?.Average()
+            ?? 0;
 
         public static void GetMinMax(out int Min, out int Max, params int[] Ints)
         {

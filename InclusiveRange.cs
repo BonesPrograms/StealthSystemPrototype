@@ -107,6 +107,11 @@ namespace StealthSystemPrototype
             }
         }
 
+        public readonly int Direction => Length.Clamp(-1, 1);
+
+        public readonly bool IsForward => Direction >= 0;
+        public readonly bool IsBackwards => Direction < 0;
+
         public InclusiveRange(int Start, int Length)
         {
             this.Start = Start;
@@ -121,12 +126,14 @@ namespace StealthSystemPrototype
         {
         }
         public InclusiveRange(int Min, InclusiveRange Source)
-            : this(Min, Source.Length)
+            : this(Source)
         {
+            this.Min = Min;
         }
         public InclusiveRange(InclusiveRange Source, int Max)
-            : this(Source.Start, Max)
+            : this(Source)
         {
+            this.Max = Max;
         }
         /// <summary>
         /// Constructs a new <see cref="InclusiveRange"/> with <see cref="Start"/> and <see cref="Length"/> values representing the breadth between 0 and the passed <paramref name="Value"/>.
@@ -263,15 +270,34 @@ namespace StealthSystemPrototype
             return new InclusiveRange(start, length);
         }
 
+        public readonly string ToString(bool Full)
+            => Min + "_" + Max + (Full ? ":" + Start + "," + Length : null);
+
         public override readonly string ToString()
-            => Start + "_" + Length;
+            => ToString(true);
 
         public readonly bool Contains(int Value)
-            => Start <= Value
-            && Value <= Length;
+            => Min <= Value
+            && Value <= Max;
 
         public readonly InclusiveRange Clamp(int Min, int Max)
-            => new(this.Start.Clamp(Min, Max), this.Length.Clamp(Min, Max));
+        {
+            int min = this.Min.Clamp(Min, Max);
+            int max = this.Max.Clamp(Min, Max);
+            int start;
+            int length;
+            if (IsForward)
+            {
+                start = min;
+                length = max - start;
+            }
+            else
+            {
+                start = max;
+                length = min - start;
+            }
+            return new(start, length);
+        }
 
         public readonly InclusiveRange Clamp(InclusiveRange OtherRange)
             => Clamp(OtherRange.Start, OtherRange.Length);

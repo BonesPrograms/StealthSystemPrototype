@@ -121,15 +121,19 @@ namespace StealthSystemPrototype.Events
         }
 
         private static void SetDieRollClamp(
-            ref ClampedDieRoll DieRoll,
+            ClampedDieRoll DieRoll,
             InclusiveRange BaseClamp,
             int? Min = null,
             int? Max = null)
-            => DieRoll = DieRoll.SetClamp(new InclusiveRange(Min ?? BaseClamp.Start, Max ?? BaseClamp.Length).Clamp(BaseClamp));
+        {
+            int start = Min ?? BaseClamp.Min;
+            int length = start + (Max ?? BaseClamp.Max);
+            DieRoll.SetClamp(new InclusiveRange(start, length).Clamp(BaseClamp));
+        }
 
         private GetPerceptionDieRollEvent SetDieRollClamp(int? Min = null, int? Max = null)
         {
-            SetDieRollClamp(ref DieRoll, DIE_ROLL_CLAMP, Min, Max);
+            SetDieRollClamp(DieRoll, DIE_ROLL_CLAMP, Min, Max);
             return this;
         }
 

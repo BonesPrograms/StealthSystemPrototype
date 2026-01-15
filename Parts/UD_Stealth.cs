@@ -79,13 +79,12 @@ namespace XRL.World.Parts
 
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
-            || (ConstantDebugOutput && ID == BeginTakeActionEvent.ID)
+            || (ConstantDebugOutput && ID == EndTurnEvent.ID)
             || ID == GetDebugInternalsEvent.ID
             ;
-        public override bool HandleEvent(BeginTakeActionEvent E)
+        public override bool HandleEvent(EndTurnEvent E)
         {
-            if (E.Object == ParentObject
-                && ParentObject.IsPlayer())
+            if (ParentObject.IsPlayer())
             {
                 UnityEngine.Debug.Log("<UD_Steath debug toggle witnesses>");
                 UnityEngine.Debug.Log(
@@ -97,7 +96,7 @@ namespace XRL.World.Parts
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
-            E.AddEntry(this, nameof(Witnesses), WitnessListString(GetWitnesses()));
+            E.AddEntry(this, nameof(Witnesses), WitnessListString(GetWitnesses()).Strip());
             E.AddEntry(this, nameof(Witnesses) + " " + nameof(Witnesses.Count), Witnesses?.Count ?? 0);
             return base.HandleEvent(E);
         }
@@ -108,11 +107,11 @@ namespace XRL.World.Parts
             {
                 if (WitnessesAwarenessLevels.IsNullOrEmpty()
                     || WitnessesAwarenessLevels.All(l => l < AwarenessLevel.Awake))
-                    E.ApplyColors("K", "w", 9999, 9999);
+                    E.ApplyColors("K", "w", int.MaxValue, int.MaxValue);
                 else
                 if (!WitnessesAwarenessLevels.IsNullOrEmpty()
                     && WitnessesAwarenessLevels.Any(l => l > AwarenessLevel.None))
-                    E.ApplyColors("w", "W", 9999, 9999);
+                    E.ApplyColors("w", "W", int.MaxValue, int.MaxValue);
             }
             return base.Render(E);
         }

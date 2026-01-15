@@ -17,14 +17,21 @@ namespace XRL.World.Parts
     {
         public static bool ConstantDebugOutput => UD_Stealth.ConstantDebugOutput;
 
+        #region Properties & Fields
+
         private Perceptions _Perceptions;
 
         public Perceptions Perceptions => _Perceptions ??= GetPerceptionsEvent.GetFor(ParentObject);
+
+        #region Debugging
 
         private BasePerception _BestPerception;
         public BasePerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
 
         public bool PlayerPerceptable;
+
+        #endregion
+        #endregion
 
         public UD_Witness()
         {
@@ -51,7 +58,8 @@ namespace XRL.World.Parts
                     (ParentObject?.DebugName?.Strip() ?? "no one") + " " + nameof(Perceptions) + ":\n" +
                     (Perceptions?.ToStringLines(Short: true) ?? "none??"));
 
-            if (ConstantDebugOutput)
+            if (ConstantDebugOutput
+                && !ParentObject.IsPlayer())
             {
                 _BestPerception = null;
                 PlayerPerceptable = The.Player is GameObject player
@@ -97,17 +105,19 @@ namespace XRL.World.Parts
         {
             if (ConstantDebugOutput
                 && The.Player is GameObject player
+                && !ParentObject.IsPlayer()
+                && PlayerPerceptable
                 && BestPerception != null
                 && BestPerception.GetAwareness(player) is AwarenessLevel playerAwareness)
             {
                 if (playerAwareness > AwarenessLevel.None)
-                    E.ApplyColors("Y", "y", 9999, 9999);
+                    E.ApplyColors("Y", "y", int.MaxValue, int.MaxValue);
                 else
                 if (playerAwareness > AwarenessLevel.Awake)
-                    E.ApplyColors("B", "b", 9999, 9999);
+                    E.ApplyColors("B", "b", int.MaxValue, int.MaxValue);
                 else
                 if (playerAwareness > AwarenessLevel.Suspect)
-                    E.ApplyColors("R", "r", 9999, 9999);
+                    E.ApplyColors("R", "r", int.MaxValue, int.MaxValue);
             }
             return base.Render(E);
         }

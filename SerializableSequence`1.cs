@@ -29,15 +29,19 @@ namespace StealthSystemPrototype
 
             public Enumerator(SerializableSequence<T> SerializableSequence)
             {
-                this.SerializableSequence = SerializableSequence;
-                Step = SerializableSequence.Steps.Start - 1;
-                LastValue = SerializableSequence.StartValue;
+                SerializableSequence.EnumeratorConstructorValues(
+                    SerializableSequence: out this.SerializableSequence,
+                    Step: out Step,
+                    LastValue: out LastValue);
             }
 
             public bool MoveNext()
             {
                 LastValue = Current;
-                return ++Step <= SerializableSequence.Steps.Length;
+                if (SerializableSequence.Direction == 0)
+                    return false;
+                Step += SerializableSequence.Direction;
+                return SerializableSequence.Steps.Contains(Step);
             }
 
             public void Reset()
@@ -70,15 +74,19 @@ namespace StealthSystemPrototype
 
             public PairEnumerator(SerializableSequence<T> SerializableSequence)
             {
-                this.SerializableSequence = SerializableSequence;
-                Step = SerializableSequence.Steps.Start - 1;
-                LastValue = SerializableSequence.StartValue;
+                SerializableSequence.EnumeratorConstructorValues(
+                    SerializableSequence: out this.SerializableSequence,
+                    Step: out Step,
+                    LastValue: out LastValue);
             }
 
             public bool MoveNext()
             {
                 LastValue = Current.Value;
-                return ++Step <= SerializableSequence.Steps.Length;
+                if (SerializableSequence.Direction == 0)
+                    return false;
+                Step += SerializableSequence.Direction;
+                return SerializableSequence.Steps.Contains(Step);
             }
 
             public void Reset()
@@ -105,6 +113,8 @@ namespace StealthSystemPrototype
         protected T StartValue;
 
         public int Count => Steps.Breadth();
+
+        public int Direction => Steps.Direction;
 
         #endregion
         #region Constructors
@@ -134,10 +144,13 @@ namespace StealthSystemPrototype
         public virtual string GetName(bool Short = false)
             => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
 
-        public virtual string ToString(bool Short)
+        public virtual string ToString(bool Short, string FormatString = "{0:0.00}")
             => GetName(Short) +
             "(){" +
-            GetStepValues().Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? "," : null) + String.Format("{0:0.000}", n)) +
+            GetStepValues()
+                ?.Aggregate(
+                    seed: "",
+                    func: (a, n) => a + (!a.IsNullOrEmpty() ? "," : null) + String.Format(FormatString, n)) +
             "}";
 
         public override string ToString()
@@ -185,6 +198,16 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+
+        public void EnumeratorConstructorValues(
+            out SerializableSequence<T> SerializableSequence,
+            out int Step,
+            out T LastValue)
+        {
+            SerializableSequence = this;
+            Step = Steps.Start - Direction;
+            LastValue = StartValue;
+        }
 
         public IEnumerable<T> GetStepValues()
             => this;

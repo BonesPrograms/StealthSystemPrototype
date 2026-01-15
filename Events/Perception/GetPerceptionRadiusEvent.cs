@@ -79,8 +79,7 @@ namespace StealthSystemPrototype.Events
         {
             base.UpdateFromStringyEvent();
 
-            if (StringyEvent?.GetParameter(nameof(BaseRadius)) is Radius baseRadius
-                )
+            if (StringyEvent?.GetParameter(nameof(BaseRadius)) is Radius baseRadius)
                 BaseRadius = baseRadius;
 
             if (StringyEvent?.GetParameter(nameof(Radius)) is Radius radius)
@@ -117,6 +116,11 @@ namespace StealthSystemPrototype.Events
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
 
+
+            UnityEngine.Debug.Log(" ".ThisManyTimes(4) +
+                nameof(E.BaseRadius) + ": " + (E.BaseRadius?.ToString() ?? "none") + ", " +
+                nameof(E.Radius) + ": " + (E.Radius?.ToString() ?? "none"));
+
             return E.GetRadius();
         }
 
@@ -125,7 +129,11 @@ namespace StealthSystemPrototype.Events
             InclusiveRange BaseClamp,
             int? Min = null,
             int? Max = null)
-            => Radius.SetClamp(new InclusiveRange(Min ?? BaseClamp.Start, Max ?? BaseClamp.Length).Clamp(BaseClamp));
+        {
+            int start = Min ?? BaseClamp.Min;
+            int length = start + (Max ?? BaseClamp.Max);
+            Radius.SetClamp(new InclusiveRange(start, length).Clamp(BaseClamp));
+        }
 
         private GetPerceptionRadiusEvent SetClamp(int? Min = null, int? Max = null)
         {
