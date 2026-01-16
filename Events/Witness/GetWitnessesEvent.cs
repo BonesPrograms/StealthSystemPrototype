@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 using XRL.World;
 using XRL.World.Parts;
@@ -21,6 +22,13 @@ namespace StealthSystemPrototype.Events
 
         public static List<GameObject> GetFor(GameObject Hider, List<GameObject> Witnesses = null)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Hider?.DebugName ?? "null"),
+                });
+
             if (!GameObject.Validate(ref Hider)
                 || FromPool(Hider, Witnesses) is not GetWitnessesEvent E)
                 return null;

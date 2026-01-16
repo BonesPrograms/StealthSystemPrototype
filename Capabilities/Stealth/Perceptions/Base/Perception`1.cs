@@ -48,6 +48,20 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            base.Write(Basis, Writer);
+            // do writing here
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            base.Read(Basis, Reader);
+            // do reading here
+        }
+
+        #endregion
 
         public abstract T GetBestSource(GameObject Owner = null);
 
@@ -55,20 +69,5 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => (Owner ?? this.Owner) is GameObject owner
             && owner == this.Owner;
 
-
-        #region Serialization
-
-        public override void Write(SerializationWriter Writer)
-        {
-            base.Write(Writer);
-            // do writing here
-        }
-        public override void Read(SerializationReader Reader)
-        {
-            base.Read(Reader);
-            // do reading here
-        }
-
-        #endregion
     }
 }

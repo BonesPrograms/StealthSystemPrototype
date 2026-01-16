@@ -26,22 +26,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
-
-
-
         #region Serialization
 
-        public override void Write(SerializationWriter Writer)
+        public override void Write(GameObject Basis, SerializationWriter Writer)
         {
-            base.Write(Writer);
-            // Write Here.
+            base.Write(Basis, Writer);
+            // do writing here
         }
-        public override void Read(SerializationReader Reader)
+        public override void Read(GameObject Basis, SerializationReader Reader)
         {
-            base.Read(Reader);
-            // Read Here.
+            base.Read(Basis, Reader);
+            // do reading here
         }
 
         #endregion
+
+
     }
 }

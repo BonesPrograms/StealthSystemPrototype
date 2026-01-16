@@ -10,6 +10,7 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
 using XRL.Rules;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Events
 {
@@ -93,10 +94,13 @@ namespace StealthSystemPrototype.Events
             ClampedDieRoll BaseDieRoll)
             where T : BasePerception
         {
-            UnityEngine.Debug.Log(
-                CallChain(nameof(GetPerceptionDieRollEvent), nameof(GetFor)) + "(" +
-                nameof(Perceiver) + ": " + (Perceiver?.DebugName ?? "no one") + ", " +
-                Perception.ToString());
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                        Debug.Arg(Perceiver?.DebugName ?? "null"),
+                        Debug.Arg(Perception.ToString()),
+                });
 
             if (!GameObject.Validate(ref Perceiver)
                 || FromPool(

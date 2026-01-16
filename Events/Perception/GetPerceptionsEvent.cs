@@ -7,6 +7,7 @@ using XRL.World.Anatomy;
 using XRL.World.Parts;
 
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Events
 {
@@ -20,10 +21,17 @@ namespace StealthSystemPrototype.Events
         {
         }
 
-        public static Perceptions GetFor(GameObject Perceiver)
+        public static PerceptionRack GetFor(GameObject Perceiver)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Perceiver?.DebugName ?? "null"),
+                });
+
             if (!GameObject.Validate(ref Perceiver)
-                || FromPool(Perceiver, new Perceptions(Perceiver)) is not GetPerceptionsEvent E)
+                || FromPool(Perceiver, new PerceptionRack(Perceiver)) is not GetPerceptionsEvent E)
                 return null;
 
             bool proceed = true;

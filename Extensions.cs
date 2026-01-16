@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL;
 using XRL.World;
 using XRL.World.AI;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 using XRL.Rules;
 
+using Range = System.Range;
+
 using StealthSystemPrototype.Capabilities.Stealth;
 
 using static StealthSystemPrototype.Utils;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype
 {
@@ -30,6 +34,14 @@ namespace StealthSystemPrototype
 
         public static DieRoll AdjustDieCount(this DieRoll DieRoll, int Amount)
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(DieRoll), DieRoll),
+                    Debug.Arg(nameof(Amount), Amount),
+                });
+
             if (DieRoll.FindType(DieRoll.TYPE_DIE) == null)
                 throw new ArgumentException("Must have " + nameof(DieRoll.TYPE_DIE) + " (" + DieRoll.TYPE_DIE + ")", nameof(DieRoll));
 
@@ -55,6 +67,14 @@ namespace StealthSystemPrototype
 
         public static DieRoll SetMin(this DieRoll DieRoll, int Min)
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(DieRoll), DieRoll),
+                    Debug.Arg(nameof(Min), Min),
+                });
+
             if (!DieRoll.IsConstantOnlyRangeType())
                 throw new ArgumentException("Must have " + nameof(DieRoll.TYPE_RANGE) + " (" + DieRoll.TYPE_RANGE + ")", nameof(DieRoll));
 
@@ -73,6 +93,14 @@ namespace StealthSystemPrototype
 
         public static DieRoll SetMax(this DieRoll DieRoll, int Max)
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(DieRoll), DieRoll),
+                    Debug.Arg(nameof(Max), Max),
+                });
+
             if (!DieRoll.IsConstantOnlyRangeType())
                 throw new ArgumentException("Must have " + nameof(DieRoll.TYPE_RANGE) + " (" + DieRoll.TYPE_RANGE + ")", nameof(DieRoll));
 
@@ -123,7 +151,10 @@ namespace StealthSystemPrototype
             => DieRoll.TryClamp(Range.Min, Range.Max, out OutDieRoll);
 
         public static DieRoll ToDieRoll(this Range Range)
-            => new(DieRoll.TYPE_RANGE, Math.Min(Range.Start.GetIntValue(), Range.End.GetIntValue()), Math.Max(Range.Start.GetIntValue(), Range.End.GetIntValue()));
+            => new(
+                Type: DieRoll.TYPE_RANGE,
+                Left: Math.Min(Range.Start.GetIntValue(), Range.End.GetIntValue()),
+                Right: Math.Max(Range.Start.GetIntValue(), Range.End.GetIntValue()));
 
         #endregion
         #region Generic Conditionals
@@ -270,8 +301,51 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-        #region Strings
+        #region GameObject
 
+        public static PerceptionRack GetPerceptions(this GameObject Object)
+            => Object?.GetPart<UD_PerceptionHelper>()?.Perceptions;
+
+        public static bool HasPerception<T>(this GameObject Object, T Item = null)
+            where T : BasePerception, new()
+            => Object
+                ?.GetPerceptions()
+                ?.ContainsType(Item?.GetType() ?? typeof(T))
+            ?? false;
+
+        public static T GetPerception<T>(this GameObject Object)
+            where T : BasePerception, new()
+        {
+            if (Object.GetPerceptions() is not PerceptionRack perceptions)
+                return null;
+
+            for (int i = 0; i < perceptions.Count; i++)
+                if (perceptions[i].GetType() == typeof(T))
+                    return perceptions[i] as T;
+
+            return null;
+        }
+
+        public static BasePerception GetPerception(this GameObject Object, string Name)
+            => Object?.GetPerceptions().AsEnumerable(
+                    p => Name.EqualsAny(new string[]
+                        {
+                            p.Name,
+                            p.ShortName,
+                            p.GetType().Name,
+                            p.GetType().ToString(),
+                        }))
+                ?.FirstOrDefault();
+
+        public static BasePerception GetFirstPerceptionOfSense(this GameObject Object, PerceptionSense Sense)
+            => Object?.GetPerceptions().AsEnumerable(p => p.Sense == Sense)?.FirstOrDefault();
+
+        public static bool TryGetPerception<T>(this GameObject Object, out T Item)
+            where T : BasePerception, new()
+            => (Item = Object.GetPerception<T>()) != null;
+
+        #endregion
+        #region Strings
         public static string MiniDebugName(this GameObject Object)
             => (Object?.ID ?? "#") + ":" + (Object?.GetReferenceDisplayName(WithoutTitles: true, Short: true)?.Strip() ?? "no one");
 
@@ -352,6 +426,42 @@ namespace StealthSystemPrototype
             ? D.ToString()
             : String.Format(WithDigitsFormat(Digits), D);
 
+        public static string ToStringWithNum<T>(this T Enum)
+            where T : struct, Enum
+            => (Enum is int intEnum)
+            ? Enum + "(" + intEnum + ")"
+            : Enum.ToString();
+
+        public static string SafeJoin<T>(this IEnumerable<T> Enumerable, string Delimiter = ", ")
+            => (Enumerable != null
+                && Enumerable.Count() > 0)
+            ? Enumerable.Aggregate(
+                seed: "",
+                func: (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString())
+            : null;
+
+        public static string ValueUnits(this TimeSpan Duration)
+        {
+            string durationUnit = "minute";
+            double durationValue = Duration.TotalMinutes;
+            if (Duration.TotalMinutes < 1)
+            {
+                durationUnit = "second";
+                durationValue = Duration.TotalSeconds;
+            }
+            if (Duration.TotalSeconds < 1)
+            {
+                durationUnit = "millisecond";
+                durationValue = Duration.TotalMilliseconds;
+            }
+            if (Duration.TotalMilliseconds < 1)
+            {
+                durationUnit = "microsecond";
+                durationValue = Duration.TotalMilliseconds / 1000;
+            }
+            return durationValue.Things(durationUnit);
+        }
+
         #endregion
         #region Anatomy
 
@@ -417,6 +527,14 @@ namespace StealthSystemPrototype
 
         public static bool HasLOSTo(this Cell Cell, Cell OtherCell)
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Cell?.ParentZone?.ZoneID + "[" + (Cell?.Location ?? new(-1,-1)) + "]"),
+                    Debug.Arg(OtherCell?.ParentZone?.ZoneID + "[" + (OtherCell?.Location ?? new(-1,-1)) + "]"),
+                });
+
             if (Cell == null
                 || OtherCell == null)
                 return false;
@@ -449,6 +567,19 @@ namespace StealthSystemPrototype
 
         public static IEnumerable<Cell> GetCellsInACosmeticCircleSilent(this Cell Cell, int Radius)
         {
+            bool debug = true;
+            if (debug)
+            {
+                using Indent indent = new(1);
+                Debug.LogMethod(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(nameof(Cell), Cell?.ParentZone?.ZoneID + "[" + (Cell?.Location ?? new(-1,-1)) + "]"),
+                        Debug.Arg(nameof(Radius), Radius),
+                    });
+                debug = false;
+            }
+
             int yRadius = (int)Math.Max(1.0, (double)Radius * 0.66);
             float radiusSquared = Radius * Radius;
             for (int x = Cell.X - Radius; x <= Cell.X + Radius; x++)
@@ -501,48 +632,41 @@ namespace StealthSystemPrototype
         #endregion
         #region Ranges
 
+        public static int Sum(this Range Range, bool IncludeIntermediateValues)
+            => new InclusiveRange(Range).Sum(IncludeIntermediateValues);
+
         public static int Sum(this Range Range)
-            => new InclusiveRange(Range).Sum();
+            => Range.Sum(false);
 
         public static int Average(this Range Range)
             => new InclusiveRange(Range).Average();
 
         public static int Breadth(this Range Range)
-            => new InclusiveRange(Range).Breadth();
+            => new InclusiveRange(Range).AbsLength;
 
         public static int Floor(this Range Range)
             => new InclusiveRange(Range).Start;
 
         public static int Ceiling(this Range Range)
-            => new InclusiveRange(Range).Length;
-
-        public static IEnumerable<int> GetValues(this Range Range, int Offset = 0, int Step = 1)
-        {
-            if (Range.Equals(Range.All)
-                || Range.Equals(default))
-                yield break;
-
-            for (int i = Offset + Range.Start.Value; i < Offset + Range.End.Value; i++)
-                yield return i * Step;
-        }
+            => new InclusiveRange(Range).End;
 
         #endregion
         #region InclusiveRanges
 
-        public static DieRoll GetDieRoll(this InclusiveRange Breadth)
-            => new(DieRoll.TYPE_RANGE, Breadth.Start, Breadth.Length);
+        public static DieRoll GetDieRoll(this InclusiveRange InclusiveRange)
+            => new(DieRoll.TYPE_RANGE, InclusiveRange.Start, InclusiveRange.End);
 
-        public static int Roll(this InclusiveRange Breadth)
-            => Stat.Roll(Breadth.Start, Breadth.Length);
+        public static int Roll(this InclusiveRange InclusiveRange)
+            => Stat.Roll(InclusiveRange.Start, InclusiveRange.End);
 
-        public static int Random(this InclusiveRange Breadth)
-            => Stat.Random(Breadth.Start, Breadth.Length);
+        public static int Random(this InclusiveRange InclusiveRange)
+            => Stat.Random(InclusiveRange.Start, InclusiveRange.End);
 
-        public static int RandomCosmetic(this InclusiveRange Breadth)
-            => Stat.RandomCosmetic(Breadth.Start, Breadth.Length);
+        public static int RandomCosmetic(this InclusiveRange InclusiveRange)
+            => Stat.RandomCosmetic(InclusiveRange.Start, InclusiveRange.End);
 
-        public static int SeededRandom(this InclusiveRange Breadth, string Seed)
-            => Stat.SeededRandom(Seed, Breadth.Start, Breadth.Length);
+        public static int SeededRandom(this InclusiveRange InclusiveRange, string Seed)
+            => Stat.SeededRandom(Seed, InclusiveRange.Start, InclusiveRange.End);
 
         #endregion
         #region Comparison

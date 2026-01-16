@@ -112,9 +112,10 @@ namespace StealthSystemPrototype
         protected InclusiveRange Steps;
         protected T StartValue;
 
-        public int Count => Steps.Breadth();
-
+        public int Count => Steps.AbsLength;
         public int Direction => Steps.Direction;
+        public bool IsForward => Steps.IsForward;
+        public bool IsBackwards => Steps.IsBackwards;
 
         #endregion
         #region Constructors

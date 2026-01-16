@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL.World.Anatomy;
+using XRL.World.Parts.Mutation;
+
 using StealthSystemPrototype;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Logging;
 
-using XRL.World.Anatomy;
-using XRL.World.Parts.Mutation;
+using static StealthSystemPrototype.Utils;
 
 namespace XRL.World.Parts
 {
@@ -17,6 +20,8 @@ namespace XRL.World.Parts
         : IScribedPart
         , IPerceptionEventHandler
     {
+        #region Static & Const
+
         public const string ANIMAL_BLUEPRINT = "Animal";
 
         public static List<string> VisionMutations => MutationFactory.AllMutationEntries()
@@ -42,11 +47,48 @@ namespace XRL.World.Parts
             "MutationAdded",
         };
 
-        public UD_Witness WitnessPart => ParentObject?.GetPart<UD_Witness>();
+        #endregion
+        #region Properties & Fields
+
+        private PerceptionRack _Perceptions;
+        public PerceptionRack Perceptions => _Perceptions ??= GetPerceptionsEvent.GetFor(ParentObject);
+
+        #region Debugging
+
+        private BasePerception _BestPerception;
+        public BasePerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
+
+        #endregion
+        #endregion
 
         public UD_PerceptionHelper()
         {
+            _Perceptions = null;
+            _BestPerception = null;
         }
+
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            Writer.WriteObject(_Perceptions);
+            Writer.WriteObject(_BestPerception);
+            base.Write(Basis, Writer);
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            _Perceptions = Reader.ReadObject() as PerceptionRack;
+            _BestPerception = Reader.ReadObject() as BasePerception;
+            base.Read(Basis, Reader);
+        }
+
+        #endregion
+
+        public void ClearPerceptions()
+            => _Perceptions = null;
+
+        public void ClearBestPerception()
+            => _BestPerception = null;
 
         #region Event Handling
 
@@ -63,7 +105,7 @@ namespace XRL.World.Parts
             if (!IsClearPerceptionsMinEvent(E.ID))
                 return false;
 
-            WitnessPart?.ClearPerceptions();
+            ClearPerceptions();
             return true;
         }
         private bool ClearPerceptions(Event E)
@@ -71,8 +113,22 @@ namespace XRL.World.Parts
             if (!IsClearPerceptionsStringyEvent(E.ID))
                 return false;
 
-            WitnessPart?.ClearPerceptions();
+            ClearPerceptions();
             return true;
+        }
+
+        public bool PerceptionsWantsEvent(int ID, int Cascade)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(ID), ID),
+                    Debug.Arg(nameof(Cascade), Cascade),
+                });
+
+            return Perceptions != null
+            && Perceptions.WantDispatch(ID, Cascade);
         }
 
         public override void Register(GameObject Object, IEventRegistrar Registrar)
@@ -85,15 +141,42 @@ namespace XRL.World.Parts
         public override bool FireEvent(Event E)
         {
             ClearPerceptions(E);
+
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), E?.ID),
+                });
+
+            if (Perceptions != null
+                && !Perceptions.FireEvent(E))
+                return false;
+
             return base.FireEvent(E);
         }
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
+            || PerceptionsWantsEvent(ID, Cascade)
             || IsClearPerceptionsMinEvent(ID)
             || ID == GetPerceptionsEvent.ID
             || ID == GetPerceptionDieRollEvent.ID
             || ID == GetPerceptionRadiusEvent.ID
+            || ID == GetDebugInternalsEvent.ID
             ;
+        public override bool HandleEvent(MinEvent E)
+        {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E?.GetType()?.ToStringWithGenerics()),
+                });
+
+            return (Perceptions == null
+                    || Perceptions.HandleEvent(E))
+                && base.HandleEvent(E);
+        }
         public override bool HandleEvent(RegenerateDefaultEquipmentEvent E)
         {
             ProcessMutationAddedEvent(E);
@@ -111,6 +194,14 @@ namespace XRL.World.Parts
         }
         public virtual bool HandleEvent(GetPerceptionsEvent E)
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E.GetType().ToStringWithGenerics()),
+                    Debug.Arg(ParentObject?.DebugName ?? "null"),
+                });
+
             E.AddPerception(new Visual(ParentObject));
             E.AddPerception(new Auditory(ParentObject));
             E.AddPerception(new Olfactory(ParentObject));
@@ -142,10 +233,14 @@ namespace XRL.World.Parts
         }
         public bool HandleEvent(GetPerceptionDieRollEvent E)
         {
-            UnityEngine.Debug.Log(
-                (ParentObject?.DebugName ?? "null") + " " + 
-                nameof(GetPerceptionDieRollEvent) + " -> " + 
-                (E.Name ?? "no type?"));
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E.GetType().ToStringWithGenerics()),
+                    Debug.Arg(E.Name),
+                    Debug.Arg(ParentObject?.DebugName ?? "null"),
+                });
 
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations
@@ -181,10 +276,14 @@ namespace XRL.World.Parts
         }
         public bool HandleEvent(GetPerceptionRadiusEvent E)
         {
-            UnityEngine.Debug.Log(
-                (ParentObject?.DebugName ?? "null") + " " + 
-                nameof(GetPerceptionRadiusEvent) + " -> " + 
-                (E.Name ?? "no type?"));
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E.GetType().ToStringWithGenerics()),
+                    Debug.Arg(E.Name),
+                    Debug.Arg(ParentObject?.DebugName ?? "null"),
+                });
 
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations
@@ -216,6 +315,14 @@ namespace XRL.World.Parts
                 if (facesList.Count < 1)
                     E.SetMaxRadius(0);
             }
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(GetDebugInternalsEvent E)
+        {
+            E.AddEntry(
+                Part: this,
+                Name: nameof(Perceptions),
+                Value: Perceptions?.ToStringLines(Short: true, Entity: The.Player, UseLastRoll: true) ?? "none??");
             return base.HandleEvent(E);
         }
 

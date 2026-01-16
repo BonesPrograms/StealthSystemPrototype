@@ -7,26 +7,26 @@ using StealthSystemPrototype;
 using StealthSystemPrototype.Capabilities.Stealth;
 
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Logging;
 
 using XRL.World.AI.Pathfinding;
 
 namespace XRL.World.Parts
 {
     [Serializable]
-    public class UD_Witness : IScribedPart, IModEventHandler<GetWitnessesEvent>
+    public class UD_Witness : IScribedPart, IWitnessEventHandler
     {
         public static bool ConstantDebugOutput => UD_Stealth.ConstantDebugOutput;
 
         #region Properties & Fields
 
-        private Perceptions _Perceptions;
+        private UD_PerceptionHelper PerceptionHelper => ParentObject?.GetPart<UD_PerceptionHelper>();
 
-        public Perceptions Perceptions => _Perceptions ??= GetPerceptionsEvent.GetFor(ParentObject);
+        public PerceptionRack Perceptions => ParentObject?.GetPerceptions();
 
         #region Debugging
 
-        private BasePerception _BestPerception;
-        public BasePerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
+        public BasePerception BestPerception => PerceptionHelper?.BestPerception;
 
         public bool PlayerPerceptable;
 
@@ -35,13 +35,26 @@ namespace XRL.World.Parts
 
         public UD_Witness()
         {
-            _Perceptions = null;
-            _BestPerception = null;
             PlayerPerceptable = false;
         }
 
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            base.Write(Basis, Writer);
+            // do writing here.
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            base.Read(Basis, Reader);
+            // do reading here.
+        }
+
+        #endregion
+
         public void ClearPerceptions()
-            => _Perceptions = null;
+            => PerceptionHelper.ClearPerceptions();
 
         #region Event Handling
 
@@ -54,14 +67,17 @@ namespace XRL.World.Parts
         public override bool HandleEvent(BeforeTakeActionEvent E)
         {
             if (ConstantDebugOutput && false)
-                UnityEngine.Debug.Log(
-                    (ParentObject?.DebugName?.Strip() ?? "no one") + " " + nameof(Perceptions) + ":\n" +
-                    (Perceptions?.ToStringLines(Short: true) ?? "none??"));
+            {
+                using Indent indent = new(1);
+                Debug.Log((ParentObject?.DebugName?.Strip() ?? "no one") + " " + nameof(Perceptions) + ":", Indent: indent);
+                Debug.Log(Perceptions?.ToString(Delimiter: indent[1] + "\n", Short: true, null) ?? indent[1] + "none??", Indent: indent);
+            }
 
             if (ConstantDebugOutput
                 && !ParentObject.IsPlayer())
             {
-                _BestPerception = null;
+                PerceptionHelper?.ClearBestPerception();
+
                 PlayerPerceptable = The.Player is GameObject player
                     && player.TryGetPart(out UD_Stealth stealth)
                     && !stealth.Witnesses.IsNullOrEmpty()
@@ -79,14 +95,18 @@ namespace XRL.World.Parts
             if (ParentObject != E.Hider
                 && !ParentObject.InSamePartyAs(E.Hider))
             {
-                UnityEngine.Debug.Log(
-                    (ParentObject?.DebugName ?? "null") + " " +
-                    nameof(GetWitnessesEvent) + " -> " +
-                    nameof(Perceptions) + " (" + (Perceptions?.Count ?? 0) + ")");
+                using Indent indent = new(1);
+                Debug.LogMethod(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(E.GetType().ToStringWithGenerics()),
+                        Debug.Arg(ParentObject?.DebugName ?? "null"),
+                        Debug.Arg(nameof(Perceptions), Perceptions?.Count ?? 0),
+                    });
 
                 if (Perceptions.GetAwareness(E.Hider, out BasePerception perception) > AwarenessLevel.None)
                 {
-                    UnityEngine.Debug.Log(" ".ThisManyTimes(4) + perception.ToString(Short: true));
+                    Debug.Log(perception.ToString(Short: true), Indent: indent[1]);
                     E.AddWitness(perception);
                 }
             }
@@ -95,10 +115,6 @@ namespace XRL.World.Parts
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
-            E.AddEntry(
-                Part: this,
-                Name: nameof(Perceptions),
-                Value: Perceptions?.ToStringLines(Short: true, Entity: The.Player, UseLastRoll: true) ?? "none??");
             return base.HandleEvent(E);
         }
         public override bool Render(RenderEvent E)
@@ -120,23 +136,6 @@ namespace XRL.World.Parts
                     E.ApplyColors("R", "r", int.MaxValue, int.MaxValue);
             }
             return base.Render(E);
-        }
-
-        #endregion
-
-        #region Serialization
-
-        public override void Write(GameObject Basis, SerializationWriter Writer)
-        {
-            Writer.WriteObject(_Perceptions);
-            Writer.WriteObject(_BestPerception);
-            base.Write(Basis, Writer);
-        }
-        public override void Read(GameObject Basis, SerializationReader Reader)
-        {
-            _Perceptions = Reader.ReadObject() as Perceptions;
-            _BestPerception = Reader.ReadObject() as BasePerception;
-            base.Read(Basis, Reader);
         }
 
         #endregion

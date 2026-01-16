@@ -9,6 +9,7 @@ using StealthSystemPrototype.Capabilities.Stealth;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Events
 {
@@ -92,10 +93,13 @@ namespace StealthSystemPrototype.Events
             Radius BaseRadius)
             where T : BasePerception
         {
-            UnityEngine.Debug.Log(
-                CallChain(nameof(GetPerceptionRadiusEvent), nameof(GetFor)) + "(" +
-                nameof(Perceiver) + ": " + (Perceiver?.DebugName ?? "no one") + ", " +
-                Perception.ToString());
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                        Debug.Arg(Perceiver?.DebugName ?? "null"),
+                        Debug.Arg(Perception.ToString()),
+                });
 
             if (!GameObject.Validate(ref Perceiver)
                 || FromPool(
@@ -116,10 +120,8 @@ namespace StealthSystemPrototype.Events
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
 
-
-            UnityEngine.Debug.Log(" ".ThisManyTimes(4) +
-                nameof(E.BaseRadius) + ": " + (E.BaseRadius?.ToString() ?? "none") + ", " +
-                nameof(E.Radius) + ": " + (E.Radius?.ToString() ?? "none"));
+            Debug.Log(nameof(E.BaseRadius), (E.BaseRadius?.ToString() ?? "none"), Indent: indent[1]);
+            Debug.Log(nameof(E.Radius), (E.Radius?.ToString() ?? "none"), Indent: indent[1]);
 
             return E.GetRadius();
         }

@@ -84,7 +84,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => SetClamp(Clamp.AdjustBy(Amount).Clamp(Clamp));
 
         public ClampedDieRoll AdjustClampBy(InclusiveRange OtherRange)
-            => SetClamp(Clamp.AdjustBy(OtherRange).Clamp(Clamp));
+            => SetClamp(Clamp.AdjustByValues(OtherRange).Clamp(Clamp));
 
         public int Average()
             => (int)GetDieRoll().Average();

@@ -27,6 +27,20 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            base.Write(Basis, Writer);
+            // do writing here
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            base.Read(Basis, Reader);
+            // do reading here
+        }
+
+        #endregion
 
         public override bool Validate(GameObject Owner = null)
         {
@@ -43,20 +57,5 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return true;
         }
-
-        #region Serialization
-
-        public override void Write(SerializationWriter Writer)
-        {
-            base.Write(Writer);
-            // Write Here.
-        }
-        public override void Read(SerializationReader Reader)
-        {
-            base.Read(Reader);
-            // Read Here.
-        }
-
-        #endregion
     }
 }

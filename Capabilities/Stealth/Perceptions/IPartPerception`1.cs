@@ -61,6 +61,20 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            base.Write(Basis, Writer);
+            // do writing here
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            base.Read(Basis, Reader);
+            // do reading here
+        }
+
+        #endregion
 
         public virtual List<T> GetPotentialSources(GameObject Owner = null)
             => (Owner ?? this.Owner)?.GetPartsDescendedFrom<T>();
@@ -86,20 +100,5 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return Owner.HasPart<T>();
         }
-
-        #region Serialization
-
-        public override void Write(SerializationWriter Writer)
-        {
-            base.Write(Writer);
-            // do writing here
-        }
-        public override void Read(SerializationReader Reader)
-        {
-            base.Read(Reader);
-            // do reading here
-        }
-
-        #endregion
     }
 }

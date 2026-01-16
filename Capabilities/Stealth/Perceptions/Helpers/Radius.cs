@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using StealthSystemPrototype.Logging;
+
 using XRL.World;
 
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
@@ -38,6 +40,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public RadiusFlags Flags;
         private BaseDoubleDiffuser DiffusionSequence;
 
+        private double[] _Diffusions;
+
         public int EffectiveValue => GetEffectiveValue();
 
         #region Constructors
@@ -48,10 +52,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Clamp = default;
             Flags = RadiusFlags.None;
             DiffusionSequence = null;
+            _Diffusions = null;
         }
         public Radius(int Value, InclusiveRange Clamp, RadiusFlags Flags, BaseDoubleDiffuser DiffusionSequence = null)
-            : base()
+            : this()
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Value), Value),
+                    Debug.Arg(nameof(Clamp), Clamp),
+                    Debug.Arg(nameof(Flags), Flags),
+                    Debug.Arg(nameof(DiffusionSequence), DiffusionSequence),
+                });
+
             this.Value = Value;
             this.Clamp = Clamp;
             this.Flags = Flags;
@@ -148,7 +163,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => SetClamp(Clamp.AdjustBy(Amount).Clamp(Clamp));
 
         public Radius AdjustClampBy(InclusiveRange OtherRange)
-            => SetClamp(Clamp.AdjustBy(OtherRange).Clamp(Clamp));
+            => SetClamp(Clamp.AdjustByValues(OtherRange).Clamp(Clamp));
 
         #region Predicates
 
@@ -187,8 +202,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public double[] Diffusions()
             => Diffuses()
                 && DiffusionSequence?.SetSteps(GetValue()) != null
-            ? DiffusionSequence[..]
-            : new double[GetValue()].Select(d => 1.0).ToArray();
+            ? _Diffusions ??= DiffusionSequence[..]
+            : _Diffusions ??= new double[GetValue()].Select(d => 1.0).ToArray();
 
         public double GetDiffusion(int Distance)
             => Diffusions()[Distance.Clamp(AsInclusiveRange())];

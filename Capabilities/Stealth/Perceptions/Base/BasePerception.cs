@@ -9,13 +9,41 @@ using XRL.World;
 using StealthSystemPrototype.Events;
 using static StealthSystemPrototype.Utils;
 using XRL.World.AI.Pathfinding;
+using XRL;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public abstract class BasePerception : IComposite, IComparable<BasePerception>
+    public abstract class BasePerception
+        : IComponent<GameObject>,
+        IComparable<BasePerception>,
+        IWitnessEventHandler,
+        IPerceptionEventHandler
     {
         #region Helpers
+
+        public class EventBinder : IEventBinder
+        {
+            public static readonly EventBinder Instance = new();
+
+            public override void WriteBind(SerializationWriter Writer, IEventHandler Handler, int ID)
+            {
+                Writer.WriteGameObject(((BasePerception)Handler).Owner, Reference: true);
+                Writer.WriteTokenized(Handler.GetType());
+            }
+
+            public override IEventHandler ReadBind(SerializationReader Reader, int ID)
+            {
+                GameObject owner = Reader.ReadGameObject();
+                Type type = Reader.ReadTokenizedType();
+                foreach (BasePerception perception in owner?.GetPerceptions() ?? new())
+                    if ((object)perception.GetType() == type)
+                        return perception;
+
+                return null;
+            }
+        }
 
         public class RatingComparer : IComparer<BasePerception>
         {
@@ -74,10 +102,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        #region Instance PropFields
+        #region Instance Fields & Properties
 
-        public string Name => GetName();
-        public string ShortName => GetName(true);
+        public sealed override IEventBinder Binder => EventBinder.Instance;
+
+        private string _Name;
+        public string Name => _Name ??= GetName();
+
+        private string _ShortName;
+        public string ShortName => _ShortName ??= GetName(true);
 
         public GameObject Owner;
 
@@ -105,6 +138,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         [NonSerialized]
         protected bool WantsToClearRating;
 
+        [NonSerialized]
+        protected List<Cell> _RadiusAreaCells;
+
+        public List<Cell> RadiusAreaCells => _RadiusAreaCells ??= GetRadiusAreaCells();
+
         #endregion
 
         #region Constructors
@@ -124,6 +162,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             LastEntityID = null;
 
             WantsToClearRating = false;
+
+            _RadiusAreaCells = null;
         }
         public BasePerception(GameObject Owner)
             : this()
@@ -149,6 +189,29 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            base.Write(Basis, Writer);
+            ClampedDieRoll.WriteOptimized(Writer, BaseDieRoll);
+            Radius.WriteOptimized(Writer, BaseRadius);
+            ClampedDieRoll.WriteOptimized(Writer, DieRoll);
+            Radius.WriteOptimized(Writer, Radius);
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            base.Read(Basis, Reader);
+            BaseDieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
+            BaseRadius = Radius.ReadOptimizedRadius(Reader);
+            _DieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
+            _Radius = Radius.ReadOptimizedRadius(Reader);
+        }
+
+        #endregion
+
+        public override GameObject GetComponentBasis()
+            => Owner;
 
         #region Abstract Methods
 
@@ -159,6 +222,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual int GetBonusDieRoll() => 0;
         public virtual int GetBonusRadius() => 0;
+
+        #endregion
+        #region Virtual HandleEvent
+
+        public virtual bool HandleEvent(GetWitnessesEvent E)
+            => true;
+
+        public virtual bool HandleEvent(GetPerceptionsEvent E)
+            => true;
+
+        public virtual bool HandleEvent(GetPerceptionDieRollEvent E)
+            => true;
+
+        public virtual bool HandleEvent(GetPerceptionRadiusEvent E)
+            => true;
 
         #endregion
 
@@ -189,7 +267,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 AwarenessLevel awareness = GetAwareness(Entity, out int rollValue, UseLastRoll);
                 rollString = "(" + awareness.ToString() + ":" + rollValue + ")";
             }
-            return GetName(Short) + "[" + BaseDieRoll + ":@R:" + BaseRadius + "]" + rollString;
+            return ShortName + "[" + BaseDieRoll + ":@R:" + BaseRadius + "]" + rollString;
         }
 
         public override string ToString()
@@ -207,20 +285,22 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             ClearRadius();
         }
 
-        public int CompareTo(BasePerception other)
-        {
-            if (EitherNull(this, other, out int comparison))
-                return comparison;
-
-            int dieRollComp = (DieRoll.Average() - other.DieRoll.Average()) - (other.DieRoll.Breadth() - DieRoll.Breadth());
-            if (dieRollComp != 0)
-                return dieRollComp;
-
-            return Radius.CompareTo(other.Radius);
-        }
+        public virtual List<Cell> GetRadiusAreaCells()
+            => Radius.IsArea()
+                && Owner?.CurrentCell?.GetCellsInACosmeticCircle(Radius) is IEnumerable<Cell> cells
+            ? Event.NewCellList(cells)
+            : Event.NewCellList();
 
         public bool CheckInRadius(GameObject Entity, out int Distance, out FindPath PerceptionPath)
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
+                });
+
             PerceptionPath = null;
             Distance = default;
 
@@ -229,13 +309,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             if (Entity?.CurrentCell is not Cell { InActiveZone: true } entityCell)
             {
-                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + Entity.DebugName + " not in active zone.");
+                Debug.CheckNah(nameof(Entity), "Not in active zone", Indent: indent[1]);
                 return false;
             }
 
             if (Owner?.CurrentCell is not Cell { InActiveZone: true } myCell)
             {
-                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + Owner.DebugName + " not in active zone.");
+                Debug.CheckNah(nameof(Owner), "Not in active zone", Indent: indent[1]);
                 return false;
             }
 
@@ -249,27 +329,66 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     || entityCell.HasLOSTo(myCell))
                     any = radiusValue >= Distance || any;
                 else
-                    UnityEngine.Debug.Log(" ".ThisManyTimes(4) +
-                        Owner.MiniDebugName() +
-                        " does not have LOS to " +
-                        Entity.MiniDebugName());
+                    Debug.CheckNah(
+                        Message: Owner.MiniDebugName() +
+                            " does not have LOS to " +
+                            Entity.MiniDebugName(),
+                        Indent: indent[1]);
             }
             if (Radius.IsArea())
             {
-                if (myCell.GetCellsInACosmeticCircle(Radius).Contains(entityCell))
-                    any = (!Occludes || entityCell.HasLOSTo(myCell)) || any;
+                if (RadiusAreaCells.Contains(entityCell))
+                {
+                    if (!Occludes
+                        || entityCell.HasLOSTo(myCell))
+                        any = true;
+                    else
+                        Debug.CheckNah(
+                            Message: "Area around " +
+                                Owner.MiniDebugName() +
+                                " contains " +
+                                Entity.MiniDebugName() +
+                                ", but does not have LOS",
+                            Indent: indent[1]);
+                }
+                else
+                    Debug.CheckNah(
+                        Message: "Area around " + 
+                            Owner.MiniDebugName() +
+                            " does not contain " +
+                            Entity.MiniDebugName(),
+                        Indent: indent[1]);
             }
             if (Radius.IsPathing())
             {
                 PerceptionPath = new(myCell, entityCell);
                 if (PerceptionPath.Steps is List<Cell> pathSteps)
-                    any = pathSteps.Count >= radiusValue || any;
+                {
+                    if (pathSteps.Count >= radiusValue)
+                        any = true;
+                    else
+                        Debug.CheckNah(
+                            Message: "Perception path from " +
+                                Owner.MiniDebugName() + 
+                                " is too long to reach " +
+                                Entity.MiniDebugName() ,
+                            Indent: indent[1]);
+                }
             }
+            Debug.YehNah(nameof(any), any, any, Indent: indent[1]);
             return any;
         }
 
         public virtual int Roll(GameObject Entity, bool UseLastRoll = false)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
+                });
+
             if (!CheckInRadius(Entity, out int distance, out FindPath perceptionPath))
                 return 0;
 
@@ -285,23 +404,63 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             double diffusion = Radius.GetDiffusion(distance);
 
-            roll = (int)(roll * Radius.GetDiffusion(distance));
+            roll = (int)Math.Floor(roll * Radius.GetDiffusion(distance));
 
-            UnityEngine.Debug.Log(" ".ThisManyTimes(4) +
-                GetName() + "(" +
-                nameof(roll) + ": " + roll + " | " +
-                nameof(distance) + ": " + distance + " | " +
-                nameof(Diffuses) + ": " + Diffuses.ToString() + ", " + String.Format("{0:0.000}", diffusion) + " (" + distance.Clamp(new(Radius.GetValue())) + "/" + (Radius.Diffusions()?.Count() ?? 0) + ") | " +
-                nameof(DieRoll) + ": " + DieRoll + ")");
+            Debug.Log(nameof(roll), roll, Indent: indent[1]);
+            Debug.Log(nameof(distance), distance, Indent: indent[1]);
 
-            UnityEngine.Debug.Log(" ".ThisManyTimes(8) +
-                Radius.GetDiffusionDebug());
+            string diffussesString = Diffuses.ToString() + ", " + diffusion.WithDigits(3);
+            string diffusionCountString = distance.Clamp(new(Radius.GetValue())) + "/" + (Radius.Diffusions()?.Count() ?? 0);
+            Debug.Log(nameof(Diffuses), diffussesString + " (" + diffusionCountString + ")", Indent: indent[1]);
+            Debug.Log(Radius.GetDiffusionDebug(), Indent: indent[2]);
+
+            Debug.Log(nameof(DieRoll), DieRoll, Indent: indent[1]);
 
             return roll;
         }
+        public virtual int RollAdvantage(GameObject Entity, bool AgainstLastRoll = false)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(AgainstLastRoll), AgainstLastRoll),
+                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
+                });
+
+            GetMinMax(out _, out int max, Roll(Entity, AgainstLastRoll), Roll(Entity, false));
+            return max;
+        }
+        public virtual int RollDisadvantage(GameObject Entity, bool AgainstLastRoll = false)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(AgainstLastRoll), AgainstLastRoll),
+                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
+                });
+
+            GetMinMax(out int min, out _, Roll(Entity, AgainstLastRoll), Roll(Entity, false));
+            return min;
+        }
+
+        public static AwarenessLevel CalculateAwareness(int Roll)
+            => (AwarenessLevel)((int)Math.Ceiling(((Roll + 1) / 20.0) - 1)).Clamp(0, 4);
 
         public virtual AwarenessLevel GetAwareness(GameObject Entity, out int Roll, bool UseLastRoll = false)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(UseLastRoll), UseLastRoll),
+                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
+                });
+
             if (Entity == null)
                 throw new ArgumentNullException(nameof(Entity), nameof(GetAwareness) + " requires a " + nameof(GameObject) + " to perceive.");
 
@@ -312,31 +471,47 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             else
                 Roll = this.Roll(Entity);
 
-            return (AwarenessLevel)((int)Math.Ceiling(((Roll + 1) / 20.0) - 1)).Clamp(0, 4);
+            AwarenessLevel awarenessLevel = CalculateAwareness(Roll);
+
+            Debug.CheckYeh(awarenessLevel.ToStringWithNum(), Indent: indent[1]);
+
+            return awarenessLevel;
         }
 
         public virtual AwarenessLevel GetAwareness(GameObject Entity, bool UseLastRoll = false)
             => GetAwareness(Entity, out _);
 
-        #region Serialization
+        #region Event Handling
 
-        public virtual void Write(SerializationWriter Writer)
+        public override bool WantEvent(int ID, int Cascade)
+            => base.WantEvent(ID, Cascade)
+            || ID == EnteredCellEvent.ID
+            ;
+        public override bool HandleEvent(EnteredCellEvent E)
         {
-            ClampedDieRoll.WriteOptimized(Writer, BaseDieRoll);
-            Radius.WriteOptimized(Writer, BaseRadius);
-            ClampedDieRoll.WriteOptimized(Writer, DieRoll);
-            Radius.WriteOptimized(Writer, Radius);
+            _RadiusAreaCells = null;
+            return base.HandleEvent(E);
         }
-        public virtual void Read(SerializationReader Reader)
+
+        #endregion
+        #region Comparison
+
+        public int CompareTo(BasePerception other)
         {
-            BaseDieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
-            BaseRadius = Radius.ReadOptimizedRadius(Reader);
-            _DieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
-            _Radius = Radius.ReadOptimizedRadius(Reader);
+            if (EitherNull(this, other, out int comparison))
+                return comparison;
+
+            int dieRollComp = (DieRoll.Average() - other.DieRoll.Average()) - (other.DieRoll.Breadth() - DieRoll.Breadth());
+            if (dieRollComp != 0)
+                return dieRollComp;
+
+            return Radius.CompareTo(other.Radius);
         }
 
         #endregion
         #region Operator Overloads
+
+        #region Comparison
 
         public static bool operator <(BasePerception Op1, BasePerception Op2)
             => Op1.CompareTo(Op2) < 0;
@@ -350,6 +525,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public static bool operator >=(BasePerception Op1, BasePerception Op2)
             => Op1.CompareTo(Op2) >= 0;
 
+        #endregion
         #endregion
     }
 }

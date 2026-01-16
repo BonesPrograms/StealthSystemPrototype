@@ -2,13 +2,73 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Reflection;
+using System.Diagnostics;
 
+using XRL;
 using XRL.World.Anatomy;
+
+using Range = System.Range;
+
+using StealthSystemPrototype.Logging;
+using static StealthSystemPrototype.Const;
 
 namespace StealthSystemPrototype
 {
     public static class Utils
     {
+        [UD_DebugRegistry]
+        public static List<MethodRegistryEntry> doDebugRegistry(List<MethodRegistryEntry> Registry)
+        {
+            Dictionary<string, bool> multiMethodRegistrations = new()
+            {
+                { nameof(GetFirstCallingModNot), false },
+            };
+
+            foreach (MethodBase extensionMethod in typeof(StealthSystemPrototype.Extensions).GetMethods() ?? new MethodBase[0])
+                if (multiMethodRegistrations.ContainsKey(extensionMethod.Name))
+                    Registry.Register(extensionMethod, multiMethodRegistrations[extensionMethod.Name]);
+
+            return Registry;
+        }
+
+        #region Meta
+
+        public static ModInfo ThisMod => ModManager.GetMod(MOD_ID) ?? ModManager.GetMod(typeof(Utils).Assembly);
+
+        public static ModInfo GetFirstCallingModNot(ModInfo ThisMod)
+        {
+            try
+            {
+                Dictionary<Assembly, ModInfo> modAssemblies = ModManager.ActiveMods
+                    ?.Where(mi => mi != ThisMod && mi.Assembly != null)
+                    ?.ToDictionary(mi => mi.Assembly, mi => mi);
+
+                if (modAssemblies.IsNullOrEmpty())
+                {
+                    return null;
+                }
+                StackTrace stackTrace = new();
+                for (int i = 0; i < 12 && stackTrace?.GetFrame(i) is StackFrame stackFrameI; i++)
+                {
+                    if (stackFrameI?.GetMethod() is MethodBase methodBase
+                        && methodBase.DeclaringType is Type declaringType
+                        && modAssemblies.ContainsKey(declaringType.Assembly))
+                    {
+                        return modAssemblies[declaringType.Assembly];
+                    }
+                }
+            }
+            catch (Exception x)
+            {
+                MetricsManager.LogException(nameof(GetFirstCallingModNot), x, GAME_MOD_EXCEPTION);
+            }
+            return null;
+        }
+        public static bool TryGetFirstCallingModNot(ModInfo ThisMod, out ModInfo FirstCallingMod)
+            => (FirstCallingMod = GetFirstCallingModNot(ThisMod)) != null;
+
+        #endregion
         #region Exceptions
 
         public class InnerArrayNullException : InvalidOperationException
@@ -204,8 +264,26 @@ namespace StealthSystemPrototype
         #endregion
         #region Strings
 
+        public static string CallChain(params string[] Strings)
+            => Strings
+                ?.Aggregate(
+                    seed: "",
+                    func: (a, n) => a + (!a.IsNullOrEmpty() && !n.IsNullOrEmpty() ? "." : null) + n);
+
         public static string WithDigitsFormat(int Digits = 0)
             => "{0:0" + (Math.Max(0, Digits) == 0 ? null : "." + "0".ThisManyTimes(Digits)) + "}";
+
+        public static string AppendTick(string String, bool AppendSpace = true)
+            => String + "[" + TICK + "]" + (AppendSpace ? " " : "");
+
+        public static string AppendCross(string String, bool AppendSpace = true)
+            => String + "[" + CROSS + "]" + (AppendSpace ? " " : "");
+
+        public static string AppendYehNah(string String, bool Yeh, bool AppendSpace = true)
+            => String + "[" + (Yeh ? TICK : CROSS) + "]" + (AppendSpace ? " " : "");
+
+        public static string YehNah(bool? Yeh = null)
+            => "[" + (Yeh == null ? "-" : (Yeh.GetValueOrDefault() ? TICK : CROSS)) + "]";
 
         #endregion
         #region Generic Conditionals
@@ -278,12 +356,5 @@ namespace StealthSystemPrototype
             => EitherNull(BodyPart2, BodyPart1, out int comparison)
             ? comparison
             : BodyPart2.DistanceFromBody().CompareTo(BodyPart1.DistanceFromBody());
-
-
-        public static string CallChain(params string[] Strings)
-            => Strings
-                ?.Aggregate(
-                    seed: "",
-                    func: (a, n) => a + (!a.IsNullOrEmpty() && !n.IsNullOrEmpty() ? "." : null) + n);
     }
 }

@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<options>
+  <!-- Option_Bones_PrototypeStealthSystem_ 
+  
+  Debug Options
+  
+  -->
+  <option
+        ID="Option_Bones_PrototypeStealthSystem_DebugEnableLogging"
+        DisplayText="Prototype {{K|Stealth}} System {{K|(development)}}: Turn on debug logging for this mod."
+        Category="Debug"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, the mod will output verbose logs to Player.log tracing program flow specifically within the mod.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+  
+  <option
+        ID="Option_Bones_PrototypeStealthSystem_DebugDisableWorldGenLogging"
+		    Requires="Option_Bones_PrototypeStealthSystem_DebugEnableLogging!=No"
+        DisplayText="Prototype {{K|Stealth}} System {{K|(development)}}: Turn off logs during world gen (improves load time)."
+        Category="Debug"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, the mod will only output logs once the world has finished generating (just shortly before, actually).
+
+      This option is to aid in testing things that easier to test with logs without the load time being measured in minutes due to the amount of logs during world gen when dealing with lots of "on every object" parts.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+  
+  <option
+        ID="Option_Bones_PrototypeStealthSystem_DebugEnableAllLogging"
+		    Requires="Option_Bones_PrototypeStealthSystem_DebugEnableLogging!=No"
+        DisplayText="Prototype {{K|Stealth}} System {{K|(development)}}: Turn on full logs (performance suffers)."
+        Category="Debug"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, the mod will output every single call to the mod's debug logger, inclinding the entries that are for niche debugging.
+
+      {{R|This setting can have an impact on performance.}}
+
+      Several, otherwise highly performant, methods will make multiple file-write calls to Player.log. This setting should only be enabled if there's a serious bug that needs plenty of information.
+
+      Make sure to track down one of the authors of the mod, such as ({{K-g-G-Y-G-g-K alternation|UnderDoug}}), either on the steam workshop, the GitHub repository for the mod, or on Discord, so you can post/send them the resultant log.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+
+  <!--
+  
+  Mod Options
+  
+  -->
+  <!--option
+        ID="Option_Bones_PrototypeStealthSystem_ExampleSettings"
+        DisplayText="Example Setting."
+        Category="Mod: Prototype Stealth System"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      This is an example setting. Whether enabled or not, it serves as an example.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option-->
+  
+</options>

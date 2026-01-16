@@ -35,6 +35,20 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            base.Write(Basis, Writer);
+            // do writing here
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            base.Read(Basis, Reader);
+            // do reading here
+        }
+
+        #endregion
 
         public override int GetBonusBaseDieRoll()
             => base.GetBonusBaseDieRoll()
@@ -50,19 +64,5 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => base.GetBonusBaseDieRoll()
             + Math.Min(Owner?.StatMod("Ego") ?? 0, 10);
 
-        #region Serialization
-
-        public override void Write(SerializationWriter Writer)
-        {
-            base.Write(Writer);
-            // Write Here.
-        }
-        public override void Read(SerializationReader Reader)
-        {
-            base.Read(Reader);
-            // Read Here.
-        }
-
-        #endregion
     }
 }
