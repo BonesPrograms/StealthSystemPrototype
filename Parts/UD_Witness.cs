@@ -96,7 +96,7 @@ namespace XRL.World.Parts
                 && !ParentObject.InSamePartyAs(E.Hider))
             {
                 using Indent indent = new(1);
-                Debug.LogMethod(indent,
+                Debug.LogCaller(indent,
                     ArgPairs: new Debug.ArgPair[]
                     {
                         Debug.Arg(E.GetType().ToStringWithGenerics()),
@@ -122,18 +122,19 @@ namespace XRL.World.Parts
             if (ConstantDebugOutput
                 && The.Player is GameObject player
                 && !ParentObject.IsPlayer()
+                && ParentObject != player
                 && PlayerPerceptable
                 && BestPerception != null
                 && BestPerception.GetAwareness(player) is AwarenessLevel playerAwareness)
             {
-                if (playerAwareness > AwarenessLevel.None)
-                    E.ApplyColors("Y", "y", int.MaxValue, int.MaxValue);
+                if (playerAwareness > AwarenessLevel.Suspect)
+                    E.ApplyColors("R", "r", int.MaxValue, int.MaxValue);
                 else
                 if (playerAwareness > AwarenessLevel.Awake)
                     E.ApplyColors("B", "b", int.MaxValue, int.MaxValue);
                 else
-                if (playerAwareness > AwarenessLevel.Suspect)
-                    E.ApplyColors("R", "r", int.MaxValue, int.MaxValue);
+                if (playerAwareness > AwarenessLevel.None)
+                    E.ApplyColors("Y", "y", int.MaxValue, int.MaxValue);
             }
             return base.Render(E);
         }

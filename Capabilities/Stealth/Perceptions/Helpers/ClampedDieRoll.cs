@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
+using StealthSystemPrototype.Logging;
+
 using XRL.Rules;
 using XRL.World;
 
@@ -19,7 +21,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Clamp = default;
         }
         public ClampedDieRoll(DieRoll DieRoll, InclusiveRange Clamp)
-            : base()
+            : this()
         {
             this.DieRoll = DieRoll.Clamp(Clamp);
             this.Clamp = Clamp;

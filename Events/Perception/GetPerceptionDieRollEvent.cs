@@ -98,8 +98,8 @@ namespace StealthSystemPrototype.Events
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                        Debug.Arg(Perceiver?.DebugName ?? "null"),
-                        Debug.Arg(Perception.ToString()),
+                    Debug.Arg(Perceiver?.DebugName ?? "null"),
+                    Debug.Arg(Perception.ToString()),
                 });
 
             if (!GameObject.Validate(ref Perceiver)

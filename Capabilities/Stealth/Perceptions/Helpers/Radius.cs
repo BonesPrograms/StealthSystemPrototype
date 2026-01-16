@@ -57,16 +57,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public Radius(int Value, InclusiveRange Clamp, RadiusFlags Flags, BaseDoubleDiffuser DiffusionSequence = null)
             : this()
         {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Value), Value),
-                    Debug.Arg(nameof(Clamp), Clamp),
-                    Debug.Arg(nameof(Flags), Flags),
-                    Debug.Arg(nameof(DiffusionSequence), DiffusionSequence),
-                });
-
             this.Value = Value;
             this.Clamp = Clamp;
             this.Flags = Flags;
@@ -130,7 +120,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             ?? "?";
 
         public override string ToString()
-            => GetValue() + "(" + EffectiveValue + ")" + "/" + Value + 
+            => GetValue() + "(" + EffectiveValue + "/" + Value + ")" + 
             "{" + FlagsString() + "}";
 
         public int GetValue()

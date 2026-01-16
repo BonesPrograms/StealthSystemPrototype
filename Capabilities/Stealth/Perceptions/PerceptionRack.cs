@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 using StealthSystemPrototype.Logging;
@@ -11,17 +12,40 @@ using XRL.World;
 
 using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
 using static StealthSystemPrototype.Utils;
+using static StealthSystemPrototype.Const;
+using XRL.World.Parts;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
     public partial class PerceptionRack : Rack<BasePerception>
     {
+        [UD_DebugRegistry]
+        public static List<MethodRegistryEntry> doDebugRegistry(List<MethodRegistryEntry> Registry)
+        {
+            Dictionary<string, bool> multiMethodRegistrations = new()
+            {
+                { nameof(Add), false },
+                { nameof(HasWantEvent), false },
+                { nameof(PerceptionWantsEvent), false },
+            };
+            UnityEngine.Debug.Log(CallChain(nameof(PerceptionRack), nameof(doDebugRegistry)));
+            typeof(PerceptionRack)?.GetMethods()?.ToList()?.ForEach(mi => UnityEngine.Debug.Log(mi.Name));
+
+            foreach (MethodBase perceptionRackMethod in typeof(PerceptionRack).GetMethods() ?? new MethodBase[0])
+                if (multiMethodRegistrations.ContainsKey(perceptionRackMethod.Name))
+                    Registry.Register(perceptionRackMethod, multiMethodRegistrations[perceptionRackMethod.Name]);
+
+            return Registry;
+        }
+
         public GameObject Owner;
 
         protected BasePerception LastBestRoll;
 
         protected string LastBestRollEntityID;
+
+        protected bool CollectingPerceptions => Owner?.GetPart<UD_PerceptionHelper>()?.CollectingPerceptions ?? false;
 
         #region Constructors
 
@@ -72,10 +96,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public virtual string ToString(string Delimiter, bool Short, GameObject Entity, bool UseLastRoll = false, bool BestRollOnly = false)
+        public virtual string ToString(
+            string Delimiter,
+            bool Short,
+            GameObject Entity,
+            bool UseLastRoll = false,
+            bool BestRollOnly = false)
         {
             if (Items == null)
-                MetricsManager.LogException(CallChain(nameof(PerceptionRack), nameof(ToString)), new InnerArrayNullException(nameof(Items)), "game_mod_exception");
+                MetricsManager.LogException(
+                    Context: CallChain(nameof(PerceptionRack), nameof(ToString)),
+                    x: new InnerArrayNullException(nameof(Items)),
+                    category: GAME_MOD_EXCEPTION);
 
             if (BestRollOnly
                 && LastBestRoll != null
@@ -85,10 +117,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return this?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString(Short: Short, Entity: Entity, UseLastRoll: UseLastRoll));
         }
 
-        public virtual string ToString(bool Short, GameObject Entity = null, bool UseLastRoll = false, bool BestRollOnly = false)
+        public virtual string ToString(
+            bool Short,
+            GameObject Entity = null,
+            bool UseLastRoll = false,
+            bool BestRollOnly = false)
             => ToString(", ", Short, Entity, UseLastRoll, BestRollOnly);
 
-        public virtual string ToStringLines(bool Short = false, GameObject Entity = null, bool UseLastRoll = false, bool BestRollOnly = false)
+        public virtual string ToStringLines(
+            bool Short = false,
+            GameObject Entity = null,
+            bool UseLastRoll = false,
+            bool BestRollOnly = false)
             => ToString("\n", Short, Entity, UseLastRoll, BestRollOnly);
 
         public override string ToString()
@@ -404,47 +444,80 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #endregion
         #region MinEvents
 
-        public bool ItemWantsEvent(BasePerception Perception, int ID, int Cascade)
+        protected static bool GameObjectHasRgisteredEventFrom(GameObject Owner, int ID, BasePerception Perception)
+            => Owner != null
+                && Owner.HasRegisteredEventFrom(ID, Perception);
+
+        public static bool PerceptionWantsEvent(
+            int ID,
+            int Cascade,
+            BasePerception Perception,
+            GameObject Owner)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(Perception?.Name ?? "null"),
+                    Debug.Arg(MinEvent.EventTypes[ID].ToStringWithGenerics()),
                 });
 
             return Perception.WantEvent(ID, Cascade)
-                || (Owner != null
-                    && Owner.HasRegisteredEventFrom(ID, Perception));
+                || GameObjectHasRgisteredEventFrom(Perception.Owner, ID, Perception)
+                || GameObjectHasRgisteredEventFrom(Owner, ID, Perception);
         }
-        public bool WantDispatch(int ID, int Cascade)
+        public bool HasWantEvent(int ID, int Cascade)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(nameof(ID), ID),
+                    Debug.Arg(MinEvent.EventTypes[ID].ToStringWithGenerics()),
                     Debug.Arg(nameof(Cascade), Cascade),
                 });
-            return Items.Any(p => ItemWantsEvent(p, ID, Cascade));
-        }
 
-        public bool HandleEvent(MinEvent E)
+            if (CollectingPerceptions)
+                return false;
+
+            if (MinEvent.CascadeTo(Cascade, MinEvent.CASCADE_NONE))
+                return false;
+
+            if (Owner?.RegisteredEvents?.ContainsKey(ID)
+                ?? false)
+                return true;
+
+            foreach (BasePerception perception in this)
+                if (PerceptionWantsEvent(ID, Cascade, perception, Owner))
+                    return true;
+
+            return false;
+        }
+        public bool DelegateHandleEvent(MinEvent E)
         {
             using Indent indent = new(1);
-            Debug.LogMethod(indent,
+            Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(E?.GetType()?.ToStringWithGenerics()),
+                    Debug.Arg(nameof(MinEvent), E?.TypeStringWithGenerics()),
                 });
+
+            if (CollectingPerceptions)
+                return true;
 
             if (E.CascadeTo(MinEvent.CASCADE_NONE))
                 return true;
 
-            for (int i = 0; i < Length; i++)
-                if (ItemWantsEvent(Items[i], E.ID, E.GetCascadeLevel())
-                    && !E.Dispatch(Items[i]))
+            foreach (BasePerception perception in this)
+            {
+                if (!perception.WantEvent(E.ID, E.GetCascadeLevel()))
+                    continue;
+
+                if (!E.Dispatch(perception))
                     return false;
+
+                if (!perception.HandleEvent(E))
+                    return false;
+            }
 
             return true;
         }
@@ -464,10 +537,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 || !Owner.HasRegisteredEvent(E.ID))
                 return true;
 
-            for (int i = 0; i < Length; i++)
-                if (!Items[i].FireEvent(E))
+            foreach (BasePerception percetion in this)
+                if (percetion.FireEvent(E))
                 {
-                    Debug.CheckNah(Items[i].Name, Indent: indent[1]);
+                    Debug.CheckNah(percetion.Name, Indent: indent[1]);
                     return false;
                 }
             Debug.CheckYeh("All Cleared", Indent: indent[1]);

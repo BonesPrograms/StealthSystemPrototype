@@ -9,6 +9,7 @@ using XRL.UI;
 using StealthSystemPrototype;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Logging;
 
 namespace XRL.World.Parts
 {
@@ -84,13 +85,17 @@ namespace XRL.World.Parts
             ;
         public override bool HandleEvent(EndTurnEvent E)
         {
-            if (ParentObject.IsPlayer())
+            if (ConstantDebugOutput
+                && ParentObject.IsPlayer())
             {
-                UnityEngine.Debug.Log("<UD_Steath debug toggle witnesses>");
-                UnityEngine.Debug.Log(
-                    ParentObject.MiniDebugName() + " Witnesses:\n" + 
-                    WitnessListString(GetWitnesses(), "\n", s => " ".ThisManyTimes(4) + s));
-                UnityEngine.Debug.Log("</UD_Steath debug toggle witnesses>");
+                WitnessesAwarenessLevels.Clear();
+                using Indent indent = new(1);
+                Debug.Log("<UD_Steath debug toggle witnesses>", Indent: indent[0]);
+                Debug.Log(
+                    Field: ParentObject.MiniDebugName() + " Witnesses",
+                    Value: "\n" + WitnessListString(GetWitnesses(), "\n", s => " ".ThisManyTimes(4) + s),
+                    Indent: indent[0]);
+                Debug.Log("</UD_Steath debug toggle witnesses>", Indent: indent[0]);
             }
             return base.HandleEvent(E);
         }

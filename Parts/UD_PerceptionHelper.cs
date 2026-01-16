@@ -12,6 +12,7 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
+using System.Reflection;
 
 namespace XRL.World.Parts
 {
@@ -20,6 +21,40 @@ namespace XRL.World.Parts
         : IScribedPart
         , IPerceptionEventHandler
     {
+        [UD_DebugRegistry]
+        public static List<MethodRegistryEntry> doDebugRegistry(List<MethodRegistryEntry> Registry)
+        {
+            Dictionary<string, bool> multiMethodRegistrations = new()
+            {
+                { nameof(WantEvent), false },
+            };
+            Dictionary<Type, bool> eventHandleRegistrations = new()
+            {
+                { typeof(MinEvent), false },
+            };
+            Dictionary<MethodBase, bool> handleEventsList = typeof(PerceptionRack).GetMethods()?.Aggregate(
+                seed: new Dictionary<MethodBase, bool>(),
+                func: delegate (Dictionary<MethodBase, bool> a, MethodInfo n)
+                {
+                    if (n.Name == nameof(HandleEvent)
+                        && n.GetParameters() is ParameterInfo[] paramInfos
+                        && paramInfos.Length == 1
+                        && paramInfos[0].ParameterType is Type eventType
+                        && eventHandleRegistrations.ContainsKey(eventType))
+                        a[n] = eventHandleRegistrations[eventType];
+                    return a;
+                });
+
+            foreach ((MethodBase method, bool value) in handleEventsList)
+                Registry.Register(method, value);
+
+            foreach (MethodBase perceptionRackMethod in typeof(PerceptionRack).GetMethods() ?? new MethodBase[0])
+                if (multiMethodRegistrations.ContainsKey(perceptionRackMethod.Name))
+                    Registry.Register(perceptionRackMethod, multiMethodRegistrations[perceptionRackMethod.Name]);
+
+            return Registry;
+        }
+
         #region Static & Const
 
         public const string ANIMAL_BLUEPRINT = "Animal";
@@ -51,7 +86,22 @@ namespace XRL.World.Parts
         #region Properties & Fields
 
         private PerceptionRack _Perceptions;
-        public PerceptionRack Perceptions => _Perceptions ??= GetPerceptionsEvent.GetFor(ParentObject);
+        public PerceptionRack Perceptions
+        {
+            get
+            {
+                if (_Perceptions.IsNullOrEmpty()
+                    && !CollectingPerceptions)
+                {
+                    CollectingPerceptions = true;
+                    _Perceptions = GetPerceptionsEvent.GetFor(ParentObject, _Perceptions ?? new PerceptionRack(ParentObject));
+                    CollectingPerceptions = false;
+                }
+                return _Perceptions;
+            }
+        }
+
+        public bool CollectingPerceptions { get; private set; }
 
         #region Debugging
 
@@ -65,6 +115,7 @@ namespace XRL.World.Parts
         {
             _Perceptions = null;
             _BestPerception = null;
+            CollectingPerceptions = false;
         }
 
         #region Serialization
@@ -85,7 +136,16 @@ namespace XRL.World.Parts
         #endregion
 
         public void ClearPerceptions()
-            => _Perceptions = null;
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(ParentObject.DebugName ?? "null"),
+                });
+
+            _Perceptions.Clear();
+        }
 
         public void ClearBestPerception()
             => _BestPerception = null;
@@ -102,7 +162,16 @@ namespace XRL.World.Parts
 
         private bool ProcessMutationAddedEvent(MinEvent E)
         {
-            if (!IsClearPerceptionsMinEvent(E.ID))
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E?.TypeStringWithGenerics()),
+                    Debug.Arg(ParentObject.DebugName ?? "null"),
+                });
+
+            if (CollectingPerceptions
+                || !IsClearPerceptionsMinEvent(E.ID))
                 return false;
 
             ClearPerceptions();
@@ -110,25 +179,19 @@ namespace XRL.World.Parts
         }
         private bool ClearPerceptions(Event E)
         {
-            if (!IsClearPerceptionsStringyEvent(E.ID))
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), E?.ID),
+                });
+
+            if (CollectingPerceptions
+                || !IsClearPerceptionsStringyEvent(E.ID))
                 return false;
 
             ClearPerceptions();
             return true;
-        }
-
-        public bool PerceptionsWantsEvent(int ID, int Cascade)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(ID), ID),
-                    Debug.Arg(nameof(Cascade), Cascade),
-                });
-
-            return Perceptions != null
-            && Perceptions.WantDispatch(ID, Cascade);
         }
 
         public override void Register(GameObject Object, IEventRegistrar Registrar)
@@ -140,8 +203,6 @@ namespace XRL.World.Parts
         }
         public override bool FireEvent(Event E)
         {
-            ClearPerceptions(E);
-
             using Indent indent = new(1);
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
@@ -149,33 +210,61 @@ namespace XRL.World.Parts
                     Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), E?.ID),
                 });
 
-            if (Perceptions != null
-                && !Perceptions.FireEvent(E))
-                return false;
+            ClearPerceptions(E);
+
+            if (!CollectingPerceptions)
+                if (Perceptions != null
+                    && !Perceptions.FireEvent(E))
+                    return false;
 
             return base.FireEvent(E);
         }
         public override bool WantEvent(int ID, int Cascade)
-            => base.WantEvent(ID, Cascade)
-            || PerceptionsWantsEvent(ID, Cascade)
-            || IsClearPerceptionsMinEvent(ID)
-            || ID == GetPerceptionsEvent.ID
-            || ID == GetPerceptionDieRollEvent.ID
-            || ID == GetPerceptionRadiusEvent.ID
-            || ID == GetDebugInternalsEvent.ID
-            ;
+        {
+            if (base.WantEvent(ID, Cascade))
+                return true;
+
+            if (IsClearPerceptionsMinEvent(ID))
+                return true;
+
+            if (ID.EqualsAny(
+                args: new int[]
+                {
+                    GetPerceptionsEvent.ID,
+                    GetPerceptionDieRollEvent.ID,
+                    GetPerceptionRadiusEvent.ID,
+                    GetDebugInternalsEvent.ID,
+                }))
+                return true;
+
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(MinEvent.EventTypes[ID].ToStringWithGenerics()),
+                    Debug.Arg(ParentObject.DebugName ?? "null"),
+                });
+
+            if (!CollectingPerceptions)
+                if (Perceptions?.HasWantEvent(ID, Cascade)
+                    ?? false)
+                    return true;
+
+            return false;
+        }
         public override bool HandleEvent(MinEvent E)
         {
             using Indent indent = new(1);
-            Debug.LogMethod(indent,
+            Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(E?.GetType()?.ToStringWithGenerics()),
+                    Debug.Arg(nameof(MinEvent), E?.TypeStringWithGenerics()),
                 });
 
-            return (Perceptions == null
-                    || Perceptions.HandleEvent(E))
-                && base.HandleEvent(E);
+            return base.HandleEvent(E)
+                && (CollectingPerceptions
+                    || (Perceptions?.DelegateHandleEvent(E)
+                        ?? true));
         }
         public override bool HandleEvent(RegenerateDefaultEquipmentEvent E)
         {
@@ -192,10 +281,10 @@ namespace XRL.World.Parts
             ProcessMutationAddedEvent(E);
             return base.HandleEvent(E);
         }
-        public virtual bool HandleEvent(GetPerceptionsEvent E)
+        public bool HandleEvent(GetPerceptionsEvent E)
         {
             using Indent indent = new(1);
-            Debug.LogMethod(indent,
+            Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(E.GetType().ToStringWithGenerics()),
@@ -224,17 +313,14 @@ namespace XRL.World.Parts
             if (ParentObject.TryGetPart(out SensePsychic sensePsychic))
                 E.AddPsionicIPartPerception(sensePsychic);
 
-            UnityEngine.Debug.Log(
-                (ParentObject?.DebugName ?? "null") + " " + 
-                nameof(GetPerceptionsEvent) + " -> " + 
-                nameof(E.Perceptions) + " (" + (E.Perceptions?.Count ?? 0) + ")");
+            Debug.Log(nameof(E.Perceptions), E.Perceptions?.Count ?? 0, Indent: indent[1]);
 
             return base.HandleEvent(E);
         }
         public bool HandleEvent(GetPerceptionDieRollEvent E)
         {
             using Indent indent = new(1);
-            Debug.LogMethod(indent,
+            Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(E.GetType().ToStringWithGenerics()),
@@ -277,7 +363,7 @@ namespace XRL.World.Parts
         public bool HandleEvent(GetPerceptionRadiusEvent E)
         {
             using Indent indent = new(1);
-            Debug.LogMethod(indent,
+            Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(E.GetType().ToStringWithGenerics()),

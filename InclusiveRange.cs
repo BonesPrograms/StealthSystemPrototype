@@ -129,14 +129,6 @@ namespace StealthSystemPrototype
 
         public InclusiveRange(int Start, int End)
         {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Start), Start),
-                    Debug.Arg(nameof(End), End),
-                });
-
             this.Start = Start;
             this.End = End;
         }
@@ -306,11 +298,8 @@ namespace StealthSystemPrototype
 
         #endregion
 
-        public readonly string ToString(bool Full)
-            => Min + "_" + Max + (Full ? ":" + Start + "," + End : null);
-
         public override readonly string ToString()
-            => ToString(true);
+            => Start + "_" + End;
 
         public readonly bool Contains(int Value)
             => Min <= Value

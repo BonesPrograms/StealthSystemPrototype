@@ -25,7 +25,7 @@ namespace StealthSystemPrototype
                 { nameof(GetFirstCallingModNot), false },
             };
 
-            foreach (MethodBase extensionMethod in typeof(StealthSystemPrototype.Extensions).GetMethods() ?? new MethodBase[0])
+            foreach (MethodBase extensionMethod in typeof(StealthSystemPrototype.Utils).GetMethods() ?? new MethodBase[0])
                 if (multiMethodRegistrations.ContainsKey(extensionMethod.Name))
                     Registry.Register(extensionMethod, multiMethodRegistrations[extensionMethod.Name]);
 

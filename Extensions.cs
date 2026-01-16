@@ -16,11 +16,30 @@ using StealthSystemPrototype.Capabilities.Stealth;
 
 using static StealthSystemPrototype.Utils;
 using StealthSystemPrototype.Logging;
+using System.Reflection;
 
 namespace StealthSystemPrototype
 {
     public static class Extensions
     {
+        [UD_DebugRegistry]
+        public static List<MethodRegistryEntry> doDebugRegistry(List<MethodRegistryEntry> Registry)
+        {
+            Dictionary<string, bool> multiMethodRegistrations = new()
+            {
+                { nameof(SetMin), false },
+                { nameof(SetMax), false },
+                { nameof(HasLOSTo), false },
+                { nameof(GetCellsInACosmeticCircleSilent), false },
+            };
+
+            foreach (MethodBase extensionMethod in typeof(StealthSystemPrototype.Extensions).GetMethods() ?? new MethodBase[0])
+                if (multiMethodRegistrations.ContainsKey(extensionMethod.Name))
+                    Registry.Register(extensionMethod, multiMethodRegistrations[extensionMethod.Name]);
+
+            return Registry;
+        }
+
         #region Clamping
 
         public static int Clamp(this int Value, int Min, int Max)
@@ -410,6 +429,9 @@ namespace StealthSystemPrototype
 
             return name + typeGenerics.GenericsString(Short);
         }
+
+        public static string TypeStringWithGenerics(this object Object, bool Short = false)
+            => Object?.GetType()?.ToStringWithGenerics(Short);
 
         public static string Acronymize(this string String)
         {

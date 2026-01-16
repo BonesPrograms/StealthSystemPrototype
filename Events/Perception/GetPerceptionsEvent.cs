@@ -21,7 +21,7 @@ namespace StealthSystemPrototype.Events
         {
         }
 
-        public static PerceptionRack GetFor(GameObject Perceiver)
+        public static PerceptionRack GetFor(GameObject Perceiver, PerceptionRack Perceptions)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -31,7 +31,7 @@ namespace StealthSystemPrototype.Events
                 });
 
             if (!GameObject.Validate(ref Perceiver)
-                || FromPool(Perceiver, new PerceptionRack(Perceiver)) is not GetPerceptionsEvent E)
+                || FromPool(Perceiver, Perceptions ?? new PerceptionRack(Perceiver)) is not GetPerceptionsEvent E)
                 return null;
 
             bool proceed = true;
@@ -59,11 +59,13 @@ namespace StealthSystemPrototype.Events
             : BasePerception
             , new()
         {
-            UnityEngine.Debug.Log(
-                (nameof(AddPerception) + "(" + 
-                    Perceiver?.DebugName?.Strip() ?? "no one") + ", " + 
-                    nameof(Perception) + ": " + (typeof(T)?.ToStringWithGenerics() ?? "none??") +
-                ")");
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Perceiver?.DebugName ?? "null"),
+                    Debug.Arg(Perception?.ToString()),
+                });
 
             Perceptions ??= new(Perceiver);
             if (Perception != null)

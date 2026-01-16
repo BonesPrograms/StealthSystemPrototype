@@ -120,9 +120,6 @@ namespace StealthSystemPrototype.Events
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
 
-            Debug.Log(nameof(E.BaseRadius), (E.BaseRadius?.ToString() ?? "none"), Indent: indent[1]);
-            Debug.Log(nameof(E.Radius), (E.Radius?.ToString() ?? "none"), Indent: indent[1]);
-
             return E.GetRadius();
         }
 
