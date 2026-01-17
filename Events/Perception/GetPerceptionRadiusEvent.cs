@@ -6,10 +6,11 @@ using XRL.World;
 using XRL.World.Parts;
 
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
-using StealthSystemPrototype.Logging;
+using static StealthSystemPrototype.Perceptions.IPerception;
 
 namespace StealthSystemPrototype.Events
 {
@@ -52,7 +53,7 @@ namespace StealthSystemPrototype.Events
             GameObject Perceiver,
             T Perception,
             Radius BaseRadius)
-            where T : BasePerception
+            where T : IPerception
         {
             if (Perception == null
                 || FromPool(Perceiver) is not GetPerceptionRadiusEvent E)
@@ -91,7 +92,7 @@ namespace StealthSystemPrototype.Events
             GameObject Perceiver,
             T Perception,
             Radius BaseRadius)
-            where T : BasePerception
+            where T : IPerception
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,

@@ -4,13 +4,14 @@ using System.Text;
 
 using XRL.World;
 using XRL.World.Parts;
+using XRL.Rules;
 
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
-using XRL.Rules;
-using StealthSystemPrototype.Logging;
+using static StealthSystemPrototype.Perceptions.IPerception;
 
 namespace StealthSystemPrototype.Events
 {
@@ -53,7 +54,7 @@ namespace StealthSystemPrototype.Events
             GameObject Perceiver,
             T Perception,
             ClampedDieRoll BaseDieRoll)
-            where T : BasePerception
+            where T : IPerception
         {
             if (Perception == null
                 || FromPool(Perceiver) is not GetPerceptionDieRollEvent E)
@@ -92,7 +93,7 @@ namespace StealthSystemPrototype.Events
             GameObject Perceiver,
             T Perception,
             ClampedDieRoll BaseDieRoll)
-            where T : BasePerception
+            where T : IPerception
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,

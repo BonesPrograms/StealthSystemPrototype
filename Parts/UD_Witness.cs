@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 
 using StealthSystemPrototype;
-using StealthSystemPrototype.Capabilities.Stealth;
-
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using XRL.World.AI.Pathfinding;
@@ -26,7 +26,7 @@ namespace XRL.World.Parts
 
         #region Debugging
 
-        public BasePerception BestPerception => PerceptionHelper?.BestPerception;
+        public IPerception BestPerception => PerceptionHelper?.BestPerception;
 
         public bool PlayerPerceptable;
 
@@ -54,7 +54,7 @@ namespace XRL.World.Parts
         #endregion
 
         public void ClearPerceptions()
-            => PerceptionHelper.ClearPerceptions();
+            => PerceptionHelper.SyncPerceptions();
 
         #region Event Handling
 
@@ -104,7 +104,7 @@ namespace XRL.World.Parts
                         Debug.Arg(nameof(Perceptions), Perceptions?.Count ?? 0),
                     });
 
-                if (Perceptions.GetAwareness(E.Hider, out BasePerception perception) > AwarenessLevel.None)
+                if (Perceptions.GetAwareness(E.Hider, out IPerception perception) > AwarenessLevel.None)
                 {
                     Debug.Log(perception.ToString(Short: true), Indent: indent[1]);
                     E.AddWitness(perception);

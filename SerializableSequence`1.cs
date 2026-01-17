@@ -9,7 +9,11 @@ using XRL.World;
 namespace StealthSystemPrototype
 {
     [Serializable]
-    public abstract class SerializableSequence<T> : IComposite, IEnumerable<T>, IReadOnlyList<T>, IReadOnlyDictionary<int, T>
+    public abstract class SerializableSequence<T>
+        : IComposite
+        , IEnumerable<T>
+        , IReadOnlyList<T>
+        , IReadOnlyDictionary<int, T>
     {
         #region Enumerators
 

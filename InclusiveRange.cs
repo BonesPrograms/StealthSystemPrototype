@@ -5,20 +5,29 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 
-using StealthSystemPrototype.Logging;
-
 using XRL.Rules;
 using XRL.World;
+
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 
 namespace StealthSystemPrototype
 {
     /// <summary>
-    /// Represents the range of values that starts with the assigned <see cref="Start"/> and less than or equal to the <see cref="End"/>.
+    /// Represents the range of values that starts with the assigned <see cref="Start"/>, ends with the assigned <see cref="End"/>, and includes them both.
     /// </summary>
     [Serializable]
-    public struct InclusiveRange : IComposite, IEquatable<InclusiveRange>, IComparable<InclusiveRange>, IEnumerable<int>, IDisposable
+    public struct InclusiveRange
+        : IComposite
+        , IEquatable<InclusiveRange>
+        , IComparable<InclusiveRange>
+        , IEnumerable<int>
+        , IDisposable
     {
         [Serializable]
         public struct Enumerator

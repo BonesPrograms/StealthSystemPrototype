@@ -2,12 +2,16 @@
 
 using XRL.World;
 
+using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class Auditory : SimplePerception, IComposite
+    public class Auditory : SimplePerception
     {
         #region Constructors
 

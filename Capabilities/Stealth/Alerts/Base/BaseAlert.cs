@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using Genkit;
+
+using XRL;
 using XRL.Rules;
 using XRL.World;
-
-using StealthSystemPrototype.Events;
 using XRL.World.AI;
 using XRL.World.Parts;
-using Genkit;
-using XRL;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+
+namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
     public abstract class BaseAlert : GoalHandler//, IComparable<BaseAlert>
@@ -114,7 +117,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             #endregion
         }
 
-        public BasePerception Perception;
+        public IPerception Perception;
 
         public PerceptionSense Sense;
 
@@ -137,7 +140,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Origin = null;
             Source = null;
         }
-        protected BaseAlert(BasePerception Perception, AlertSource Source)
+        protected BaseAlert(IPerception Perception, AlertSource Source)
             : this()
         {
             this.Perception = Perception;
@@ -145,12 +148,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Origin = Perception.Owner.CurrentCell;
             this.Source = Source?.SetParentAlert(this);
         }
-        public BaseAlert(BasePerception Perception, Cell SourceCell)
+        public BaseAlert(IPerception Perception, Cell SourceCell)
             : this(Perception, (AlertSource)null)
         {
             Source = new AlertSource(this, SourceCell);
         }
-        public BaseAlert(BasePerception Perception, GameObject SourceObject)
+        public BaseAlert(IPerception Perception, GameObject SourceObject)
             : this(Perception, (AlertSource)null)
         {
             Source = new AlertSource(this, SourceObject);

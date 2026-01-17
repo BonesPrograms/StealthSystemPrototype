@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using StealthSystemPrototype.Logging;
-
 using XRL.World;
+
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
 
@@ -14,10 +18,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [Serializable]
     public class Radius : IComposite, IComparable<Radius>
     {
-        public static Radius Empty => new(0, 0..0, 0);
-
-        public static BaseDoubleDiffuser DefaultDiffuser = new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
-
         [Flags]
         [Serializable]
         public enum RadiusFlags : int
@@ -29,6 +29,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Occludes = 8,
             Diffuses = 16,
         }
+
+        public static Radius Empty => new(0, 0..0, 0);
+
+        public static BaseDoubleDiffuser DefaultDiffuser = new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
 
         private static RadiusFlags[] _RadiusFlagValues;
         public static RadiusFlags[] RadiusFlagValues => _RadiusFlagValues ??= Enum.GetValues(typeof(RadiusFlags)) as RadiusFlags[] 
@@ -67,7 +71,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
         public Radius(int Value, BaseDoubleDiffuser DiffusionSequence = null)
-            : this(Value, BasePerception.RADIUS_CLAMP, RadiusFlags.Line, DiffusionSequence)
+            : this(Value, IPerception.RADIUS_CLAMP, RadiusFlags.Line, DiffusionSequence)
         {
         }
         public Radius(Radius Source)

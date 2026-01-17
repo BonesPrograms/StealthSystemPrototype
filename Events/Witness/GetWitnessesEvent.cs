@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Logging;
-
 using XRL.World;
 using XRL.World.Parts;
+
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Events
 {
@@ -32,6 +35,15 @@ namespace StealthSystemPrototype.Events
             if (!GameObject.Validate(ref Hider)
                 || FromPool(Hider, Witnesses) is not GetWitnessesEvent E)
                 return null;
+
+            if (Hider.GetBlueprint() is GameObjectBlueprint hiderModel)
+            {
+                if (hiderModel.HasPart(nameof(UD_PerceptionHelper)))
+                    Hider.RequirePerceptions();
+
+                if (hiderModel.HasPart(nameof(UD_Witness)))
+                    Hider.RequirePart<UD_Witness>();
+            }
 
             bool proceed = true;
             if (proceed)
@@ -59,7 +71,7 @@ namespace StealthSystemPrototype.Events
         public GetWitnessesEvent AddWitness(IPart WitnessPart)
             => AddWitness(WitnessPart?.ParentObject);
 
-        public GetWitnessesEvent AddWitness(BasePerception Perception)
+        public GetWitnessesEvent AddWitness(IPerception Perception)
             => AddWitness(Perception?.Owner);
     }
 }

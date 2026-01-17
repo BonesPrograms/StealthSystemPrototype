@@ -4,94 +4,135 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-using StealthSystemPrototype.Logging;
-
 using XRL;
 using XRL.Collections;
 using XRL.World;
+using XRL.World.Parts;
 
-using static StealthSystemPrototype.Capabilities.Stealth.BasePerception;
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
+
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Const;
-using XRL.World.Parts;
+using static StealthSystemPrototype.Perceptions.IPerception;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public partial class PerceptionRack : Rack<BasePerception>
+    public partial class PerceptionRack : Rack<IPerception>
     {
         [UD_DebugRegistry]
-        public static List<MethodRegistryEntry> doDebugRegistry(List<MethodRegistryEntry> Registry)
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+            => Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Capabilities.Stealth.PerceptionRack),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(Add), false },
+                    { nameof(HasWantEvent), false },
+                    { nameof(PerceptionWantsEvent), false },
+                });
+
+        private GameObject _Owner;
+
+        public GameObject Owner
         {
-            Dictionary<string, bool> multiMethodRegistrations = new()
+            get => _Owner;
+            set
             {
-                { nameof(Add), false },
-                { nameof(HasWantEvent), false },
-                { nameof(PerceptionWantsEvent), false },
-            };
-            UnityEngine.Debug.Log(CallChain(nameof(PerceptionRack), nameof(doDebugRegistry)));
-            typeof(PerceptionRack)?.GetMethods()?.ToList()?.ForEach(mi => UnityEngine.Debug.Log(mi.Name));
-
-            foreach (MethodBase perceptionRackMethod in typeof(PerceptionRack).GetMethods() ?? new MethodBase[0])
-                if (multiMethodRegistrations.ContainsKey(perceptionRackMethod.Name))
-                    Registry.Register(perceptionRackMethod, multiMethodRegistrations[perceptionRackMethod.Name]);
-
-            return Registry;
+                _Owner = value;
+                for (int i = 0; i < Length; i++)
+                    Items[i].Owner = _Owner;
+            }
         }
 
-        public GameObject Owner;
-
-        protected BasePerception LastBestRoll;
+        protected IPerception LastBestRoll;
 
         protected string LastBestRollEntityID;
-
-        protected bool CollectingPerceptions => Owner?.GetPart<UD_PerceptionHelper>()?.CollectingPerceptions ?? false;
 
         #region Constructors
 
         public PerceptionRack()
             : base()
         {
-            Owner = null;
+            _Owner = null;
             LastBestRoll = null;
             LastBestRollEntityID = null;
         }
         public PerceptionRack(int Capacity)
             : base(Capacity)
         {
-            Owner = null;
+            _Owner = null;
             LastBestRoll = null;
             LastBestRollEntityID = null;
         }
         public PerceptionRack(GameObject Owner)
             : this()
         {
-            this.Owner = Owner;
+            _Owner = Owner;
         }
         public PerceptionRack(GameObject Owner, int Capacity)
             : this(Capacity)
         {
-            this.Owner = Owner;
+            _Owner = Owner;
         }
-        public PerceptionRack(IReadOnlyCollection<BasePerception> Source)
+        public PerceptionRack(IReadOnlyCollection<IPerception> Source)
             : this(Source.Count)
         {
             Length = Source.Count;
             Items = Source.ToArray();
         }
-        public PerceptionRack(GameObject Owner, IReadOnlyCollection<BasePerception> Source)
+        public PerceptionRack(GameObject Owner, IReadOnlyCollection<IPerception> Source)
             : this(Source)
         {
             this.Owner = Owner;
         }
         public PerceptionRack(PerceptionRack Source)
-            : this(Source.Owner, (IReadOnlyCollection<BasePerception>)Source)
+            : this(Source.Owner, (IReadOnlyCollection<IPerception>)Source)
         {
         }
         public PerceptionRack(GameObject NewOwner, PerceptionRack Source)
             : this(Source)
         {
             Owner = NewOwner;
+        }
+
+        #endregion
+        #region Serialization
+
+        public override void Write(SerializationWriter Writer)
+        {
+            base.Write(Writer);
+            Writer.WriteOptimized(Variant);
+            Writer.WriteGameObject(Owner);
+        }
+
+        public override void Read(SerializationReader Reader)
+        {
+            base.Read(Reader);
+            Variant = Reader.ReadOptimizedInt32();
+            _Owner = Reader.ReadGameObject();
+        }
+
+        public void FinalizeRead(GameObject Basis, SerializationReader Reader)
+        {
+            int i = 0;
+            for (int length = Length; i < length; i++)
+            {
+                IPerception perception = Items[i];
+                perception.ApplyRegistrar(Basis);
+                perception.FinalizeRead(Reader);
+                if (length != Length)
+                {
+                    length = Length;
+                    if (i < length
+                        && Items[i] != perception)
+                        i--;
+                }
+            }
+            Owner = _Owner;
         }
 
         #endregion
@@ -134,107 +175,197 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public override string ToString()
             => ToString(Short: false, Entity: null);
 
-        public override void Add(BasePerception Item)
+        public override void Add(IPerception Item)
+            => Add(Item);
+
+        public void Add<T>(
+            T Perception,
+            bool DoRegistration = true,
+            bool Initial = false,
+            bool Creation = false)
+            where T : IPerception, new()
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Item), Item?.Name ?? "null"),
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                });
-
-            Add(Item, true);
-        }
-
-        public void Add<T>(T Item, bool Override)
-            where T : BasePerception
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Item), Item?.Name ?? "null"),
-                    Debug.Arg(nameof(Override), Override),
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                });
-
             if (Items == null)
                 throw new InnerArrayNullException(nameof(Items));
 
-            if (Override
-                || !Contains(Item))
+            if (Perception == null)
+                return;
+
+            if (Perception.Owner != Owner)
+                Perception.Owner = Owner;
+
+            Owner?.FlushTransientCache();
+
+            base.Add(Perception);
+            
+            if (DoRegistration)
             {
-                Remove(Item);
-
-                Debug.Log("Calling base." + nameof(Add), Indent: indent[1]);
-                base.Add(Item);
-
-                if (Item.Owner != Owner)
-                    Item.Owner = Owner;
+                Perception.Owner = Owner;
+                Perception.ApplyRegistrar(Owner);
+            }
+            if (Initial)
+            {
+                Perception.Initialize();
+            }
+            Perception.Attach();
+            if (!Creation)
+            {
+                Perception.AddedAfterCreation();
             }
         }
 
-        public bool RemoveType(Type Type)
+        public T Add<T>(
+            bool DoRegistration = true,
+            bool Initial = false,
+            bool Creation = false)
+            where T : IPerception, new()
         {
-            if (Type == null)
-                throw new ArgumentNullException(nameof(Type), "Cannot be null.");
-
-            int index = -1;
-            for (int i = 0; i < Count; i++)
-                if (Items[i].GetType() == Type)
-                {
-                    index = i;
-                    break;
-                }
-
-            if (index < 0)
-                return false;
-
-            Length--;
-
-            if (index < Count)
-                Array.Copy(Items, index + 1, Items, index, Count - index);
-
-            Items[Count] = null;
-            Variant++;
-
-            return true;
+            T perception = new ();
+            Add(perception, DoRegistration, Initial, Creation);
+            return perception;
         }
 
-        public bool RemoveType(BasePerception Item)
-            => RemoveType(Item?.GetType());
+        public T Add<T>(
+            bool DoRegistration = true,
+            bool Creation = false)
+            where T : IPerception, new()
+            => Add<T>(DoRegistration, false, Creation);
+
+        public bool Has<T>()
+            where T : IPerception, new()
+            => Contains<T>();
+
+        public bool Has<T>(T Perception)
+            where T : IPerception, new()
+            => Contains(Perception);
+
+        public bool Has(string Name)
+            => AsEnumerable(
+                p => Name.EqualsAny(new string[]
+                {
+                    p.Name,
+                    p.ShortName,
+                    p.GetType().Name,
+                    p.GetType().ToString(),
+                }))
+            ?.FirstOrDefault() != null;
+
+        public T Get<T>()
+            where T : IPerception, new()
+        {
+            for (int i = 0; i < Count; i++)
+                if (Items[i].GetType() == typeof(T))
+                    return Items[i] as T;
+            return null;
+        }
+
+        public IPerception Get(string Name)
+            => AsEnumerable(
+                p => Name.EqualsAny(new string[]
+                {
+                    p.Name,
+                    p.ShortName,
+                    p.GetType().Name,
+                    p.GetType().ToString(),
+                }))
+            ?.FirstOrDefault();
+
+        public IPerception GetFirstOfSense(PerceptionSense Sense)
+            => AsEnumerable(p => p.Sense == Sense)?.FirstOrDefault();
+
+        public bool TryGet<T>(out T Perception)
+            where T : IPerception, new()
+            => (Perception = Get<T>()) != null;
+
+        public bool TryGet(string Name, out IPerception Perception)
+            => (Perception = Get(Name)) != null;
+
+        public T Require<T>(
+            bool Creation = false)
+            where T : IPerception, new()
+        {
+            if (TryGet(out T perception))
+                return perception;
+
+            return Add<T>(DoRegistration: true, Creation);
+        }
+
+        protected IPerception RemovePerceptionAt(int Index)
+        {
+            IPerception perception = TakeAt(Index);
+            perception.ApplyUnregistrar(Owner);
+
+            perception.Remove();
+            perception.Owner = null;
+            Owner.FlushTransientCache();
+            return perception;
+        }
 
         public bool Remove<T>(T Item)
-            where T : BasePerception
-            => RemoveType(Item?.GetType() ?? typeof(T));
-
-        public bool Validate(GameObject Owner = null, bool RemoveInvalid = true)
+            where T : IPerception, new()
         {
-            Owner ??= this.Owner;
+            if (Item == null)
+                throw new ArgumentNullException(nameof(Item), "Cannot be null.");
+
+            if (GetArray() is IPerception[] perceptions)
+                for (int i = 0; i < perceptions.Length; i++)
+                    if (perceptions[i] == Item)
+                    {
+                        RemovePerceptionAt(i);
+                        return true;
+                    }
+
+            return false;
+        }
+
+        public virtual PerceptionRack DeepCopy(GameObject Parent)
+        {
+            PerceptionRack perceptionRack = (PerceptionRack)Activator.CreateInstance(GetType());
+
+            FieldInfo[] fields = GetType().GetFields();
+
+            foreach (FieldInfo fieldInfo in fields)
+                if ((fieldInfo.Attributes & FieldAttributes.NotSerialized) == 0
+                    && !fieldInfo.IsLiteral)
+                    fieldInfo.SetValue(perceptionRack, fieldInfo.GetValue(this));
+
+            perceptionRack.Owner = Parent;
+
+            perceptionRack.Items = new IPerception[DefaultCapacity];
+            perceptionRack.EnsureCapacity(Size);
+
+            for (int i = 0; i < Length; i++)
+                perceptionRack.Items[i] = Items[i].DeepCopy(Parent);
+
+            return perceptionRack;
+        }
+
+        public bool Validate(bool RemoveInvalid = true)
+        {
+            Owner = _Owner;
             bool allValid = true;
-            List<BasePerception> removeList = new();
+            List<int> removeList = new();
             for (int i = 0; i < Count; i++)
             {
-                if (Items[i] is not BasePerception perception)
+                if (Items[i] is not IPerception perception)
                     throw new InvalidOperationException(nameof(Items) + " contains null entry at " + i + " despite length of " + Count + ".");
 
-                if (!perception.Validate(Owner))
+                if (!perception.Validate())
                 {
                     if (RemoveInvalid)
-                        removeList.Add(perception);
+                        removeList.Add(i);
                     else
                         allValid = false;
                 }
             }
-            foreach (BasePerception perception in removeList)
-                RemoveType(perception);
+            foreach (int index in removeList)
+                RemovePerceptionAt(index);
 
             removeList.Clear();
 
             if (RemoveInvalid
                 && !allValid)
-                allValid = Validate(Owner, false);
+                allValid = Validate(false);
 
             return allValid;
         }
@@ -245,15 +376,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 Items[i].ClearRating();
         }
 
-        public IEnumerable<BasePerception> GetPerceptionsBestFirst(
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(
             GameObject Entity,
-            Predicate<BasePerception> Filter,
+            Predicate<IPerception> Filter,
             bool ClearFirst)
         {
             if (Items == null)
                 throw new InnerArrayNullException(nameof(Items));
 
-            if (Items.ToList() is not List<BasePerception> perceptionsList)
+            if (Items.ToList() is not List<IPerception> perceptionsList)
                 return null;
 
             if (ClearFirst)
@@ -264,21 +395,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return perceptionsList
                 ?.Where(Filter.ToFunc());
         }
-        public IEnumerable<BasePerception> GetPerceptionsBestFirst(
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(
             GameObject Entity,
-            Predicate<BasePerception> Filter)
+            Predicate<IPerception> Filter)
             => GetPerceptionsBestFirst(Entity, Filter, true);
 
-        public IEnumerable<BasePerception> GetPerceptionsBestFirst(
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(
             GameObject Entity,
             bool ClearFirst)
             => GetPerceptionsBestFirst(Entity, null, ClearFirst);
 
-        public IEnumerable<BasePerception> GetPerceptionsBestFirst(
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(
             GameObject Entity)
             => GetPerceptionsBestFirst(Entity, null);
 
-        public BasePerception GetHighestRatedPerceptionFor(GameObject Entity, bool ClearFirst)
+        public IPerception GetHighestRatedPerceptionFor(GameObject Entity, bool ClearFirst)
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
@@ -290,20 +421,20 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 });
 
             if (Entity == null
-                || GetPerceptionsBestFirst(Entity, ClearFirst) is not List<BasePerception> highestFirstList
+                || GetPerceptionsBestFirst(Entity, ClearFirst) is not List<IPerception> highestFirstList
                 || highestFirstList.Count < 1)
             {
                 Debug.CheckNah("Entity null, or Rack empty or null", Indent: indent[1]);
                 return null;
             }
-            BasePerception output = highestFirstList[0];
+            IPerception output = highestFirstList[0];
             Debug.CheckYeh("Got", output, Indent: indent[1]);
             return output;
         }
-        public BasePerception GetHighestRatedPerceptionFor(GameObject Entity)
+        public IPerception GetHighestRatedPerceptionFor(GameObject Entity)
             => GetHighestRatedPerceptionFor(Entity, true);
 
-        public virtual int Roll(GameObject Entity, out BasePerception Perception, bool UseLastBestRoll = false)
+        public virtual int Roll(GameObject Entity, out IPerception Perception, bool UseLastBestRoll = false)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -340,7 +471,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual int Roll(GameObject Entity)
             => Roll(Entity, out _);
 
-        public virtual int RollAdvantage(GameObject Entity, out BasePerception Perception, bool AgainstLastRoll = false)
+        public virtual int RollAdvantage(GameObject Entity, out IPerception Perception, bool AgainstLastRoll = false)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -351,8 +482,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
 
-            int first = Roll(Entity, out BasePerception firstPerception, AgainstLastRoll);
-            int second = Roll(Entity, out BasePerception secondPerception, false);
+            int first = Roll(Entity, out IPerception firstPerception, AgainstLastRoll);
+            int second = Roll(Entity, out IPerception secondPerception, false);
             GetMinMax(out _, out int max, first, second);
             Perception = max == first
                 ? firstPerception
@@ -362,7 +493,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual int RollAdvantage(GameObject Entity, bool AgainstLastRoll = false)
             => RollAdvantage(Entity, out _, AgainstLastRoll);
 
-        public virtual int RollDisadvantage(GameObject Entity, out BasePerception Perception, bool AgainstLastRoll = false)
+        public virtual int RollDisadvantage(GameObject Entity, out IPerception Perception, bool AgainstLastRoll = false)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -373,8 +504,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
 
-            int first = Roll(Entity, out BasePerception firstPerception, AgainstLastRoll);
-            int second = Roll(Entity, out BasePerception secondPerception, false);
+            int first = Roll(Entity, out IPerception firstPerception, AgainstLastRoll);
+            int second = Roll(Entity, out IPerception secondPerception, false);
             GetMinMax(out int min, out _, first, second);
             Perception = min == first
                 ? firstPerception
@@ -384,7 +515,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual int RollDisadvantage(GameObject Entity, bool AgainstLastRoll = false)
             => RollDisadvantage(Entity, out _, AgainstLastRoll);
 
-        public virtual AwarenessLevel GetAwareness(GameObject Entity, out int Roll, out BasePerception Perception, bool UseLastBestRoll = false)
+        public virtual AwarenessLevel GetAwareness(GameObject Entity, out int Roll, out IPerception Perception, bool UseLastBestRoll = false)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -407,7 +538,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return awarenessLevel;
         }
 
-        public virtual AwarenessLevel GetAwareness(GameObject Entity, out BasePerception Perception, bool UseLastBestRoll = false)
+        public virtual AwarenessLevel GetAwareness(GameObject Entity, out IPerception Perception, bool UseLastBestRoll = false)
             => GetAwareness(Entity, out _, out Perception, UseLastBestRoll);
 
         public virtual AwarenessLevel GetAwareness(GameObject Entity, bool UseLastBestRoll = false)
@@ -444,14 +575,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #endregion
         #region MinEvents
 
-        protected static bool GameObjectHasRgisteredEventFrom(GameObject Owner, int ID, BasePerception Perception)
+        protected static bool GameObjectHasRgisteredEventFrom(GameObject Owner, int ID, IPerception Perception)
             => Owner != null
                 && Owner.HasRegisteredEventFrom(ID, Perception);
 
         public static bool PerceptionWantsEvent(
             int ID,
             int Cascade,
-            BasePerception Perception,
+            IPerception Perception,
             GameObject Owner)
         {
             using Indent indent = new(1);
@@ -476,9 +607,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     Debug.Arg(nameof(Cascade), Cascade),
                 });
 
-            if (CollectingPerceptions)
-                return false;
-
             if (MinEvent.CascadeTo(Cascade, MinEvent.CASCADE_NONE))
                 return false;
 
@@ -486,7 +614,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 ?? false)
                 return true;
 
-            foreach (BasePerception perception in this)
+            foreach (IPerception perception in this)
                 if (PerceptionWantsEvent(ID, Cascade, perception, Owner))
                     return true;
 
@@ -501,13 +629,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     Debug.Arg(nameof(MinEvent), E?.TypeStringWithGenerics()),
                 });
 
-            if (CollectingPerceptions)
-                return true;
-
             if (E.CascadeTo(MinEvent.CASCADE_NONE))
                 return true;
 
-            foreach (BasePerception perception in this)
+            foreach (IPerception perception in this)
             {
                 if (!perception.WantEvent(E.ID, E.GetCascadeLevel()))
                     continue;
@@ -537,7 +662,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 || !Owner.HasRegisteredEvent(E.ID))
                 return true;
 
-            foreach (BasePerception percetion in this)
+            foreach (IPerception percetion in this)
                 if (percetion.FireEvent(E))
                 {
                     Debug.CheckNah(percetion.Name, Indent: indent[1]);
@@ -561,17 +686,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return false;
         }
-        public virtual bool ContainsType(BasePerception Item)
+        public virtual bool ContainsType(IPerception Item)
             => ContainsType(Item.GetType());
 
-        public virtual bool Contains<T>(T Item)
-            where T : BasePerception
+        public virtual bool Contains<T>(T Item = null)
+            where T : IPerception
             => ContainsType(Item?.GetType() ?? typeof(T));
 
         #endregion
         #region Conversion Methods
 
-        public IEnumerable<BasePerception> AsEnumerable(Predicate<BasePerception> Filter = null)
+        public IEnumerable<IPerception> AsEnumerable(Predicate<IPerception> Filter = null)
         {
             try
             {
@@ -582,23 +707,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
             catch (InnerArrayNullException)
             {
-                return new BasePerception[0];
+                return new IPerception[0];
             }
-        }
-
-        #endregion
-        #region Serialization
-
-        public override void Write(SerializationWriter Writer)
-        {
-            base.Write(Writer);
-            Writer.WriteOptimized(Variant);
-        }
-
-        public override void Read(SerializationReader Reader)
-        {
-            base.Read(Reader);
-            Variant = Reader.ReadOptimizedInt32();
         }
 
         #endregion

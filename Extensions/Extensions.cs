@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 
 using XRL;
 using XRL.World;
@@ -13,32 +14,27 @@ using XRL.Rules;
 using Range = System.Range;
 
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Alerts;
 
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Logging;
-using System.Reflection;
 
 namespace StealthSystemPrototype
 {
     public static class Extensions
     {
         [UD_DebugRegistry]
-        public static List<MethodRegistryEntry> doDebugRegistry(List<MethodRegistryEntry> Registry)
-        {
-            Dictionary<string, bool> multiMethodRegistrations = new()
-            {
-                { nameof(SetMin), false },
-                { nameof(SetMax), false },
-                { nameof(HasLOSTo), false },
-                { nameof(GetCellsInACosmeticCircleSilent), false },
-            };
-
-            foreach (MethodBase extensionMethod in typeof(StealthSystemPrototype.Extensions).GetMethods() ?? new MethodBase[0])
-                if (multiMethodRegistrations.ContainsKey(extensionMethod.Name))
-                    Registry.Register(extensionMethod, multiMethodRegistrations[extensionMethod.Name]);
-
-            return Registry;
-        }
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+            => Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Extensions),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(SetMin), false },
+                    { nameof(SetMax), false },
+                    { nameof(HasLOSTo), false },
+                    { nameof(GetCellsInACosmeticCircleSilent), false },
+                });
 
         #region Clamping
 
@@ -320,50 +316,6 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-        #region GameObject
-
-        public static PerceptionRack GetPerceptions(this GameObject Object)
-            => Object?.GetPart<UD_PerceptionHelper>()?.Perceptions;
-
-        public static bool HasPerception<T>(this GameObject Object, T Item = null)
-            where T : BasePerception, new()
-            => Object
-                ?.GetPerceptions()
-                ?.ContainsType(Item?.GetType() ?? typeof(T))
-            ?? false;
-
-        public static T GetPerception<T>(this GameObject Object)
-            where T : BasePerception, new()
-        {
-            if (Object.GetPerceptions() is not PerceptionRack perceptions)
-                return null;
-
-            for (int i = 0; i < perceptions.Count; i++)
-                if (perceptions[i].GetType() == typeof(T))
-                    return perceptions[i] as T;
-
-            return null;
-        }
-
-        public static BasePerception GetPerception(this GameObject Object, string Name)
-            => Object?.GetPerceptions().AsEnumerable(
-                    p => Name.EqualsAny(new string[]
-                        {
-                            p.Name,
-                            p.ShortName,
-                            p.GetType().Name,
-                            p.GetType().ToString(),
-                        }))
-                ?.FirstOrDefault();
-
-        public static BasePerception GetFirstPerceptionOfSense(this GameObject Object, PerceptionSense Sense)
-            => Object?.GetPerceptions().AsEnumerable(p => p.Sense == Sense)?.FirstOrDefault();
-
-        public static bool TryGetPerception<T>(this GameObject Object, out T Item)
-            where T : BasePerception, new()
-            => (Item = Object.GetPerception<T>()) != null;
-
-        #endregion
         #region Strings
         public static string MiniDebugName(this GameObject Object)
             => (Object?.ID ?? "#") + ":" + (Object?.GetReferenceDisplayName(WithoutTitles: true, Short: true)?.Strip() ?? "no one");
@@ -527,7 +479,7 @@ namespace StealthSystemPrototype
         }
 
         public static BaseAlert FindAlert<T>(this Brain Brain, T Perception)
-            where T : BasePerception, new()
+            where T : IPerception, new()
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
                 return null;
@@ -541,7 +493,7 @@ namespace StealthSystemPrototype
         }
 
         public static BaseAlert FindAlert<T>(this Brain Brain, Alert<T> Alert)
-            where T : BasePerception, new()
+            where T : IPerception, new()
             => Brain.FindGoal(Alert.GetType()) as BaseAlert;
 
         #endregion

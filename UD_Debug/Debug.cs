@@ -15,6 +15,7 @@ using StealthSystemPrototype;
 using static StealthSystemPrototype.Options;
 using static StealthSystemPrototype.Const;
 using static StealthSystemPrototype.Utils;
+// using static StealthSystemPrototype.Logging.DebugMethodRegistry;
 
 namespace StealthSystemPrototype.Logging
 {
@@ -37,13 +38,15 @@ namespace StealthSystemPrototype.Logging
             SetSilenceLogging(!SilenceLogging);
         }
 
-        private static bool DoDebugSetting
+        public static DebugMethodRegistry DoDebugRegistry => DebugMethodRegistry.Instance;
+
+        public static bool DoDebugSetting
             => DebugEnableLogging
             && (!DebugDisableWorldGenLogging || The.Player != null)
             && !SilenceLogging
             ;
             
-        private static bool DoDebug
+        public static bool DoDebug
         {
             get
             {
@@ -53,7 +56,7 @@ namespace StealthSystemPrototype.Logging
                         return false;
 
                     if (TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod)
-                        && GetRegistry() is List<MethodRegistryEntry> registry
+                        && DebugMethodRegistry.Instance is DebugMethodRegistry registry
                         && registry.TryGetValue(callingMethod, out bool registryMethodValue)
                         && !registryMethodValue
                         && !DebugEnableAllLogging)
@@ -67,41 +70,14 @@ namespace StealthSystemPrototype.Logging
             }
         }
 
-        [ModSensitiveStaticCache(CreateEmptyInstance = false)]
-        [GameBasedStaticCache(ClearInstance = false)]
-        private static List<MethodRegistryEntry> _DoDebugRegistry = null;
-
-        public static List<MethodRegistryEntry> DoDebugRegistry => _DoDebugRegistry ??= GetRegistry();
-
-
-        public static bool Contains(this ICollection<MethodRegistryEntry> DebugRegistry, MethodBase MethodBase)
-            => !DebugRegistry.IsNullOrEmpty()
-            && MethodBase is not null
-            && DebugRegistry.Any(mb => mb.Equals(MethodBase));
-
-        public static bool GetValue(this ICollection<MethodRegistryEntry> DebugRegistry, MethodBase MethodBase)
+        public static List<Type> DebugTypes = new()
         {
-            foreach ((MethodBase methodBase, bool value) in DebugRegistry)
-                if (MethodBase.Equals(methodBase))
-                    return value;
-
-            throw new ArgumentOutOfRangeException(nameof(MethodBase), "Not found.");
-        }
-        public static bool TryGetValue(
-            this ICollection<MethodRegistryEntry> DebugRegistry,
-            MethodBase MethodBase,
-            out bool Value)
-        {
-            Value = default;
-            if (!DebugRegistry.IsNullOrEmpty()
-                && MethodBase is not null
-                && DebugRegistry.Contains(MethodBase))
-            {
-                Value = DebugRegistry.GetValue(MethodBase);
-                return true;
-            }
-            return false;
-        }
+            typeof(StealthSystemPrototype.Logging.Debug),
+            typeof(StealthSystemPrototype.Logging.Debug.ArgPair),
+            typeof(StealthSystemPrototype.Logging.Indent),
+            typeof(StealthSystemPrototype.Logging.DebugMethodRegistry),
+            typeof(StealthSystemPrototype.Logging.MethodRegistryEntry),
+        };
 
         public static string CallerString(Type CallingType, MethodBase CallingMethod)
             => CallingType.Name + "." + CallingMethod.Name;
@@ -119,137 +95,6 @@ namespace StealthSystemPrototype.Logging
                         : a + paramType;
                 }) +
             ")";
-
-        public static void Register(
-            Type Class,
-            string MethodName,
-            bool Value,
-            List<MethodRegistryEntry> Registry,
-            ref List<MethodRegistryEntry> ReturnRegistry)
-            => Register(Class?.GetMethod(MethodName), Value, Registry, ref ReturnRegistry);
-
-        public static void Register(
-            MethodBase MethodBase,
-            bool Value,
-            List<MethodRegistryEntry> Registry,
-            ref List<MethodRegistryEntry> ReturnRegistry)
-        {
-            string thisMethodName = nameof(Debug) + "." + nameof(Register);
-            if (MethodBase == null)
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: thisMethodName + " passed null " + nameof(MethodBase));
-
-            string declaringType = MethodBase?.DeclaringType?.Name;
-            UnityEngine.Debug.Log(thisMethodName + "(" + declaringType + "." + (MethodBase?.Name ?? "NO_METHOD") + ": " + Value + ")");
-            Registry.Add(new(MethodBase, Value));
-
-            ReturnRegistry = Registry;
-        }
-
-        #region List<MethodRegistryEntry> Extensions
-
-        public static void Register(this List<MethodRegistryEntry> Registry, Type Class, string MethodName, bool Value)
-            => Register(Class, MethodName, Value, Registry, ref _DoDebugRegistry);
-
-        public static void Register(this List<MethodRegistryEntry> Registry, MethodBase MethodBase, bool Value)
-            => Register(MethodBase, Value, Registry, ref _DoDebugRegistry);
-
-        public static void Register(this List<MethodRegistryEntry> Registry, string MethodName, bool Value)
-        {
-            string thisMethodName = nameof(Debug) + "." + nameof(Register);
-            if (TryGetCallingTypeAndMethod(out Type callingType, out MethodBase callingMethod))
-            {
-                bool any = false;
-                foreach (MethodBase methodBase in callingType.GetMethods() ?? new MethodInfo[0])
-                    if (methodBase.Name == MethodName)
-                    {
-                        any = true;
-                        Register(methodBase, Value, Registry, ref _DoDebugRegistry);
-                    }
-                if (!any)
-                    MetricsManager.LogModWarning(
-                        mod: ModManager.GetMod(callingType.Assembly),
-                        Message: CallerSignatureString(callingType, callingMethod) + 
-                            " failed to register any methods called " + MethodName + " with " + thisMethodName);
-            }
-            else
-                MetricsManager.LogModWarning(ThisMod, thisMethodName + " couldn't get " + nameof(callingType));
-        }
-        public static void Register(this List<MethodRegistryEntry> Registry, MethodRegistryEntry RegisterEntry)
-            => Register(RegisterEntry.GetMethod(), RegisterEntry.GetValue(), Registry, ref _DoDebugRegistry);
-
-        #endregion
-
-        public static List<MethodRegistryEntry> GetRegistry()
-        {
-            _DoDebugRegistry ??= new();
-            if (_GotRegistry)
-                return _DoDebugRegistry;
-
-            try
-            {
-                List<MethodInfo> debugRegistryMethods = ModManager.GetMethodsWithAttribute(typeof(UD_DebugRegistryAttribute))
-                        /*
-                        ?.Where(m 
-                            => m != null
-                            && m.IsStatic 
-                            && m.ReturnType.EqualsAny(typeof(void), typeof(List<MethodRegistryEntry>))
-                            && m.GetParameters() is ParameterInfo[] parameters
-                            && parameters[0].GetType() == typeof(List<MethodRegistryEntry>))
-                        ?.ToList();
-                        */
-                    ?? new();
-                if (debugRegistryMethods.IsNullOrEmpty())
-                    MetricsManager.LogModError(
-                        mod: ThisMod,
-                        Message: nameof(Debug) + "." + nameof(GetRegistry) + " failed to retrieve any " + 
-                            nameof(UD_DebugRegistryAttribute) + " decorated methods");
-
-                foreach (MethodInfo debugRegistryMethod in debugRegistryMethods)
-                    debugRegistryMethod.Invoke(null, new object[] { _DoDebugRegistry });
-            }
-            catch (Exception x)
-            {
-                MetricsManager.LogException(nameof(Debug) + "." + nameof(GetRegistry), x, GAME_MOD_EXCEPTION);
-                _GotRegistry = true;
-            }
-            _GotRegistry = true;
-            return _DoDebugRegistry;
-        }
-
-        public static void LogRegistry()
-        {
-            UnityEngine.Debug.Log(nameof(Debug) + "." + nameof(LogRegistry));
-            if (_GotRegistry)
-            {
-                foreach (MethodRegistryEntry methodEntry in DoDebugRegistry ?? new())
-                    UnityEngine.Debug.Log(methodEntry.ToString());
-            }
-            else
-                UnityEngine.Debug.Log("registry not cached yet");
-        }
-
-        [ModSensitiveCacheInit]
-        [GameBasedCacheInit]
-        public static void CacheDoDebugRegistry()
-            => GetRegistry();
-
-        public static bool GetDoDebug(string CallingMethod = null)
-        {
-            if (CallingMethod.IsNullOrEmpty())
-                return DoDebug;
-
-            if (GetRegistry() is List<MethodRegistryEntry> doDebugRegistry
-                && !doDebugRegistry.Any(m => m.GetMethod().Name == CallingMethod))
-                return DoDebugSetting;
-
-            return DoDebug;
-        }
-
-        [ModSensitiveStaticCache( CreateEmptyInstance = false )]
-        [GameBasedStaticCache( ClearInstance = false )]
-        private static bool _GotRegistry = false;
 
         [ModSensitiveStaticCache(CreateEmptyInstance = true)]
         [GameBasedStaticCache(ClearInstance = false)]
@@ -323,18 +168,12 @@ namespace StealthSystemPrototype.Logging
             CallingMethod = null;
             try
             {
-                Type[] debugTypes = new Type[3]
-                {
-                    typeof(StealthSystemPrototype.Logging.Debug),
-                    typeof(StealthSystemPrototype.Logging.Debug.ArgPair),
-                    typeof(StealthSystemPrototype.Logging.Indent),
-                };
                 StackTrace stackTrace = new();
                 for (int i = 0; i < 12 && stackTrace?.GetFrame(i) is StackFrame stackFrameI; i++)
                 {
                     if (stackFrameI?.GetMethod() is MethodBase methodBase
                         && methodBase.DeclaringType is Type declaringType
-                        && !declaringType.EqualsAny(debugTypes))
+                        && !declaringType.EqualsAny(DebugTypes?.ToArray()))
                     {
                         CallingType = declaringType;
                         CallingMethod = methodBase;
@@ -351,7 +190,7 @@ namespace StealthSystemPrototype.Logging
 
         public static Indent Log<T>(string Field, T Value, Indent Indent = null, [CallerMemberName] string CallingMethod = "")
         {
-            if (!GetDoDebug(CallingMethod))
+            if (!DebugMethodRegistry.GetDoDebug(CallingMethod))
             {
                 return Indent;
             }
@@ -431,7 +270,7 @@ namespace StealthSystemPrototype.Logging
             [CallerMemberName] string CallingMethod = "",
             params ArgPair[] ArgPairs)
         {
-            if (!GetDoDebug(CallingMethod))
+            if (!DebugMethodRegistry.GetDoDebug(CallingMethod))
             {
                 return Indent;
             }
@@ -466,7 +305,7 @@ namespace StealthSystemPrototype.Logging
             [CallerMemberName] string CallingMethod = "",
             params ArgPair[] ArgPairs)
         {
-            if (!GetDoDebug(CallingMethod))
+            if (!DebugMethodRegistry.GetDoDebug(CallingMethod))
             {
                 return Indent;
             }

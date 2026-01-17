@@ -3,12 +3,20 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
+using XRL;
+
+using static StealthSystemPrototype.Utils;
+
 namespace StealthSystemPrototype.Logging
 {
     public readonly struct MethodRegistryEntry : IEquatable<MethodBase>
     {
         private readonly MethodBase MethodBase;
         private readonly bool Value;
+
+        public readonly string MethodName => MethodBase?.Name ?? "NO_METHOD";
+        public readonly Type DeclaringType => MethodBase?.DeclaringType;
+        public readonly string DeclaringTypeName => DeclaringType?.Name ?? "NO_TYPE";
 
         public MethodRegistryEntry(MethodBase MethodBase, bool Value)
             : this()
@@ -23,11 +31,19 @@ namespace StealthSystemPrototype.Logging
             MethodBase = this.MethodBase;
         }
 
+        public readonly string GetSourceModName()
+            =>  ModManager.GetMod(DeclaringType.Assembly).Manifest?.Title?.Strip()
+            ?? "NO_MOD";
+
         public readonly string GetTypeAndMethodName()
-            => MethodBase.DeclaringType.Name + "." + MethodBase.Name;
+            => CallChain(DeclaringTypeName, MethodName);
+
+        public readonly string ToString(bool IncludeSourceMod) 
+            => (IncludeSourceMod ? "[" + GetSourceModName() + "] - " : null) +
+                GetTypeAndMethodName() + ": " + Value;
 
         public override readonly string ToString() 
-            => GetTypeAndMethodName() + ": " + Value;
+            => ToString(false);
 
         public MethodBase GetMethod()
             => MethodBase;
@@ -52,17 +68,41 @@ namespace StealthSystemPrototype.Logging
 
         public override readonly bool Equals(object obj)
         {
-            if (obj is KeyValuePair<MethodBase, bool> kvp)
-                return kvp.Key.Equals(MethodBase) && kvp.Value.Equals(Value);
+            if (obj is KeyValuePair<MethodBase, bool> kvpMBBObj)
+                return Equals(kvpMBBObj);
 
-            if (obj is MethodBase methodBase)
-                return MethodBase.Equals(methodBase);
+            if (obj is KeyValuePair<MethodInfo, bool> kvpMIBObj)
+                return Equals(kvpMIBObj);
 
-            if (obj is MethodInfo methodInfo)
-                return MethodBase.Equals(methodInfo);
+            if (obj is MethodBase methodBaseObj)
+                return Equals(methodBaseObj);
+
+            if (obj is MethodInfo methodInfoObj)
+                return Equals(methodInfoObj);
+
+            if (obj is bool boolObj)
+                return Value.Equals(boolObj);
 
             return base.Equals(obj);
         }
+
+        public readonly bool Equals<T>(T obj)
+            where T : MethodBase
+        {
+            if (obj is T tObj)
+                return MethodBase.Equals(tObj);
+
+            return base.Equals(obj);
+        }
+
+        public readonly bool Equals<T>(KeyValuePair<T, bool> obj)
+            where T : MethodBase
+            => obj.Key.Equals(MethodBase)
+            && obj.Value.Equals(Value);
+
+
+        bool IEquatable<MethodBase>.Equals(MethodBase other)
+            => throw new NotImplementedException("Use Generic " + nameof(Equals) + "<T> where T : " + nameof(System.Reflection.MethodBase));
 
         public override readonly int GetHashCode()
         {
@@ -70,9 +110,6 @@ namespace StealthSystemPrototype.Logging
             int value = Value.GetHashCode();
             return methodBase ^ value;
         }
-
-        public readonly bool Equals(MethodBase other)
-            => other.Equals(MethodBase);
 
         public static bool operator ==(MethodRegistryEntry Operand1, MethodBase Operand2) => Operand1.MethodBase == Operand2;
         public static bool operator !=(MethodRegistryEntry Operand1, MethodBase Operand2) => !(Operand1 == Operand2);

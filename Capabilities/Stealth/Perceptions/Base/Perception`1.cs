@@ -3,24 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using StealthSystemPrototype.Events;
-
 using XRL.Rules;
 using XRL.World;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
+
+namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public abstract class Perception<T>
-        : BasePerception
-        , IComposite
-        where T
-        : class,
-        new()
+    public class Perception<T> : IPerception
+        where T : class, new()
     {
         [NonSerialized]
         protected T _Source;
-        public virtual T Source => _Source ??= GetBestSource(Owner); 
+        public virtual T Source => _Source ??= GetBestSource(); 
 
         #region Constructors
 
@@ -63,11 +63,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public abstract T GetBestSource(GameObject Owner = null);
+        public virtual T GetBestSource()
+            => null;
 
-        public override bool Validate(GameObject Owner = null)
-            => (Owner ?? this.Owner) is GameObject owner
-            && owner == this.Owner;
-
+        public override bool Validate()
+            => base.Validate();
     }
 }

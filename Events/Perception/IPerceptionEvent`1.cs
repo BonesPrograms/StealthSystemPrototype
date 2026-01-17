@@ -2,11 +2,15 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Capabilities.Stealth;
-
 using XRL.Collections;
 using XRL.World;
 using XRL.World.Parts;
+
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Events
 {
@@ -20,7 +24,7 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Perceiver;
 
-        public BasePerception Perception;
+        public IPerception Perception;
 
         public PerceptionRack Perceptions;
 
@@ -53,7 +57,7 @@ namespace StealthSystemPrototype.Events
 
         public static T FromPool(
             GameObject Perciever,
-            BasePerception Perception,
+            IPerception Perception,
             PerceptionRack Perceptions)
         {
             if (Perciever == null
@@ -67,7 +71,7 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
-        public static T FromPool(GameObject Perciever, BasePerception Perception)
+        public static T FromPool(GameObject Perciever, IPerception Perception)
             => FromPool(Perciever, Perception, null);
 
         public static T FromPool(GameObject Perciever, PerceptionRack Perceptions)
@@ -107,7 +111,7 @@ namespace StealthSystemPrototype.Events
 
         protected static T Process(
             GameObject Perciever,
-            BasePerception Perception,
+            IPerception Perception,
             PerceptionRack Perceptions,
             out bool Success)
         {

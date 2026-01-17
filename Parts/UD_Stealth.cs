@@ -7,8 +7,9 @@ using XRL.Wish;
 using XRL.UI;
 
 using StealthSystemPrototype;
-using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 namespace XRL.World.Parts

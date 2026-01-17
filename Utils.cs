@@ -11,6 +11,7 @@ using XRL.World.Anatomy;
 using Range = System.Range;
 
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Perceptions;
 using static StealthSystemPrototype.Const;
 
 namespace StealthSystemPrototype
@@ -18,19 +19,13 @@ namespace StealthSystemPrototype
     public static class Utils
     {
         [UD_DebugRegistry]
-        public static List<MethodRegistryEntry> doDebugRegistry(List<MethodRegistryEntry> Registry)
-        {
-            Dictionary<string, bool> multiMethodRegistrations = new()
-            {
-                { nameof(GetFirstCallingModNot), false },
-            };
-
-            foreach (MethodBase extensionMethod in typeof(StealthSystemPrototype.Utils).GetMethods() ?? new MethodBase[0])
-                if (multiMethodRegistrations.ContainsKey(extensionMethod.Name))
-                    Registry.Register(extensionMethod, multiMethodRegistrations[extensionMethod.Name]);
-
-            return Registry;
-        }
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+            => Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Utils),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(GetFirstCallingModNot), false },
+                });
 
         #region Meta
 

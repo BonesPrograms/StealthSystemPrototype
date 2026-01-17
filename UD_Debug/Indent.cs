@@ -62,10 +62,9 @@ namespace StealthSystemPrototype.Logging
         {
             get
             {
-                if (Debug.GetDoDebug())
-                {
+                if (DebugMethodRegistry.GetDoDebug())
                     LastValue = CapIndent(BaseValue + Indent);
-                }
+
                 return this;
             }
             protected set => SetIndent(value + Indent);

@@ -2,12 +2,16 @@
 
 using XRL.World;
 
+using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public abstract class SimplePerception : BasePerception, IComposite
+    public abstract class SimplePerception : IPerception
     {
         public const string FACE_BODYPART = "Face";
 
@@ -42,13 +46,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public override bool Validate(GameObject Owner = null)
+        public override bool Validate()
         {
-            Owner ??= this.Owner;
-            if (Owner == null)
-                return false;
-
-            if (Owner != this.Owner)
+            if (!base.Validate())
                 return false;
 
             if (Owner.Body == null

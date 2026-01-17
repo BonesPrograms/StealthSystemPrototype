@@ -8,14 +8,18 @@ using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts.Mutation;
 
+using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class BodyPartPerception : Perception<BodyPart>, IComposite
+    public class BodyPartPerception : Perception<BodyPart>
     {
         public string SourceType;
 
@@ -72,9 +76,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public override BodyPart GetBestSource(GameObject Owner)
+        public override BodyPart GetBestSource()
         {
-            Owner ??= this.Owner;
             if (Owner == null
                 || Owner.Body?.LoopPart(SourceType, ExcludeDismembered: true) is not List<BodyPart> bodyParts)
                 return null;
@@ -85,11 +88,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return bodyParts[0];
         }
 
-        public override bool Validate(GameObject Owner = null)
-            => (Owner ?? this.Owner) is GameObject owner
-            && base.Validate(owner)
-            && owner.Body != null
-            && owner.Body.GetFirstPart(SourceType, false) != null;
+        public override bool Validate()
+            => base.Validate()
+            && Owner.Body?.GetFirstPart(SourceType, false) != null;
 
     }
 }

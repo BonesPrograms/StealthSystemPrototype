@@ -6,6 +6,9 @@ using XRL.World;
 using XRL.World.Anatomy;
 using XRL.World.Parts;
 
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
@@ -54,10 +57,9 @@ namespace StealthSystemPrototype.Events
 
         public GetPerceptionsEvent AddPerception<T>(
             T Perception,
-            bool Override = true)
-            where T
-            : BasePerception
-            , new()
+            bool DoRegistration = true,
+            bool Creation = false)
+            where T : IPerception, new()
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -67,13 +69,37 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Perception?.ToString()),
                 });
 
-            Perceptions ??= new(Perceiver);
-            if (Perception != null)
-            {
+            Perceptions ??= new PerceptionRack(Perceiver);
+
+            if (Perception.Owner != Perceiver)
+                Perception.Owner = Perceiver;
+
+            Perceptions.Add(Perception, DoRegistration, Creation);
+
+            return this;
+        }
+
+        public GetPerceptionsEvent RequirePerception<T>(
+            T Perception = null,
+            bool Creation = false)
+            where T : IPerception, new()
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Perceiver?.DebugName ?? "null"),
+                    Debug.Arg(Perception?.ToString()),
+                });
+
+            Perceptions ??= new PerceptionRack(Perceiver);
+
+            if (!Perceptions.Has<T>())
                 if (Perception.Owner != Perceiver)
+                {
                     Perception.Owner = Perceiver;
-                Perceptions.Add(Perception, Override);
-            }
+                    AddPerception(Perception, DoRegistration: true, Creation);
+                }
             return this;
         }
 
@@ -82,96 +108,208 @@ namespace StealthSystemPrototype.Events
             PerceptionSense Sense,
             ClampedDieRoll BaseScore,
             Radius BaseRadius,
-            bool Override = true)
+            bool DoRegistration = true,
+            bool Creation = false)
             where T : IPart, new()
             => AddPerception(
                 Perception: new IPartPerception<T>(
                     Source: IPart,
                     Sense: Sense, 
                     BaseDieRoll: BaseScore, 
-                    BaseRadius: BaseRadius), 
-                Override: Override);
+                    BaseRadius: BaseRadius),
+                DoRegistration: DoRegistration,
+                Creation: Creation);
+
+        public GetPerceptionsEvent RequireIPartPerception<T>(
+            T IPart,
+            PerceptionSense Sense,
+            ClampedDieRoll BaseScore,
+            Radius BaseRadius,
+            bool Creation = false)
+            where T : IPart, new()
+            => RequirePerception(
+                Perception: new IPartPerception<T>(
+                    Source: IPart,
+                    Sense: Sense, 
+                    BaseDieRoll: BaseScore, 
+                    BaseRadius: BaseRadius),
+                Creation: Creation);
 
         public GetPerceptionsEvent AddIPartPerception<T>(
             T IPart,
             PerceptionSense Sense,
-            bool Override = true)
+            bool DoRegistration = true,
+            bool Creation = false)
             where T : IPart, new()
             => AddIPartPerception(
                 IPart: IPart,
                 Sense: Sense, 
-                BaseScore: BasePerception.BASE_DIE_ROLL, 
-                BaseRadius: BasePerception.BASE_RADIUS, 
-                Override: Override);
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: IPerception.BASE_RADIUS,
+                DoRegistration: DoRegistration,
+                Creation: Creation);
+
+        public GetPerceptionsEvent RequireIPartPerception<T>(
+            T IPart,
+            PerceptionSense Sense,
+            bool Creation = false)
+            where T : IPart, new()
+            => RequireIPartPerception(
+                IPart: IPart,
+                Sense: Sense, 
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: IPerception.BASE_RADIUS,
+                Creation: Creation);
 
         public GetPerceptionsEvent AddVisualIPartPerception<T>(
             T IPart,
-            bool Override = true)
+            bool DoRegistration = true,
+            bool Creation = false)
             where T : IPart, new()
             => AddIPartPerception(
                 IPart: IPart,
                 Sense: PerceptionSense.Visual, 
-                BaseScore: BasePerception.BASE_DIE_ROLL, 
-                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.VisualFlag), 
-                Override: Override);
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.VisualFlag),
+                DoRegistration: DoRegistration,
+                Creation: Creation);
+
+        public GetPerceptionsEvent RequireVisualIPartPerception<T>(
+            T IPart,
+            bool Creation = false)
+            where T : IPart, new()
+            => RequireIPartPerception(
+                IPart: IPart,
+                Sense: PerceptionSense.Visual, 
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.VisualFlag),
+                Creation: Creation);
 
         public GetPerceptionsEvent AddAuditoryIPartPerception<T>(
             T IPart,
-            bool Override = true)
+            bool DoRegistration = true,
+            bool Creation = false)
             where T : IPart, new()
             => AddIPartPerception(
                 IPart: IPart,
                 Sense: PerceptionSense.Auditory, 
-                BaseScore: BasePerception.BASE_DIE_ROLL, 
-                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.AuditoryFlag), 
-                Override: Override);
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.AuditoryFlag),
+                DoRegistration: DoRegistration,
+                Creation: Creation);
+
+        public GetPerceptionsEvent RequireAuditoryIPartPerception<T>(
+            T IPart,
+            bool Creation = false)
+            where T : IPart, new()
+            => RequireIPartPerception(
+                IPart: IPart,
+                Sense: PerceptionSense.Auditory, 
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.AuditoryFlag),
+                Creation: Creation);
 
         public GetPerceptionsEvent AddOlfactoryIPartPerception<T>(
             T IPart,
-            bool Override = true)
+            bool DoRegistration = true,
+            bool Creation = false)
             where T : IPart, new()
             => AddIPartPerception(
                 IPart: IPart,
                 Sense: PerceptionSense.Olfactory, 
-                BaseScore: BasePerception.BASE_DIE_ROLL, 
-                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.OlfactoryFlag), 
-                Override: Override);
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.OlfactoryFlag),
+                DoRegistration: DoRegistration,
+                Creation: Creation);
+
+        public GetPerceptionsEvent RequireOlfactoryIPartPerception<T>(
+            T IPart,
+            bool Creation = false)
+            where T : IPart, new()
+            => RequireIPartPerception(
+                IPart: IPart,
+                Sense: PerceptionSense.Olfactory, 
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.OlfactoryFlag),
+                Creation: Creation);
 
         public GetPerceptionsEvent AddPsionicIPartPerception<T>(
             T IPart,
-            bool Override = true)
+            bool DoRegistration = true,
+            bool Creation = false)
             where T : IPart, new()
             => AddIPartPerception(
                 IPart: IPart,
                 Sense: PerceptionSense.Psionic, 
-                BaseScore: BasePerception.BASE_DIE_ROLL, 
-                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.PsionicFlag), 
-                Override: Override);
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.PsionicFlag),
+                DoRegistration: DoRegistration,
+                Creation: Creation);
+
+        public GetPerceptionsEvent RequirePsionicIPartPerception<T>(
+            T IPart,
+            bool Creation = false)
+            where T : IPart, new()
+            => RequireIPartPerception(
+                IPart: IPart,
+                Sense: PerceptionSense.Psionic, 
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.PsionicFlag),
+                Creation: Creation);
 
         public GetPerceptionsEvent AddBodyPartPerception(
             BodyPart BodyPart,
             PerceptionSense Sense,
             ClampedDieRoll BaseScore,
             Radius BaseRadius,
-            bool Override = true)
+            bool DoRegistration = true,
+            bool Creation = false)
             => AddPerception(
                 Perception: new BodyPartPerception(
                     Source: BodyPart,
                     Sense: Sense, 
                     BaseDieRoll: BaseScore, 
-                    BaseRadius: BaseRadius), 
-                Override: Override);
+                    BaseRadius: BaseRadius),
+                DoRegistration: DoRegistration,
+                Creation: Creation);
+
+        public GetPerceptionsEvent RequireBodyPartPerception(
+            BodyPart BodyPart,
+            PerceptionSense Sense,
+            ClampedDieRoll BaseScore,
+            Radius BaseRadius,
+            bool Creation = false)
+            => RequirePerception(
+                Perception: new BodyPartPerception(
+                    Source: BodyPart,
+                    Sense: Sense, 
+                    BaseDieRoll: BaseScore, 
+                    BaseRadius: BaseRadius),
+                Creation: Creation);
 
         public GetPerceptionsEvent AddBodyPartPerception(
             BodyPart BodyPart,
             PerceptionSense Sense,
-            bool Override = true)
+            bool DoRegistration = true,
+            bool Creation = false)
             => AddBodyPartPerception(
                 BodyPart: BodyPart,
                 Sense: Sense, 
-                BaseScore: BasePerception.BASE_DIE_ROLL, 
-                BaseRadius: BasePerception.BASE_RADIUS, 
-                Override: Override);
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: IPerception.BASE_RADIUS,
+                DoRegistration: DoRegistration,
+                Creation: Creation);
+
+        public GetPerceptionsEvent RequireBodyPartPerception(
+            BodyPart BodyPart,
+            PerceptionSense Sense,
+            bool Creation = false)
+            => RequireBodyPartPerception(
+                BodyPart: BodyPart,
+                Sense: Sense, 
+                BaseScore: IPerception.BASE_DIE_ROLL, 
+                BaseRadius: IPerception.BASE_RADIUS,
+                Creation: Creation);
     }
 }
 

@@ -3,16 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using StealthSystemPrototype.Events;
-
 using XRL.World;
 using XRL.World.Parts;
 using XRL.World.Parts.Mutation;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
+
+namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class EsperPsionic : IPartPerception<Esper>, IComposite
+    public class EsperPsionic : IPartPerception<Esper>
     {
         #region Constructors
 

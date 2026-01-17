@@ -2,12 +2,16 @@
 
 using XRL.World;
 
+using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class Visual : SimplePerception, IComposite
+    public class Visual : SimplePerception
     {
         #region Constructors
 
@@ -41,6 +45,38 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-
+        public override bool WantEvent(int ID, int Cascade)
+            => base.WantEvent(ID, Cascade)
+            || ID == EnteredCellEvent.ID
+            || ID == EquippedEvent.ID
+            ;
+        public override bool HandleEvent(EnteredCellEvent E)
+        {
+            if (E.Actor?.IsPlayer() ?? false)
+            {
+                using Indent indent = new(1);
+                Debug.LogCaller(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(E?.TypeStringWithGenerics()),
+                        Debug.Arg(E?.Actor?.DebugName ?? "no one??"),
+                    });
+            }
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(EquippedEvent E)
+        {
+            if (E.Actor?.IsPlayer() ?? false)
+            {
+                using Indent indent = new(1);
+                Debug.LogCaller(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                        Debug.Arg(E?.TypeStringWithGenerics()),
+                        Debug.Arg(E?.Actor?.DebugName ?? "no one??"),
+                    });
+            }
+            return base.HandleEvent(E);
+        }
     }
 }

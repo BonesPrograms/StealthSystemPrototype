@@ -3,21 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL;
 using XRL.Rules;
 using XRL.World;
-
-using StealthSystemPrototype.Events;
-using static StealthSystemPrototype.Utils;
 using XRL.World.AI.Pathfinding;
-using XRL;
+
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+using static StealthSystemPrototype.Utils;
+using System.Reflection;
+
+namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public abstract class BasePerception
+    public class IPerception
         : IComponent<GameObject>,
-        IComparable<BasePerception>,
+        IComparable<IPerception>,
         IWitnessEventHandler,
         IPerceptionEventHandler
     {
@@ -29,7 +34,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             public override void WriteBind(SerializationWriter Writer, IEventHandler Handler, int ID)
             {
-                Writer.WriteGameObject(((BasePerception)Handler).Owner, Reference: true);
+                Writer.WriteGameObject(((IPerception)Handler).Owner, Reference: true);
                 Writer.WriteTokenized(Handler.GetType());
             }
 
@@ -37,7 +42,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             {
                 GameObject owner = Reader.ReadGameObject();
                 Type type = Reader.ReadTokenizedType();
-                foreach (BasePerception perception in owner?.GetPerceptions() ?? new())
+                foreach (IPerception perception in owner?.GetPerceptions() ?? new())
                     if ((object)perception.GetType() == type)
                         return perception;
 
@@ -45,7 +50,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-        public class RatingComparer : IComparer<BasePerception>
+        public class RatingComparer : IComparer<IPerception>
         {
             protected GameObject Entity;
 
@@ -59,7 +64,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 this.Entity = Entity;
             }
 
-            public virtual int Compare(BasePerception x, BasePerception y)
+            public virtual int Compare(IPerception x, IPerception y)
             {
                 if (Utils.EitherNull(x, y, out int comparison))
                     return comparison;
@@ -144,10 +149,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public List<Cell> RadiusAreaCells => _RadiusAreaCells ??= GetRadiusAreaCells();
 
         #endregion
-
         #region Constructors
 
-        public BasePerception()
+        public IPerception()
         {
             Owner = null;
             Sense = PerceptionSense.None;
@@ -165,12 +169,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             _RadiusAreaCells = null;
         }
-        public BasePerception(GameObject Owner)
+        public IPerception(GameObject Owner)
             : this()
         {
             this.Owner = Owner;
         }
-        public BasePerception(
+        public IPerception(
             GameObject Owner,
             PerceptionSense Sense,
             ClampedDieRoll BaseDieRoll,
@@ -181,7 +185,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             this.BaseDieRoll = BaseDieRoll;
             this.BaseRadius = BaseRadius;
         }
-        public BasePerception(
+        public IPerception(
             GameObject Owner,
             PerceptionSense Sense)
             : this(Owner, Sense, BASE_DIE_ROLL, BASE_RADIUS)
@@ -208,20 +212,122 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             _Radius = Radius.ReadOptimizedRadius(Reader);
         }
 
+        public virtual void FinalizeRead(SerializationReader Reader)
+        {
+        }
+
         #endregion
 
         public override GameObject GetComponentBasis()
             => Owner;
 
-        #region Abstract Methods
+        #region Base Methods
 
-        public abstract bool Validate(GameObject Owner = null);
+        public virtual void Initialize()
+        {
+        }
 
-        public virtual int GetBonusBaseDieRoll() => 0;
-        public virtual int GetBonusBaseRadius() => 0;
+        public virtual void Attach()
+        {
+        }
 
-        public virtual int GetBonusDieRoll() => 0;
-        public virtual int GetBonusRadius() => 0;
+        public virtual void AddedAfterCreation()
+        {
+        }
+
+        public virtual void Remove()
+        {
+        }
+
+        public virtual IPerception DeepCopy(GameObject Parent)
+        {
+            IPerception perception = (IPerception)Activator.CreateInstance(GetType());
+
+            FieldInfo[] fields = GetType().GetFields();
+
+            foreach (FieldInfo fieldInfo in fields)
+                if ((fieldInfo.Attributes & FieldAttributes.NotSerialized) == 0
+                    && !fieldInfo.IsLiteral)
+                    fieldInfo.SetValue(perception, fieldInfo.GetValue(this));
+
+            perception.Owner = Parent;
+
+            return perception;
+        }
+
+        public virtual bool Validate()
+        {
+            if (Owner == null)
+                return false;
+
+            return true;
+        }
+
+        public virtual int GetBonusBaseDieRoll()
+            => 0;
+
+        public virtual int GetBonusBaseRadius()
+            => 0;
+
+        public virtual int GetBonusDieRoll()
+            => 0;
+
+        public virtual int GetBonusRadius()
+            => 0;
+
+        #endregion
+        #region Virtual Event Registration
+
+        public virtual void ApplyRegistrar(GameObject Object, bool Active = false)
+        {
+            if (Active)
+            {
+                RegisterActive(Object, EventRegistrar.Get(Object, this));
+                return;
+            }
+            Register(Object, EventRegistrar.Get(Object, this));
+            /* This is base game code which should be investigated and possibly emulated 
+            if (ComponentReflection.EffectEvents.TryGetValue(GetType(), out var value))
+            {
+                Object.CurrentCell?.FlushRenderCache();
+                for (int i = 0; i < value.Length; i++)
+                    Object.RegisterEvent(this, value[i]);
+            }
+            */
+            if (WantEvent(EndTurnEvent.ID, EndTurnEvent.CascadeLevel))
+                Object.RegisterEvent(this, EndTurnEvent.ID);
+        }
+
+        public virtual void ApplyUnregistrar(GameObject Object, bool Active = false)
+        {
+            EventUnregistrar registrar = EventUnregistrar.Get(Object, this);
+            if (!Active)
+            {
+                Register(Object, registrar);
+                /* This is base game code which should be investigated and possibly emulated 
+                if (ComponentReflection.PartEvents.TryGetValue(GetType(), out var value))
+                    for (int i = 0; i < value.Length; i++)
+                        Object.UnregisterEvent(this, value[i]);
+                */
+                if (WantEvent(EndTurnEvent.ID, EndTurnEvent.CascadeLevel))
+                    Object.UnregisterEvent(this, EndTurnEvent.ID);
+            }
+            RegisterActive(Object, registrar);
+        }
+
+        /// <summary>Register to events from the <see cref="GameObject" /> while it is active in the action queue.</summary>
+        /// <remarks>It is safer to register for external events here, since they're guaranteed to be cleaned up once the object goes out of scope.</remarks>
+        /// <param name="Object">The current <see cref="GameObject" />.</param>
+        /// <param name="Registrar">An <see cref="IEventRegistrar" /> with this <see cref="IPerception" /> and <see cref="GameObject" />  provisioned as defaults.</param>
+        public virtual void RegisterActive(GameObject Object, IEventRegistrar Registrar)
+        {
+        }
+        /// <summary>Register to events from the <see cref="GameObject" />.</summary>
+        /// <param name="Object">The current <see cref="GameObject" />.</param>
+        /// <param name="Registrar">An <see cref="IEventRegistrar" /> with this <see cref="IPerception" /> and <see cref="GameObject" /> provisioned as defaults.</param>
+        public virtual void Register(GameObject Object, IEventRegistrar Registrar)
+        {
+        }
 
         #endregion
         #region Virtual HandleEvent
@@ -229,6 +335,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual bool HandleEvent(GetWitnessesEvent E)
             => true;
 
+        // this currently unlikely to ever be called, based on how collection and dispatch happens,
+        // but it is a goal to get it working.
         public virtual bool HandleEvent(GetPerceptionsEvent E)
             => true;
 
@@ -241,7 +349,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #endregion
 
         protected ClampedDieRoll GetDieRoll<T>(T Perception = null)
-            where T : BasePerception
+            where T : IPerception
             => GetPerceptionDieRollEvent.GetFor(
                     Perceiver: Owner,
                     Perception: Perception ?? (T)this,
@@ -249,7 +357,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 ?.AdjustBy(GetBonusDieRoll());
 
         protected Radius GetRadius<T>(T Perception = null)
-            where T : BasePerception
+            where T : IPerception
             => GetPerceptionRadiusEvent.GetFor(
                     Perceiver: Owner,
                     Perception: Perception ?? (T)this,
@@ -496,7 +604,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #endregion
         #region Comparison
 
-        public int CompareTo(BasePerception other)
+        public int CompareTo(IPerception other)
         {
             if (EitherNull(this, other, out int comparison))
                 return comparison;
@@ -513,16 +621,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #region Comparison
 
-        public static bool operator <(BasePerception Op1, BasePerception Op2)
+        public static bool operator <(IPerception Op1, IPerception Op2)
             => Op1.CompareTo(Op2) < 0;
 
-        public static bool operator >(BasePerception Op1, BasePerception Op2)
+        public static bool operator >(IPerception Op1, IPerception Op2)
             => Op1.CompareTo(Op2) > 0;
 
-        public static bool operator <=(BasePerception Op1, BasePerception Op2)
+        public static bool operator <=(IPerception Op1, IPerception Op2)
             => Op1.CompareTo(Op2) <= 0;
 
-        public static bool operator >=(BasePerception Op1, BasePerception Op2)
+        public static bool operator >=(IPerception Op1, IPerception Op2)
             => Op1.CompareTo(Op2) >= 0;
 
         #endregion

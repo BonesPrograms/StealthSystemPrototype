@@ -5,15 +5,17 @@ using System.Text;
 
 using XRL.Rules;
 using XRL.World;
-
-using StealthSystemPrototype.Events;
 using XRL.World.AI;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+
+namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
     public abstract class Alert<T> : BaseAlert
-        where T : BasePerception
+        where T : IPerception
     {
 
         #region Constructors

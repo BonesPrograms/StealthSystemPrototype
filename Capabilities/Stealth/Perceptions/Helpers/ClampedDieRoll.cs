@@ -2,10 +2,14 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Logging;
-
 using XRL.Rules;
 using XRL.World;
+
+using StealthSystemPrototype;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
