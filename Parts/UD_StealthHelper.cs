@@ -16,7 +16,7 @@ namespace XRL.World.Parts
 {
     [HasWishCommand]
     [Serializable]
-    public class UD_Stealth : IScribedPart
+    public class UD_StealthHelper : IScribedPart
     {
         public static bool ConstantDebugOutput = false;
 
@@ -24,7 +24,7 @@ namespace XRL.World.Parts
 
         public List<AwarenessLevel> WitnessesAwarenessLevels;
 
-        public UD_Stealth()
+        public UD_StealthHelper()
         {
             Witnesses = null;
             WitnessesAwarenessLevels = null;
@@ -53,27 +53,24 @@ namespace XRL.World.Parts
             return Accumulator + nextString;
         }
 
-        public string WitnessListString(List<GameObject> Witnesses, string Delimiter = "\n", Func<string, string> ProcItem = null)
-            => (Witnesses ?? this.Witnesses) is List<GameObject> witnessess
+        public string WitnessListString(string Delimiter = "\n", Func<string, string> ProcItem = null)
+            => Witnesses is List<GameObject> witnessess
                 && witnessess.Count > 0
             ? witnessess?.Aggregate("", (a, n) => ProcWitness(a, n, Delimiter, ProcItem))
             : "Total {{K|Invisibility}}!";
 
-        public string WitnessListString(string Delimiter = "\n", Func<string, string> ProcItem = null)
-            => WitnessListString(null, Delimiter, ProcItem);
-
         public List<GameObject> GetWitnesses()
         {
-            Witnesses = GetWitnessesEvent.GetFor(ParentObject);
-            Witnesses?.ForEach(delegate (GameObject witness)
-            {
-                if (witness.TryGetPart(out UD_Witness witnessPart)
-                    && witnessPart.BestPerception?.GetAwareness(ParentObject) is AwarenessLevel witnessAwareness)
+            GetWitnessesEvent.GetFor(ParentObject, ref Witnesses)
+                ?.ForEach(delegate (GameObject witness)
                 {
-                    WitnessesAwarenessLevels ??= new();
-                    WitnessesAwarenessLevels.Add(witnessAwareness);
-                }
-            });
+                    if (witness.TryGetPart(out UD_Witness witnessPart)
+                        && witnessPart.BestPerception?.GetAwareness(ParentObject) is AwarenessLevel witnessAwareness)
+                    {
+                        WitnessesAwarenessLevels ??= new();
+                        WitnessesAwarenessLevels.Add(witnessAwareness);
+                    }
+                });
             return Witnesses;
         }
 
@@ -92,9 +89,10 @@ namespace XRL.World.Parts
                 WitnessesAwarenessLevels.Clear();
                 using Indent indent = new(1);
                 Debug.Log("<UD_Steath debug toggle witnesses>", Indent: indent[0]);
+                GetWitnesses();
                 Debug.Log(
                     Field: ParentObject.MiniDebugName() + " Witnesses",
-                    Value: "\n" + WitnessListString(GetWitnesses(), "\n", s => " ".ThisManyTimes(4) + s),
+                    Value: "\n" + WitnessListString("\n", s => " ".ThisManyTimes(4) + s),
                     Indent: indent[0]);
                 Debug.Log("</UD_Steath debug toggle witnesses>", Indent: indent[0]);
             }
@@ -102,7 +100,7 @@ namespace XRL.World.Parts
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
-            E.AddEntry(this, nameof(Witnesses), WitnessListString(GetWitnesses()).Strip());
+            E.AddEntry(this, nameof(Witnesses), WitnessListString().Strip());
             E.AddEntry(this, nameof(Witnesses) + " " + nameof(Witnesses.Count), Witnesses?.Count ?? 0);
             return base.HandleEvent(E);
         }
@@ -129,10 +127,11 @@ namespace XRL.World.Parts
         public static void DebugWitnesses_Wish()
         {
             if (The.Player is GameObject player
-                && player.TryGetPart(out UD_Stealth stealthPart))
+                && player.TryGetPart(out UD_StealthHelper stealthPart))
             {
+                stealthPart.GetWitnesses();
                 string msg = player.MiniDebugName() + "'s Witnesses:\n" +
-                        stealthPart.WitnessListString(stealthPart.GetWitnesses(), "\n", s => "{{K|" + "-".ThisManyTimes(4) + "}}" + s);
+                    stealthPart.WitnessListString("\n", s => "{{K|" + "-".ThisManyTimes(4) + "}}" + s);
                 UnityEngine.Debug.Log("<UD_Steath debug witnesses>");
                 UnityEngine.Debug.Log(msg.Strip().Replace("----", "    "));
                 UnityEngine.Debug.Log("</UD_Steath debug witnesses>");

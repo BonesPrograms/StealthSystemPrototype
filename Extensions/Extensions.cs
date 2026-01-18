@@ -24,6 +24,7 @@ namespace StealthSystemPrototype
 {
     public static class Extensions
     {
+        #region Debug
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
             => Registry.RegisterEach(
@@ -35,7 +36,7 @@ namespace StealthSystemPrototype
                     { nameof(HasLOSTo), false },
                     { nameof(GetCellsInACosmeticCircleSilent), false },
                 });
-
+        #endregion
         #region Clamping
 
         public static int Clamp(this int Value, int Min, int Max)
@@ -43,6 +44,16 @@ namespace StealthSystemPrototype
 
         public static int Clamp(this int Value, InclusiveRange Range)
             => Value.Clamp(Range.Min, Range.Max);
+
+        public static bool Twixt<T>(this T Value, T Min, T Max, bool Inclusive = false)
+            where T : IComparable
+            => Inclusive
+                ? Value.CompareTo(Min) < 0 && Value.CompareTo(Max) > 0
+                : Value.CompareTo(Min) <= 0 && Value.CompareTo(Max) >= 0;
+
+        public static int ToInt<T>(this T Value)
+            where T : struct, Enum
+            => (int)(object)Value;
 
         #endregion
         #region Die Rolls
@@ -437,6 +448,90 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+        #region Events
+
+        public static bool HasRegisteredEvent(
+            this IEnumerable<GameObject> GameObjects,
+            Event E,
+            out IEnumerable<GameObject> RegisteredGameObjects)
+        {
+            RegisteredGameObjects = null;
+            if (GameObjects.IsNullOrEmpty())
+                return false;
+
+            return !(RegisteredGameObjects = GameObjects.Where(GO => GO.HasRegisteredEvent(E.ID))).IsNullOrEmpty();
+        }
+        public static bool FireEvent(
+            this IEnumerable<GameObject> GameObjects,
+            Event E,
+            bool RegisteredOnly = false)
+        {
+            if (GameObjects.IsNullOrEmpty())
+                return true;
+
+            IEnumerable<GameObject> gameObjects = GameObjects;
+            if (RegisteredOnly
+                && !gameObjects.HasRegisteredEvent(E, out gameObjects))
+                return true;
+
+            foreach (GameObject gameObject in gameObjects)
+                if (!gameObject.FireEvent(E))
+                    return false;
+
+            return true;
+        }
+
+        public static bool WantEvent(
+            this IEnumerable<GameObject> GameObjects,
+            int ID,
+            int Cascade,
+            out IEnumerable<GameObject> WantEventGameObjects)
+        {
+            WantEventGameObjects = null;
+            if (GameObjects.IsNullOrEmpty())
+                return false;
+
+            return !(WantEventGameObjects = GameObjects.Where(GO => GO.WantEvent(ID, Cascade))).IsNullOrEmpty();
+        }
+        public static bool HandleEvent<T>(
+            this IEnumerable<GameObject> GameObjects,
+            T E,
+            bool WantOnly = false)
+            where T : MinEvent, new()
+        {
+            if (GameObjects.IsNullOrEmpty())
+                return true;
+
+            IEnumerable<GameObject> gameObjects = GameObjects;
+            if (WantOnly
+                && !gameObjects.WantEvent(E.GetID(), E.GetCascadeLevel(), out gameObjects))
+                return true;
+
+            foreach (GameObject gameObject in gameObjects)
+                if (!gameObject.HandleEvent(E))
+                    return false;
+
+            return true;
+        }
+
+        public static Event SetParameterOrNullExisting(
+            this Event Event,
+            string ParameterName,
+            object ParameterValue = null)
+        {
+            if (Event == null)
+                return null;
+
+            if (ParameterValue != null)
+                Event.SetParameter(ParameterName, ParameterValue);
+            else
+            if (Event.HasParameter(ParameterName))
+                Event.SetParameter(ParameterName, null);
+
+            return Event;
+        }
+
+        #endregion
         #region Anatomy
 
         public static IEnumerable<BodyPart> LoopPart(this Body Body, string RequiredType, Predicate<BodyPart> Filter)
@@ -478,7 +573,7 @@ namespace StealthSystemPrototype
             return null;
         }
 
-        public static BaseAlert FindAlert<T>(this Brain Brain, T Perception)
+        public static IAlert FindAlert<T>(this Brain Brain, T Perception)
             where T : IPerception, new()
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
@@ -492,9 +587,9 @@ namespace StealthSystemPrototype
             return null;
         }
 
-        public static BaseAlert FindAlert<T>(this Brain Brain, Alert<T> Alert)
+        public static IAlert FindAlert<T>(this Brain Brain, Alert<T> Alert)
             where T : IPerception, new()
-            => Brain.FindGoal(Alert.GetType()) as BaseAlert;
+            => Brain.FindGoal(Alert.GetType()) as IAlert;
 
         #endregion
         #region Cells
@@ -615,7 +710,7 @@ namespace StealthSystemPrototype
         public static int Average(this Range Range)
             => new InclusiveRange(Range).Average();
 
-        public static int Breadth(this Range Range)
+        public static int Length(this Range Range)
             => new InclusiveRange(Range).AbsLength;
 
         public static int Floor(this Range Range)

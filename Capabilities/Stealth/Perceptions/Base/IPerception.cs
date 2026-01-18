@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Perceptions
         : IComponent<GameObject>,
         IComparable<IPerception>,
         IWitnessEventHandler,
-        IPerceptionEventHandler
+        ISneakEventHandler
     {
         #region Helpers
 
@@ -106,7 +106,6 @@ namespace StealthSystemPrototype.Perceptions
         public static Radius.RadiusFlags PsionicFlag => Radius.RadiusFlags.Line | Radius.RadiusFlags.Area | Radius.RadiusFlags.Diffuses;
 
         #endregion
-
         #region Instance Fields & Properties
 
         public sealed override IEventBinder Binder => EventBinder.Instance;
@@ -118,6 +117,8 @@ namespace StealthSystemPrototype.Perceptions
         public string ShortName => _ShortName ??= GetName(true);
 
         public GameObject Owner;
+
+        public PerceptionRack Rack => Owner?.GetPerceptions();
 
         public PerceptionSense Sense;
 

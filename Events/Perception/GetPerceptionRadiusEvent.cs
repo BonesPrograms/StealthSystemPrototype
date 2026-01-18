@@ -10,6 +10,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
+
 using static StealthSystemPrototype.Perceptions.IPerception;
 
 namespace StealthSystemPrototype.Events
@@ -70,11 +71,11 @@ namespace StealthSystemPrototype.Events
 
         public override Event GetStringyEvent()
             => base.GetStringyEvent()
-                ?.SetParameter(nameof(Name), Name)
-                ?.SetParameter(nameof(Type), Type)
-                ?.SetParameter(nameof(Sense), Sense)
-                ?.SetParameter(nameof(BaseRadius), BaseRadius)
-                ?.SetParameter(nameof(Radius), Radius)
+                ?.SetParameterOrNullExisting(nameof(Name), Name)
+                ?.SetParameterOrNullExisting(nameof(Type), Type)
+                ?.SetParameterOrNullExisting(nameof(Sense), Sense)
+                ?.SetParameterOrNullExisting(nameof(BaseRadius), BaseRadius)
+                ?.SetParameterOrNullExisting(nameof(Radius), Radius)
                 ;
 
         public override void UpdateFromStringyEvent()

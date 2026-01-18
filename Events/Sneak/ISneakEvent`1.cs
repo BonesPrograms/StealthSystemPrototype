@@ -9,13 +9,14 @@ using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public abstract class IWitnessEvent<T> : ModPooledEvent<T>
-        where T : IWitnessEvent<T>, new()
+    public abstract class ISneakEvent<T> : ModPooledEvent<T>
+        where T : ISneakEvent<T>, new()
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
@@ -23,13 +24,16 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Hider;
 
+        public SneakPerformance Performance;
+
         public List<GameObject> Witnesses;
 
         public Event StringyEvent;
 
-        public IWitnessEvent()
+        public ISneakEvent()
         {
             Hider = null;
+            Performance = null;
             Witnesses = null;
 
             StringyEvent = null;
@@ -45,28 +49,50 @@ namespace StealthSystemPrototype.Events
         {
             base.Reset();
             Hider = null;
+            Performance = null;
             Witnesses = null;
             StringyEvent?.Clear();
             StringyEvent = null;
         }
 
-        public static T FromPool(GameObject Hider, List<GameObject> Witnesses = null)
+        public static T FromPool(
+            GameObject Hider,
+            SneakPerformance Performance)
         {
             if (Hider == null
                 || FromPool() is not T E)
                 return null;
 
             E.Hider = Hider;
-            E.Witnesses = Witnesses ?? Event.NewGameObjectList();
+            E.Performance = Performance;
             E.StringyEvent = E.GetStringyEvent();
             return E;
         }
 
-        public static Event GetStringyEvent(IWitnessEvent<T> ForEvent, ref Event ExistingEvent)
+        public static T FromPool(
+            GameObject Hider,
+            SneakPerformance Performance,
+            ref List<GameObject> Witnesses,
+            bool CollectWitnesses = false)
+        {
+            if (Hider == null
+                || FromPool(Hider, Performance) is not T E)
+                return null;
+
+            if (CollectWitnesses)
+                GetWitnessesEvent.GetFor(E.Hider, ref Witnesses);
+            E.Witnesses = Witnesses;
+            E.StringyEvent = E.GetStringyEvent();
+            return E;
+        }
+
+
+        public static Event GetStringyEvent(ISneakEvent<T> ForEvent, ref Event ExistingEvent)
             => ForEvent == null
             ? ExistingEvent = Event.New(RegisteredEventID)
             : ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID())
                 .SetParameter(nameof(ForEvent.Hider), ForEvent?.Hider)
+                .SetParameterOrNullExisting(nameof(ForEvent.Performance), ForEvent.Performance)
                 .SetParameterOrNullExisting(nameof(ForEvent.Witnesses), ForEvent.Witnesses);
 
         public virtual Event GetStringyEvent()
@@ -75,16 +101,20 @@ namespace StealthSystemPrototype.Events
         public virtual void UpdateFromStringyEvent()
         {
             if (StringyEvent?.GetParameter(nameof(Witnesses)) != null)
-                Witnesses = StringyEvent?.GetParameter(nameof(Witnesses)) as List<GameObject>;
+                Performance = StringyEvent?.GetParameter<SneakPerformance>(nameof(Performance));
+
+            if (StringyEvent?.GetParameter(nameof(Witnesses)) != null)
+                Witnesses = StringyEvent?.GetParameter<List<GameObject>>(nameof(Witnesses));
         }
 
         protected static T Process(
             GameObject Hider,
-            List<GameObject> Witnesses,
+            ref List<GameObject> Witnesses,
+            SneakPerformance Performance,
             out bool Success)
         {
             Success = true;
-            T E = FromPool(Hider, Witnesses);
+            T E = FromPool(Hider, Performance, ref Witnesses);
             if (GameObject.Validate(ref Hider))
             {
                 if (Success
@@ -100,7 +130,27 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
-        
+        protected static T Process(
+            GameObject Hider,
+            SneakPerformance Performance,
+            out bool Success)
+        {
+            Success = true;
+            T E = FromPool(Hider, Performance);
+            if (GameObject.Validate(ref Hider))
+            {
+                if (Success
+                    && Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
+                    Success = Hider.FireEvent(E.StringyEvent);
+
+                E.UpdateFromStringyEvent();
+
+                if (Success
+                    && Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
+                    Success = Hider.HandleEvent(E);
+            }
+            return E;
+        }
     }
 }
 

@@ -23,7 +23,7 @@ namespace StealthSystemPrototype.Events
         {
         }
 
-        public static List<GameObject> GetFor(GameObject Hider, List<GameObject> Witnesses = null)
+        public static List<GameObject> GetFor(GameObject Hider, ref List<GameObject> Witnesses)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -32,9 +32,13 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Hider?.DebugName ?? "null"),
                 });
 
+            Witnesses ??= Event.NewGameObjectList();
+
             if (!GameObject.Validate(ref Hider)
                 || FromPool(Hider, Witnesses) is not GetWitnessesEvent E)
-                return null;
+                return Witnesses;
+
+            Witnesses = E.Witnesses;
 
             if (Hider.GetBlueprint() is GameObjectBlueprint hiderModel)
             {
@@ -55,9 +59,10 @@ namespace StealthSystemPrototype.Events
             if (proceed)
                 proceed = Hider.GetCurrentZone().HandleEvent(E);
 
-            return proceed
-                ? E.Witnesses
-                : null;
+            if (!proceed)
+                Witnesses.Clear();
+
+            return Witnesses;
         }
 
         public GetWitnessesEvent AddWitness(GameObject Witness)
@@ -68,8 +73,8 @@ namespace StealthSystemPrototype.Events
             return this;
         }
 
-        public GetWitnessesEvent AddWitness(IPart WitnessPart)
-            => AddWitness(WitnessPart?.ParentObject);
+        public GetWitnessesEvent AddWitness(IComponent<GameObject> WitnessComponent)
+            => AddWitness(WitnessComponent?.GetComponentBasis());
 
         public GetWitnessesEvent AddWitness(IPerception Perception)
             => AddWitness(Perception?.Owner);

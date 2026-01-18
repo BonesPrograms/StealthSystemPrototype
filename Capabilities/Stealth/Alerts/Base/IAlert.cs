@@ -18,23 +18,33 @@ using StealthSystemPrototype.Capabilities.Stealth;
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public abstract class BaseAlert : GoalHandler//, IComparable<BaseAlert>
+    public abstract class IAlert : GoalHandler//, IComparable<BaseAlert>
     {
         [Serializable]
         protected class AlertSource : IComposite
         {
-            public BaseAlert ParentAlert;
+            public IAlert ParentAlert;
 
             private GameObject _Object;
             public GameObject Object => _Object;
 
             private Cell _Cell;
             public Cell Cell
-                => _Cell == null
-                    && The.ZoneManager is ZoneManager zoneManager
-                    && zoneManager.IsZoneLive(ZoneID)
-                ? _Cell = zoneManager.GetZone(ZoneID).GetCell(Location)
-                : _Cell;
+            {
+                get => _Cell == null
+                        && !ZoneID.IsNullOrEmpty()
+                        && The.ZoneManager is ZoneManager zoneManager
+                        && zoneManager.IsZoneLive(ZoneID)
+                    ? _Cell = zoneManager.GetZone(ZoneID).GetCell(Location)
+                    : _Cell;
+                set
+                {
+                    _Cell = value;
+                    ZoneID = _Cell?.ParentZone?.ZoneID;
+                    Location = _Cell?.Location ?? default;
+                }
+            }
+                
 
             private string ZoneID;
             private Location2D Location;
@@ -49,28 +59,46 @@ namespace StealthSystemPrototype.Alerts
                 ZoneID = null;
                 Location = default;
             }
-            public AlertSource(BaseAlert ParentAlert, GameObject Object, Cell Cell)
+            public AlertSource(IAlert ParentAlert, GameObject Object, Cell Cell)
                 : this()
             {
                 this.ParentAlert = ParentAlert;
                 _Object = Object;
-                ZoneID = Cell?.ParentZone?.ZoneID;
-                Location = Cell?.Location ?? default;
+                this.Cell = Cell;
             }
-            public AlertSource(BaseAlert ParentAlert, GameObject Object)
+            public AlertSource(IAlert ParentAlert, GameObject Object)
                 : this(ParentAlert, Object, Object?.CurrentCell)
             {
             }
-            public AlertSource(BaseAlert ParentAlert, Cell Cell)
+            public AlertSource(IAlert ParentAlert, Cell Cell)
                 : this(ParentAlert, null, Cell)
             {
             }
 
-            public AlertSource SetParentAlert(BaseAlert Alert)
+            public AlertSource SetParentAlert(IAlert Alert)
             {
                 ParentAlert = Alert;
                 return this;
             }
+            #region Serialization
+
+            public void Write(SerializationWriter Writer)
+            {
+                Writer.WriteGameObject(Object);
+                Writer.WriteOptimized(ZoneID);
+                Writer.WriteOptimized(Location.X);
+                Writer.WriteOptimized(Location.Y);
+            }
+            public void Read(SerializationReader Reader)
+            {
+                _Object = Reader.ReadGameObject();
+                ZoneID = Reader.ReadOptimizedString();
+                Location = new(
+                    X: Reader.ReadOptimizedInt32(),
+                    Y: Reader.ReadOptimizedInt32());
+            }
+
+            #endregion
 
             public bool HasObject()
                 => GameObject.Validate(Object)
@@ -95,26 +123,6 @@ namespace StealthSystemPrototype.Alerts
 
             public bool TryGetObject(out GameObject Object)
                 => (Object = GetObject()) != null;
-
-            #region Serialization
-
-            public void Write(SerializationWriter Writer)
-            {
-                Writer.WriteGameObject(Object);
-                Writer.WriteOptimized(ZoneID);
-                Writer.WriteOptimized(Location.X);
-                Writer.WriteOptimized(Location.Y);
-            }
-            public void Read(SerializationReader Reader)
-            {
-                _Object = Reader.ReadGameObject();
-                ZoneID = Reader.ReadOptimizedString();
-                Location = new(
-                    X: Reader.ReadOptimizedInt32(),
-                    Y: Reader.ReadOptimizedInt32());
-            }
-
-            #endregion
         }
 
         public IPerception Perception;
@@ -133,14 +141,14 @@ namespace StealthSystemPrototype.Alerts
 
         #region Constructors
 
-        protected BaseAlert()
+        protected IAlert()
         {
             Perception = null;
             Sense = PerceptionSense.None;
             Origin = null;
             Source = null;
         }
-        protected BaseAlert(IPerception Perception, AlertSource Source)
+        protected IAlert(IPerception Perception, AlertSource Source)
             : this()
         {
             this.Perception = Perception;
@@ -148,12 +156,12 @@ namespace StealthSystemPrototype.Alerts
             Origin = Perception.Owner.CurrentCell;
             this.Source = Source?.SetParentAlert(this);
         }
-        public BaseAlert(IPerception Perception, Cell SourceCell)
+        public IAlert(IPerception Perception, Cell SourceCell)
             : this(Perception, (AlertSource)null)
         {
             Source = new AlertSource(this, SourceCell);
         }
-        public BaseAlert(IPerception Perception, GameObject SourceObject)
+        public IAlert(IPerception Perception, GameObject SourceObject)
             : this(Perception, (AlertSource)null)
         {
             Source = new AlertSource(this, SourceObject);
@@ -161,7 +169,7 @@ namespace StealthSystemPrototype.Alerts
 
         #endregion
 
-        public static bool ValidateAlert(BaseAlert Alert)
+        public static bool ValidateAlert(IAlert Alert)
             => Alert != null
             && Alert.ParentBrain is Brain parentBrain
             && parentBrain.ParentObject is GameObject parentObject
@@ -169,7 +177,7 @@ namespace StealthSystemPrototype.Alerts
             && Alert.Perception != null
             && Alert.Origin != null;
 
-        public static bool ValidateAlert(ref BaseAlert Alert)
+        public static bool ValidateAlert(ref IAlert Alert)
         {
             if (!ValidateAlert(Alert))
             {

@@ -80,25 +80,16 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(GameObject Perciever)
             => FromPool(Perciever, null, null);
 
-        public static Event GetStringyEvent(IPerceptionEvent<T> ForEvent)
-        {
-            if (ForEvent == null)
-                return Event.New(RegisteredEventID);
-
-            var @event = Event.New(ForEvent.GetRegisteredEventID(),
-                nameof(ForEvent.Perceiver), ForEvent?.Perceiver);
-
-            if (ForEvent.Perception != null)
-                @event.AddParameter(nameof(ForEvent.Perception), ForEvent?.Perception);
-
-            if (ForEvent.Perceptions != null)
-                @event.AddParameter(nameof(ForEvent.Perceptions), ForEvent?.Perceptions);
-
-            return @event;
-        }
+        public static Event GetStringyEvent(IPerceptionEvent<T> ForEvent, ref Event ExistingEvent)
+            => ForEvent == null
+            ? ExistingEvent = Event.New(RegisteredEventID)
+            : ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID())
+                .SetParameter(nameof(ForEvent.Perceiver), ForEvent?.Perceiver)
+                .SetParameterOrNullExisting(nameof(ForEvent.Perception), ForEvent.Perception)
+                .SetParameterOrNullExisting(nameof(ForEvent.Perceptions), ForEvent.Perceptions);
 
         public virtual Event GetStringyEvent()
-            => StringyEvent ??= GetStringyEvent(this);
+            => GetStringyEvent(this, ref StringyEvent);
 
         public virtual void UpdateFromStringyEvent()
         {

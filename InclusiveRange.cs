@@ -165,9 +165,8 @@ namespace StealthSystemPrototype
             GetValuesFromRange(Range, out Start, out End);
         }
         public InclusiveRange(int Adjustment, Range Range)
-            : this()
+            : this(Range)
         {
-            GetValuesFromRange(Range, out Start, out End);
             Start += Adjustment;
             End += Adjustment;
         }

@@ -71,11 +71,11 @@ namespace StealthSystemPrototype.Events
 
         public override Event GetStringyEvent()
             => base.GetStringyEvent()
-                ?.SetParameter(nameof(Name), Name)
-                ?.SetParameter(nameof(Type), Type)
-                ?.SetParameter(nameof(Sense), Sense)
-                ?.SetParameter(nameof(BaseDieRoll), BaseDieRoll)
-                ?.SetParameter(nameof(DieRoll), DieRoll)
+                ?.SetParameterOrNullExisting(nameof(Name), Name)
+                ?.SetParameterOrNullExisting(nameof(Type), Type)
+                ?.SetParameterOrNullExisting(nameof(Sense), Sense)
+                ?.SetParameterOrNullExisting(nameof(BaseDieRoll), BaseDieRoll)
+                ?.SetParameterOrNullExisting(nameof(DieRoll), DieRoll)
                 ;
 
         public override void UpdateFromStringyEvent()

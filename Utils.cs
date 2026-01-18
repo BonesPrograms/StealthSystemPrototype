@@ -16,8 +16,11 @@ using static StealthSystemPrototype.Const;
 
 namespace StealthSystemPrototype
 {
+    [HasGameBasedStaticCache]
+    [HasModSensitiveStaticCache]
     public static class Utils
     {
+        #region Debug
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
             => Registry.RegisterEach(
@@ -26,7 +29,7 @@ namespace StealthSystemPrototype
                 {
                     { nameof(GetFirstCallingModNot), false },
                 });
-
+        #endregion
         #region Meta
 
         public static ModInfo ThisMod => ModManager.GetMod(MOD_ID) ?? ModManager.GetMod(typeof(Utils).Assembly);
@@ -112,20 +115,19 @@ namespace StealthSystemPrototype
                 => Comparer?.Compare(y, x)
                 ?? 0;
         }
-
         public class IndexComparer : IComparer<Index>
         {
             public int Compare(Index x, Index y)
-                => x.Value.CompareTo(y.Value);
+                => x.GetIntValue().CompareTo(y.GetIntValue());
         }
-        public class RangeComparer : IComparer<Range>
+        public class InclusiveRangeComparer : IComparer<InclusiveRange>
         {
             public enum ComparisonType : int
             {
                 None,
                 Sum,
                 Average,
-                Breadth,
+                Length,
                 Floor,
                 Ceiling,
                 FloorThenCeiling,
@@ -134,33 +136,33 @@ namespace StealthSystemPrototype
             public ComparisonType Type;
             public bool Inverted;
 
-            private readonly Range X;
-            private readonly Range Y;
+            private readonly InclusiveRange X;
+            private readonly InclusiveRange Y;
 
-            private RangeComparer()
+            private InclusiveRangeComparer()
             {
                 Type = ComparisonType.None;
                 Inverted = false;
                 X = default;
                 Y = default;
             }
-            public RangeComparer(ComparisonType Type, bool Inverted = false)
+            public InclusiveRangeComparer(ComparisonType Type, bool Inverted = false)
                 : this()
             {
                 this.Type = Type;
                 this.Inverted = Inverted;
             }
-            public RangeComparer(Range X, Range Y)
+            public InclusiveRangeComparer(InclusiveRange X, InclusiveRange Y)
                 : this()
             {
                 this.X = X;
                 this.Y = Y;
             }
 
-            public int Compare(Range x, Range y)
+            public int Compare(InclusiveRange x, InclusiveRange y)
                 => Compare(x, y, Type, Inverted);
 
-            public static int Compare(Range x, Range y, ComparisonType Type, bool Inverted = false)
+            public static int Compare(InclusiveRange x, InclusiveRange y, ComparisonType Type, bool Inverted = false)
             {
                 if (Inverted)
                     (x, y) = (y, x);
@@ -168,7 +170,7 @@ namespace StealthSystemPrototype
                 return Type switch
                 {
                     ComparisonType.Average => CompareAverage(x, y),
-                    ComparisonType.Breadth => CompareBreadth(x, y),
+                    ComparisonType.Length => CompareLength(x, y),
                     ComparisonType.Floor => CompareFloor(x, y),
                     ComparisonType.Ceiling => CompareCeiling(x, y),
                     ComparisonType.FloorThenCeiling => CompareFloorThenCeiling(x, y),
@@ -179,28 +181,28 @@ namespace StealthSystemPrototype
                 };
             }
 
-            public static int CompareSum(Range x, Range y)
+            public static int CompareSum(InclusiveRange x, InclusiveRange y)
                 => x.Sum() - y.Sum();
 
-            public static int CompareAverage(Range x, Range y)
+            public static int CompareAverage(InclusiveRange x, InclusiveRange y)
                 => x.Average() - y.Average();
 
-            public static int CompareBreadth(Range x, Range y)
-                => x.Breadth() - y.Breadth();
+            public static int CompareLength(InclusiveRange x, InclusiveRange y)
+                => x.Length - y.Length;
 
-            public static int CompareFloor(Range x, Range y)
-                => x.Floor() - y.Floor();
+            public static int CompareFloor(InclusiveRange x, InclusiveRange y)
+                => x.Min - y.Min;
 
-            public static int CompareCeiling(Range x, Range y)
-                => x.Ceiling() - y.Ceiling();
+            public static int CompareCeiling(InclusiveRange x, InclusiveRange y)
+                => x.Max - y.Max;
 
-            public static int CompareFloorThenCeiling(Range x, Range y)
+            public static int CompareFloorThenCeiling(InclusiveRange x, InclusiveRange y)
                 => CompareFloor(x, y) is int floorComp
                     && floorComp == 0
                 ? CompareCeiling(x, y)
                 : floorComp;
 
-            public static int CompareCeilingThenFloor(Range x, Range y)
+            public static int CompareCeilingThenFloor(InclusiveRange x, InclusiveRange y)
                 => CompareCeiling(x, y) is int ceilingComp
                     && ceilingComp == 0
                 ? CompareFloor(x, y)
@@ -210,7 +212,7 @@ namespace StealthSystemPrototype
                 => !X.Equals(default)
                 && !Y.Equals(default);
 
-            private bool TryGetRanges(bool Invert, out Range X, out Range Y)
+            private bool TryGetRanges(bool Invert, out InclusiveRange X, out InclusiveRange Y)
             {
                 X = this.X;
                 Y = this.Y;
@@ -221,37 +223,37 @@ namespace StealthSystemPrototype
             }
 
             public int CompareSum(bool Invert = false)
-                => TryGetRanges(Invert, out Range x, out Range y)
+                => TryGetRanges(Invert, out InclusiveRange x, out InclusiveRange y)
                 ? CompareSum(x, y)
                 : 0;
 
             public int CompareAverage(bool Invert = false)
-                => TryGetRanges(Invert, out Range x, out Range y)
+                => TryGetRanges(Invert, out InclusiveRange x, out InclusiveRange y)
                 ? CompareAverage(x, y)
                 : 0;
 
             public int CompareBreadth(bool Invert = false)
-                => TryGetRanges(Invert, out Range x, out Range y)
-                ? CompareBreadth(x, y)
+                => TryGetRanges(Invert, out InclusiveRange x, out InclusiveRange y)
+                ? CompareLength(x, y)
                 : 0;
 
             public int CompareFloor(bool Invert = false)
-                => TryGetRanges(Invert, out Range x, out Range y)
+                => TryGetRanges(Invert, out InclusiveRange x, out InclusiveRange y)
                 ? CompareFloor(x, y)
                 : 0;
 
             public int CompareCeiling(bool Invert = false)
-                => TryGetRanges(Invert, out Range x, out Range y)
+                => TryGetRanges(Invert, out InclusiveRange x, out InclusiveRange y)
                 ? CompareCeiling(x, y)
                 : 0;
 
             public int CompareFloorThenCeiling(bool Invert = false)
-                => TryGetRanges(Invert, out Range x, out Range y)
+                => TryGetRanges(Invert, out InclusiveRange x, out InclusiveRange y)
                 ? CompareFloorThenCeiling(x, y)
                 : 0;
 
             public int CompareCeilingThenFloor(bool Invert = false)
-                => TryGetRanges(Invert, out Range x, out Range y)
+                => TryGetRanges(Invert, out InclusiveRange x, out InclusiveRange y)
                 ? CompareCeilingThenFloor(x, y)
                 : 0;
         }
@@ -341,6 +343,7 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+        #region Anatomy
 
         public static int ClosestBodyPart(BodyPart BodyPart1, BodyPart BodyPart2)
             => EitherNull(BodyPart1, BodyPart2, out int comparison)
@@ -351,5 +354,26 @@ namespace StealthSystemPrototype
             => EitherNull(BodyPart2, BodyPart1, out int comparison)
             ? comparison
             : BodyPart2.DistanceFromBody().CompareTo(BodyPart1.DistanceFromBody());
+
+        #endregion
+        #region Enums
+
+        [ModSensitiveStaticCache]
+        [GameBasedStaticCache(CreateInstance = false)]
+        public static Dictionary<Type, Dictionary<string, Enum>> EnumValueCaches = new();
+
+        public static Dictionary<string, T> GetValuesDictionary<T>()
+            where T : struct, Enum
+        {
+            EnumValueCaches ??= new();
+            if (!EnumValueCaches.ContainsKey(typeof(T)))
+            {
+                T[] valuesArray = Enum.GetValues(typeof(T)) as T[];
+                EnumValueCaches[typeof(T)] = (valuesArray?.ToDictionary(t => t.ToString(), t => t) as Dictionary<string, Enum>) ?? new();
+            }
+            return EnumValueCaches[typeof(T)] as Dictionary<string, T>;
+        }
+
+        #endregion
     }
 }

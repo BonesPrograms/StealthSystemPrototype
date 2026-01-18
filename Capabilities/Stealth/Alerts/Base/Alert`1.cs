@@ -14,10 +14,9 @@ using StealthSystemPrototype.Capabilities.Stealth;
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public abstract class Alert<T> : BaseAlert
+    public abstract class Alert<T> : IAlert
         where T : IPerception
     {
-
         #region Constructors
 
         protected Alert()

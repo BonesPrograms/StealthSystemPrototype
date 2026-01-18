@@ -16,7 +16,7 @@ namespace XRL.World.Parts
     [Serializable]
     public class UD_Witness : IScribedPart, IWitnessEventHandler
     {
-        public static bool ConstantDebugOutput => UD_Stealth.ConstantDebugOutput;
+        public static bool ConstantDebugOutput => UD_StealthHelper.ConstantDebugOutput;
 
         #region Properties & Fields
 
@@ -79,7 +79,7 @@ namespace XRL.World.Parts
                 PerceptionHelper?.ClearBestPerception();
 
                 PlayerPerceptable = The.Player is GameObject player
-                    && player.TryGetPart(out UD_Stealth stealth)
+                    && player.TryGetPart(out UD_StealthHelper stealth)
                     && !stealth.Witnesses.IsNullOrEmpty()
                     && stealth.Witnesses.Contains(ParentObject)
                     && BestPerception.CheckInRadius(player, out int _, out FindPath _);

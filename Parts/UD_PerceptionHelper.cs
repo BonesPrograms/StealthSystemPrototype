@@ -75,10 +75,7 @@ namespace XRL.World.Parts
             get
             {
                 if (_Perceptions == null)
-                {
-                    _Perceptions = new PerceptionRack(ParentObject);
-                    GetPerceptionsEvent.GetFor(ParentObject, _Perceptions);
-                }
+                    GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
                 return _Perceptions;
             }
         }
@@ -124,14 +121,13 @@ namespace XRL.World.Parts
         public void SyncPerceptions()
         {
             using Indent indent = new(1);
-            Debug.LogCaller(indent,
+            Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
 
-            _Perceptions ??= new PerceptionRack(ParentObject);
-            GetPerceptionsEvent.GetFor(ParentObject, _Perceptions);
+            GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
             _Perceptions?.Validate();
         }
 
@@ -151,7 +147,7 @@ namespace XRL.World.Parts
         private bool ProcessPerceptionAlteringEvent(MinEvent E)
         {
             using Indent indent = new(1);
-            Debug.LogCaller(indent,
+            Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(E?.TypeStringWithGenerics()),

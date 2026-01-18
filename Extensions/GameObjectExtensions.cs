@@ -19,6 +19,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Alerts;
 
 using static StealthSystemPrototype.Utils;
+using XRL.UI;
 
 namespace StealthSystemPrototype
 {
@@ -87,5 +88,16 @@ namespace StealthSystemPrototype
             bool Creation = false)
             where T : IPerception, new()
             => Object.RequirePerceptions()?.Require<T>(Creation);
+
+        public static bool CheckNotOnWorldMap(this GameObject Object, string Verb, bool ShowMessage = false)
+        {
+            if (Object.OnWorldMap())
+            {
+                if (ShowMessage)
+                    Popup.ShowFail("You cannot " + Verb + " on the world map.");
+                return false;
+            }
+            return true;
+        }
     }
 }

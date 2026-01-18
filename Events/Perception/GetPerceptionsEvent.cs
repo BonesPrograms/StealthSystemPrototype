@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Events
         {
         }
 
-        public static PerceptionRack GetFor(GameObject Perceiver, PerceptionRack Perceptions)
+        public static void GetFor(GameObject Perceiver, ref PerceptionRack Perceptions)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -33,9 +33,11 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Perceiver?.DebugName ?? "null"),
                 });
 
+            Perceptions ??= new PerceptionRack(Perceiver);
+
             if (!GameObject.Validate(ref Perceiver)
-                || FromPool(Perceiver, Perceptions ?? new PerceptionRack(Perceiver)) is not GetPerceptionsEvent E)
-                return null;
+                || FromPool(Perceiver, Perceptions) is not GetPerceptionsEvent E)
+                return;
 
             bool proceed = true;
             if (proceed
@@ -49,10 +51,8 @@ namespace StealthSystemPrototype.Events
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                 proceed = Perceiver.HandleEvent(E);
 
-            return proceed
-                    && !E.Perceptions.IsNullOrEmpty() 
-                ? E.Perceptions
-                : null;
+            if (!proceed)
+                Perceptions.Clear();
         }
 
         public GetPerceptionsEvent AddPerception<T>(
