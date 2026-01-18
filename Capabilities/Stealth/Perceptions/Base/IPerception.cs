@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Perceptions
         : IComponent<GameObject>,
         IComparable<IPerception>,
         IWitnessEventHandler,
-        ISneakEventHandler
+        IPerceptionEventHandler
     {
         #region Helpers
 
