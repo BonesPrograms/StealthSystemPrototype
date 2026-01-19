@@ -13,12 +13,13 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using XRL.World.Effects;
+using XRL.World.Parts.Skill;
 
 namespace XRL.World.Parts
 {
     [HasWishCommand]
     [Serializable]
-    public class UD_Sneak : IScribedPart
+    public class UD_Sneak : IScribedPart, ISneakEventHandler
     {
         public static string SUPPORT_TYPE => nameof(UD_Sneak);
         public static string COMMAND_SNEAK => "CommandToggleSneaking";
@@ -47,10 +48,13 @@ namespace XRL.World.Parts
         public void SyncAbility(bool Silent = false)
         {
             if (SneakPerformance.WantsSync)
+            {
                 SneakPerformance = null;
+                if (ParentObject.TryGetEffect(out UD_Sneaking sneaking))
+                    sneaking.ClearDetailsEntries();
+            }
 
             bool removed = false;
-
             if (ParentObject.GetActivatedAbilityByCommand(COMMAND_SNEAK) is ActivatedAbilityEntry abilityEntry
                 && abilityEntry.ID != ActivatedAbilityID)
             {
@@ -98,6 +102,8 @@ namespace XRL.World.Parts
             ? StartSneaking()
             : StopSneaking();
 
+        #region Event Handling
+
         public override bool AllowStaticRegistration()
             => true;
 
@@ -105,6 +111,7 @@ namespace XRL.World.Parts
             => base.WantEvent(ID, Cascade)
             || ID == NeedPartSupportEvent.ID
             || ID == CommandEvent.ID
+            || ID == GetSneakPerformanceEvent.ID
             ;
         public override bool HandleEvent(NeedPartSupportEvent E)
         {
@@ -122,5 +129,14 @@ namespace XRL.World.Parts
 
             return base.HandleEvent(E);
         }
+        public virtual bool HandleEvent(GetSneakPerformanceEvent E)
+        {
+            if (E.Hider == ParentObject
+                && !E.Hider.HasSkill(nameof(UD_Stealth_LightFooted)))
+                E.AdjustMoveSpeedMultiplier(this, -10);
+            return base.HandleEvent(E);
+        }
+
+        #endregion
     }
 }

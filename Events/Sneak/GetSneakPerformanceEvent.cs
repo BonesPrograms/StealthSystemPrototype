@@ -52,6 +52,39 @@ namespace StealthSystemPrototype.Events
 
             return E.Performance;
         }
+
+        public GetSneakPerformanceEvent SetClamp(string SenseName, InclusiveRange Clamp)
+        {
+            Performance.SetClamp(SenseName, Clamp);
+            return this;
+        }
+        public GetSneakPerformanceEvent SetMin(string SenseName, int Min)
+        {
+            Performance.SetMin(SenseName, Min);
+            return this;
+        }
+        public GetSneakPerformanceEvent SetRating(string SenseName, int Rating)
+        {
+            Performance.SetRating(SenseName, Rating);
+            return this;
+        }
+        public GetSneakPerformanceEvent AdjustRating(string SenseName, int Amount)
+        {
+            Performance.AdjustRating(SenseName, Amount);
+            return this;
+        }
+        public GetSneakPerformanceEvent SetMax(string SenseName, int Max)
+        {
+            Performance.SetMax(SenseName, Max);
+            return this;
+        }
+
+        public GetSneakPerformanceEvent AdjustMoveSpeedMultiplier<T>(T Source, int Value, string SourceDisplay = null)
+            where T : IComponent<GameObject>, new()
+        {
+            Performance.AdjustMoveSpeedMultiplier(Source, Value, SourceDisplay);
+            return this;
+        }
     }
 }
 

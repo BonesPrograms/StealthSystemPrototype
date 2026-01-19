@@ -65,7 +65,7 @@ namespace StealthSystemPrototype.Events
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(Perceiver?.DebugName ?? "null"),
+                    Debug.Arg(Perceiver?.MiniDebugName() ?? "null"),
                     Debug.Arg(Perception?.ToString()),
                 });
 
@@ -88,18 +88,19 @@ namespace StealthSystemPrototype.Events
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(Perceiver?.DebugName ?? "null"),
                     Debug.Arg(Perception?.ToString()),
                 });
 
             Perceptions ??= new PerceptionRack(Perceiver);
 
-            if (!Perceptions.Has<T>())
-                if (Perception.Owner != Perceiver)
-                {
-                    Perception.Owner = Perceiver;
-                    AddPerception(Perception, DoRegistration: true, Creation);
-                }
+            if (!Perceptions.TryGet(out T perception))
+            {
+                perception = Perception;
+                AddPerception(perception, DoRegistration: true, Creation);
+            }
+            if (perception.Owner != Perceiver)
+                perception.Owner = Perceiver;
+                
             return this;
         }
 

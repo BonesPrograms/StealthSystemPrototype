@@ -7,6 +7,7 @@ using XRL;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Const;
+using static StealthSystemPrototype.Options;
 using static StealthSystemPrototype.Logging.Debug;
 using static StealthSystemPrototype.Logging.Indent;
 using System.Linq;
@@ -42,7 +43,7 @@ namespace StealthSystemPrototype.Logging
                 if (debugRegistryMethods.IsNullOrEmpty())
                     MetricsManager.LogModError(
                         mod: ThisMod,
-                        Message: nameof(Debug) + "." + nameof(GetRegistry) + " failed to retrieve any " +
+                        Message: CallChain(nameof(DebugMethodRegistry), nameof(GetRegistry)) + " failed to retrieve any " +
                             nameof(UD_DebugRegistryAttribute) + " decorated methods");
 
                 foreach (MethodInfo debugRegistryMethod in debugRegistryMethods)
@@ -50,7 +51,7 @@ namespace StealthSystemPrototype.Logging
             }
             catch (Exception x)
             {
-                MetricsManager.LogException(nameof(Debug) + "." + nameof(GetRegistry), x, GAME_MOD_EXCEPTION);
+                MetricsManager.LogException(CallChain(nameof(DebugMethodRegistry), nameof(GetRegistry)), x, GAME_MOD_EXCEPTION);
                 _GotRegistry = true;
             }
             _GotRegistry = true;
@@ -68,26 +69,44 @@ namespace StealthSystemPrototype.Logging
 
         public static bool GetDoDebug(string CallingMethod = null)
         {
-            if (CallingMethod.IsNullOrEmpty())
-                return DoDebug;
+            if (!DoDebugSetting)
+                return false;
 
-            if (Instance is DebugMethodRegistry doDebugRegistry
-                && !doDebugRegistry.Any(m => m.GetMethod().Name == CallingMethod))
+            if (CallingMethod.IsNullOrEmpty())
                 return DoDebugSetting;
 
-            return DoDebug;
+            if (Instance is DebugMethodRegistry doDebugRegistry
+                && !doDebugRegistry.Contains(CallingMethod))
+                return DoDebugSetting;
+
+            try
+            {
+                if (Instance is DebugMethodRegistry registry
+                    && TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod)
+                    && registry.TryGetValue(callingMethod, out bool registryMethodValue)
+                    && !registryMethodValue
+                    && !DebugEnableAllLogging)
+                    return false;
+            }
+            catch (Exception x)
+            {
+                MetricsManager.LogException(CallChain(typeof(DebugMethodRegistry).ToString(), nameof(GetDoDebug)), x, GAME_MOD_EXCEPTION);
+            }
+            return DoDebugSetting;
         }
 
         public static void LogRegistry()
         {
-            UnityEngine.Debug.Log(nameof(Debug) + "." + nameof(LogRegistry));
+            UnityEngine.Debug.Log("DEBUG [" + ThisMod.DisplayTitleStripped + "] - Start of " + CallChain(nameof(DebugMethodRegistry), nameof(LogRegistry)));
             if (_GotRegistry)
             {
-                foreach (MethodRegistryEntry methodEntry in DoDebugRegistry ?? new())
-                    UnityEngine.Debug.Log(methodEntry.ToString());
+                foreach (MethodRegistryEntry methodEntry in Instance ?? new())
+                    UnityEngine.Debug.Log(" ".ThisManyTimes(4) + methodEntry.ToString(IncludeSourceMod: true));
+
+                UnityEngine.Debug.Log("DEBUG [" + ThisMod.DisplayTitleStripped + "] - End of " + CallChain(nameof(DebugMethodRegistry), nameof(LogRegistry)));
             }
             else
-                UnityEngine.Debug.Log("registry not cached yet");
+                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + YehNah(false) + " registry not cached yet");
         }
 
         public DebugMethodRegistry Register(MethodRegistryEntry RegisterEntry)
@@ -103,7 +122,7 @@ namespace StealthSystemPrototype.Logging
                     Message: thisMethodName + " passed null " + nameof(MethodBase));
 
             Add(RegisterEntry);
-            UnityEngine.Debug.Log(thisMethodName + "(" + declaringType + "." + (methodBase?.Name ?? "NO_METHOD") + ": " + value + ")");
+            // UnityEngine.Debug.Log(thisMethodName + "(" + RegisterEntry.ToString() + ")");
             return this;
         }
 
@@ -151,7 +170,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterEachValue)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachValue)));
                 return this;
             }
             foreach (MethodBase typeMethod in Type.GetMethods() ?? new MethodBase[0])
@@ -172,7 +191,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterEachValue)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachValue)));
                 return this;
             }
             foreach (MethodBase typeMethod in Type.GetMethods() ?? new MethodBase[0])
@@ -191,7 +210,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(MethodNameValues) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterEach)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEach)));
                 return this;
             }
             if (MethodNameValues.Values.Any(v => v))
@@ -213,7 +232,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(MethodValues) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterEach)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEach)));
                 return this;
             }
             if (MethodValues.Values.Any(v => v))
@@ -234,7 +253,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterEachFalse)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachFalse)));
                 return this;
             }
             return RegisterEachValue(Type, false, Methods);
@@ -250,7 +269,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterEachFalse)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachFalse)));
                 return this;
             }
             return RegisterEachValue(Type, false, Methods);
@@ -265,7 +284,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterEachTrue)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachTrue)));
                 return this;
             }
             return RegisterEachValue(Type, true, Methods);
@@ -281,7 +300,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterEachTrue)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachTrue)));
                 return this;
             }
             return RegisterEachValue(Type, true, Methods);
@@ -296,7 +315,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(MinEventTypeValues) + " to " +
-                    CallChain(nameof(Debug), nameof(RegisterHandleEventVariants)));
+                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterHandleEventVariants)));
                 return this;
             }
             return RegisterEach(
@@ -318,14 +337,18 @@ namespace StealthSystemPrototype.Logging
         public bool Contains<T>(T MethodBase)
             where T : MethodBase
             => MethodBase is not null
-            && this.Any(mb => mb.Equals(MethodBase));
+            && this.Any(e => e.Equals(MethodBase));
 
         public bool Contains(Type DeclaringType, string MethodName)
-            => MethodName is not null
-            && this.Any(mb
-                => mb.GetMethod() is MethodBase methodBase
+            => !MethodName.IsNullOrEmpty()
+            && this.Any(e
+                => e.GetMethod() is MethodBase methodBase
                 && methodBase.Name == MethodName
                 && methodBase.DeclaringType == DeclaringType);
+
+        public bool Contains(string MethodName)
+            => !MethodName.IsNullOrEmpty()
+            && this.Any(e => e.GetMethod()?.Name == MethodName);
 
         public bool GetValue<T>(T MethodBase)
             where T : MethodBase

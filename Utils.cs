@@ -366,12 +366,21 @@ namespace StealthSystemPrototype
             where T : struct, Enum
         {
             EnumValueCaches ??= new();
+            Dictionary<string, Enum> input = new();
             if (!EnumValueCaches.ContainsKey(typeof(T)))
             {
                 T[] valuesArray = Enum.GetValues(typeof(T)) as T[];
-                EnumValueCaches[typeof(T)] = (valuesArray?.ToDictionary(t => t.ToString(), t => t) as Dictionary<string, Enum>) ?? new();
+                EnumValueCaches[typeof(T)] = input;
+                foreach (T value in valuesArray ?? new T[0])
+                    input[value.ToString()] = value;
             }
-            return EnumValueCaches[typeof(T)] as Dictionary<string, T>;
+            input = EnumValueCaches[typeof(T)];
+            Dictionary<string, T> output = new();
+            if (!input.IsNullOrEmpty())
+                foreach ((string key, Enum value) in input)
+                    output[key] = (T)value;
+
+            return output;
         }
 
         #endregion

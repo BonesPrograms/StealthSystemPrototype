@@ -134,8 +134,6 @@ namespace XRL.World.Parts
         public void ClearBestPerception()
             => _BestPerception = null;
 
-        #region Event Handling
-
         private static bool IsClearPerceptionsMinEvent(int ID)
             => !ValidatePerceptionsMinEvents.IsNullOrEmpty()
             && ValidatePerceptionsMinEvents.Contains(ID);
@@ -167,6 +165,7 @@ namespace XRL.World.Parts
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), E?.ID),
+                    Debug.Arg(ParentObject.DebugName ?? "null"),
                 });
 
             if (!IsClearPerceptionsStringyEvent(E.ID))
@@ -175,6 +174,11 @@ namespace XRL.World.Parts
             SyncPerceptions();
             return true;
         }
+
+        #region Event Handling
+
+        public override bool AllowStaticRegistration()
+            => true;
 
         public override void Register(GameObject Object, IEventRegistrar Registrar)
         {

@@ -28,10 +28,20 @@ namespace XRL.World.Parts.Skill
             return base.AddSkill(GO);
         }
 
+        #region Event Handling
+
+        public override bool AllowStaticRegistration()
+            => true;
+
+        public override void Register(GameObject Object, IEventRegistrar Registrar)
+        {
+            Registrar.Register(GetSneakPerformanceEvent.ID, EventOrder.EXTREMELY_EARLY);
+            base.Register(Object, Registrar);
+        }
         public override bool WantEvent(int ID, int cascade)
             => base.WantEvent(ID, cascade)
             || ID == PartSupportEvent.ID
-            || ID == GetSneakPerformanceEvent.ID
+            // || ID == GetSneakPerformanceEvent.ID
             ;
         public override bool HandleEvent(PartSupportEvent E)
         {
@@ -45,8 +55,10 @@ namespace XRL.World.Parts.Skill
         public virtual bool HandleEvent(GetSneakPerformanceEvent E)
         {
             if (E.Hider == ParentObject)
-                E.Performance.AdjustMoveSpeedMultiplier(this, -10);
+                E.AdjustMoveSpeedMultiplier(this, -10);
             return base.HandleEvent(E);
         }
+
+        #endregion
     }
 }

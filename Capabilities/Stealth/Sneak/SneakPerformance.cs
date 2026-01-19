@@ -2,17 +2,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
+using XRL;
+using XRL.World.Parts.Skill;
+using XRL.World.Parts.Mutation;
 using XRL.Collections;
 using XRL.World;
 
 using StealthSystemPrototype.Perceptions;
 
 using Sense = StealthSystemPrototype.Perceptions.PerceptionSense;
-using System.Linq;
-using XRL;
-using XRL.World.Parts.Skill;
-using XRL.World.Parts.Mutation;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 {
@@ -21,7 +21,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
     {
         #region Const & Static
 
-        public static Dictionary<string, Sense> PerceptionSenses => Utils.GetValuesDictionary<Sense>();
+        public static Dictionary<string, Sense> PerceptionSenses => Utils.GetValuesDictionary<Sense>() ?? new();
 
         public static Dictionary<Sense, Dictionary<string, Entry>> DefaultSneakPerformances => PerceptionSenses
             ?.Aggregate(
@@ -35,9 +35,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                         Accumulator[Sense][Name] = new Entry(Name, 5);
 
                     return Accumulator;
-                });
+                })
+            ?? new();
 
-        public static string MoveSpeedMulti => "MoveSpeed Multiplier";
+        public static string MOVESPEED_MULTI => "MoveSpeed_Multiplier";
 
         #endregion
         #region Helpers
@@ -128,6 +129,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             }
 
             #endregion
+
+            public override string ToString()
+                => Name + "(" + Sense + "): " + Rating + "[" + Clamp.ToString() + "]";
 
             private bool SetName(string Name = null)
             {
@@ -236,35 +240,43 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
         public struct StatCollectorEntry : IComposite, IEquatable<StatCollectorEntry>
         {
             public string Class;
-            public float Bonus;
+            public int Value;
             public string Source;
 
-            public StatCollectorEntry(string Class, float Bonus, string Source)
+            public StatCollectorEntry(string Class, int Value, string Source)
             {
                 this.Class = Class;
-                this.Bonus = Bonus;
+                this.Value = Value;
                 this.Source = Source;
             }
 
-            public bool Equals(StatCollectorEntry other)
+            public readonly void Deconstruct(out int Value, out string Source)
+            {
+                Value = this.Value;
+                Source = this.Source;
+            }
+
+            public readonly bool Equals(StatCollectorEntry other)
                 => Utils.EitherNull(this, other, out bool areEqual)
                 ? areEqual
                 : Class == other.Class;
+
+            public static explicit operator (int Multi, string Source)(StatCollectorEntry Operand)
+                => (Operand.Value, Operand.Source);
         }
 
         #endregion
 
         private Dictionary<Sense, Dictionary<string, Entry>> PerformanceEntries;
 
-        protected StringMap<List<StatCollectorEntry>> CollectedStats;
-        public float MoveSpeedPenalty;
+        public StringMap<List<StatCollectorEntry>> CollectedStats;
+        public float MoveSpeedMultiplier => (GetCollectedStats(MOVESPEED_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
 
         public bool WantsSync;
 
         public SneakPerformance()
         {
             PerformanceEntries = new(DefaultSneakPerformances);
-            MoveSpeedPenalty = 10;
             WantsSync = false;
             CollectedStats = new()
             {
@@ -309,11 +321,30 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             }
         }
 
+        public string PerformanceEntriesDebugString(out string Contents, string Delimiter = "\n")
+        {
+            Contents = GetEntries()
+                ?.Aggregate(
+                    seed: "",
+                    func: (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString());
+
+            return nameof(PerformanceEntries);
+        }
+
+        public string CollectedStatsEntriesDebugString(out string Contents, string Delimiter = "\n")
+        {
+            Contents = CollectedStats
+                ?.Aggregate(
+                    seed: "",
+                    func: (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.Key + ": " + ((n.Value?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f));
+
+            return nameof(CollectedStats);
+        }
+
         public SneakPerformance AdjustMoveSpeedMultiplier<T>(T Source, int Value, string SourceDisplay = null)
             where T : IComponent<GameObject>, new()
         {
             string className = Source?.TypeStringWithGenerics();
-            float amount = (Value / 100) - 1f;
             if (SourceDisplay.IsNullOrEmpty())
             {
                 SourceDisplay = Source?.TypeStringWithGenerics();
@@ -327,7 +358,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                     SourceDisplay = sourceEffect.DisplayName;
             }
             StatCollectorEntry newEntry = new(className, Value, SourceDisplay);
-            if (CollectedStats[MoveSpeedMulti] is List<StatCollectorEntry> collectedStatsList
+            if (CollectedStats[MOVESPEED_MULTI] is List<StatCollectorEntry> collectedStatsList
                 && collectedStatsList.Any(e => e.Class == className))
                 for (int i = 0; i < collectedStatsList.Count; i++)
                 {
@@ -338,8 +369,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                     }
                 }
             else
-                CollectedStats[MoveSpeedMulti].Add(newEntry);
-            MoveSpeedPenalty += amount;
+                CollectedStats[MOVESPEED_MULTI].Add(newEntry);
             return this;
         }
 
@@ -352,6 +382,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                             || Filter(entry)))
                         yield return entry;
         }
+
+        public IEnumerable<StatCollectorEntry> GetCollectedStats(string Stat)
+            => GetCollectedStats(Stat, null);
 
         public SneakPerformance SetClamp(string SenseName, InclusiveRange Clamp)
         {
@@ -416,13 +449,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             : First;
 
         public Entry GetHighestRatedEntry()
-            => GetEntries(s => s != Sense.None)
+            => GetEntries()
                 ?.Aggregate(
                     seed: (Entry)null,
                     func: HigherRated);
 
         public Entry GetHighestPotentialEntry()
-            => GetEntries(s => s != Sense.None)
+            => GetEntries()
                 ?.Aggregate(
                     seed: (Entry)null,
                     func: HigherPotential);

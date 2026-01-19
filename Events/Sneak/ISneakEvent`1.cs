@@ -56,14 +56,25 @@ namespace StealthSystemPrototype.Events
         }
 
         public static T FromPool(
-            GameObject Hider,
-            SneakPerformance Performance)
+            GameObject Hider)
         {
             if (Hider == null
                 || FromPool() is not T E)
                 return null;
 
             E.Hider = Hider;
+            E.StringyEvent = E.GetStringyEvent();
+            return E;
+        }
+
+        public static T FromPool(
+            GameObject Hider,
+            SneakPerformance Performance)
+        {
+            if (Hider == null
+                || FromPool(Hider) is not T E)
+                return null;
+
             E.Performance = Performance;
             E.StringyEvent = E.GetStringyEvent();
             return E;
@@ -107,50 +118,36 @@ namespace StealthSystemPrototype.Events
                 Witnesses = StringyEvent?.GetParameter<List<GameObject>>(nameof(Witnesses));
         }
 
+        protected static T Process(T E, out bool Success)
+        {
+            Success = true;
+            if (GameObject.Validate(ref E.Hider))
+            {
+                if (Success
+                    && E.Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
+                    Success = E.Hider.FireEvent(E.StringyEvent);
+
+                E.UpdateFromStringyEvent();
+
+                if (Success
+                    && E.Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
+                    Success = E.Hider.HandleEvent(E);
+            }
+            return E;
+        }
+
+        protected static T Process(
+            GameObject Hider,
+            SneakPerformance Performance,
+            out bool Success)
+            => Process(FromPool(Hider, Performance), out Success);
+
         protected static T Process(
             GameObject Hider,
             ref List<GameObject> Witnesses,
             SneakPerformance Performance,
             out bool Success)
-        {
-            Success = true;
-            T E = FromPool(Hider, Performance, ref Witnesses);
-            if (GameObject.Validate(ref Hider))
-            {
-                if (Success
-                    && Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
-                    Success = Hider.FireEvent(E.StringyEvent);
-
-                E.UpdateFromStringyEvent();
-
-                if (Success
-                    && Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
-                    Success = Hider.HandleEvent(E);
-            }
-            return E;
-        }
-
-        protected static T Process(
-            GameObject Hider,
-            SneakPerformance Performance,
-            out bool Success)
-        {
-            Success = true;
-            T E = FromPool(Hider, Performance);
-            if (GameObject.Validate(ref Hider))
-            {
-                if (Success
-                    && Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
-                    Success = Hider.FireEvent(E.StringyEvent);
-
-                E.UpdateFromStringyEvent();
-
-                if (Success
-                    && Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
-                    Success = Hider.HandleEvent(E);
-            }
-            return E;
-        }
+            => Process(FromPool(Hider, Performance, ref Witnesses), out Success);
     }
 }
 

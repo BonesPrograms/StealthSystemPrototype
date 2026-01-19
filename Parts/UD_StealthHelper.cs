@@ -76,6 +76,9 @@ namespace XRL.World.Parts
 
         #region Event Handling
 
+        public override bool AllowStaticRegistration()
+            => true;
+
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
             || (ConstantDebugOutput && ID == EndTurnEvent.ID)

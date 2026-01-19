@@ -45,30 +45,6 @@ namespace StealthSystemPrototype.Logging
             && (!DebugDisableWorldGenLogging || The.Player != null)
             && !SilenceLogging
             ;
-            
-        public static bool DoDebug
-        {
-            get
-            {
-                try
-                {
-                    if (!DoDebugSetting)
-                        return false;
-
-                    if (TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod)
-                        && DebugMethodRegistry.Instance is DebugMethodRegistry registry
-                        && registry.TryGetValue(callingMethod, out bool registryMethodValue)
-                        && !registryMethodValue
-                        && !DebugEnableAllLogging)
-                        return false;
-                }
-                catch (Exception x)
-                {
-                    MetricsManager.LogException(typeof(Debug) + "." + nameof(DoDebug), x, GAME_MOD_EXCEPTION);
-                }
-                return DoDebugSetting;
-            }
-        }
 
         public static List<Type> DebugTypes = new()
         {
@@ -162,24 +138,34 @@ namespace StealthSystemPrototype.Logging
             }
             return null;
         }
+
+        private static bool IsDebugFrame(this StackFrame Frame)
+            => Frame
+                ?.GetMethod()
+                ?.DeclaringType
+                ?.EqualsAny(DebugTypes?.ToArray())
+            ?? false;
+
+        private static bool IsNonDebugFrame(this StackFrame Frame)
+            => !Frame.IsDebugFrame();
+
+        private static bool TryGetCallingTypeAndMethod(
+            this StackFrame Frame,
+            out Type CallingType,
+            out MethodBase CallingMethod)
+            => (CallingType = (CallingMethod = Frame?.GetMethod())?.DeclaringType) != null;
+
         public static bool TryGetCallingTypeAndMethod(out Type CallingType, out MethodBase CallingMethod)
         {
             CallingType = null;
             CallingMethod = null;
             try
             {
-                StackTrace stackTrace = new();
-                for (int i = 0; i < 12 && stackTrace?.GetFrame(i) is StackFrame stackFrameI; i++)
-                {
-                    if (stackFrameI?.GetMethod() is MethodBase methodBase
-                        && methodBase.DeclaringType is Type declaringType
-                        && !declaringType.EqualsAny(DebugTypes?.ToArray()))
-                    {
-                        CallingType = declaringType;
-                        CallingMethod = methodBase;
-                        return true;
-                    }
-                }
+                return new StackTrace()
+                        ?.GetFrames()
+                        ?.FirstOrDefault(IsNonDebugFrame)
+                        ?.TryGetCallingTypeAndMethod(out CallingType, out CallingMethod)
+                    ?? false;
             }
             catch (Exception x)
             {

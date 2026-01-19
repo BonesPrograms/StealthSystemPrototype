@@ -81,7 +81,7 @@
            Prereq="UD_Stealth_SneakAttack|UD_Stealth_Pickpocket|UD_Stealth_Sap"
            Class="UD_Stealth_Shameless"
            Snippet="shameless"
-           Description="While light footed, your actions are half as psionically obvious and you the base movement speed penalty is negated."
+           Description="While light footed, your actions are half as psionically obvious and the base movement speed penalty is negated."
            Tile="Abilities/sw_skill_shake_it_off.png"
            Foreground="y" Detail="K"></power>
     <power Name="Master Of Shadows"

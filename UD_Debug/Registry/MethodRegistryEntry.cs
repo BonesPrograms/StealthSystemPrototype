@@ -32,7 +32,7 @@ namespace StealthSystemPrototype.Logging
         }
 
         public readonly string GetSourceModName()
-            =>  ModManager.GetMod(DeclaringType.Assembly).Manifest?.Title?.Strip()
+            =>  ModManager.GetMod(DeclaringType.Assembly)?.DisplayTitleStripped
             ?? "NO_MOD";
 
         public readonly string GetTypeAndMethodName()
@@ -80,6 +80,9 @@ namespace StealthSystemPrototype.Logging
             if (obj is MethodInfo methodInfoObj)
                 return Equals(methodInfoObj);
 
+            if (obj.GetType().InheritsFrom(typeof(MethodBase)))
+                return Equals(obj as MethodBase);
+
             if (obj is bool boolObj)
                 return Value.Equals(boolObj);
 
@@ -90,7 +93,7 @@ namespace StealthSystemPrototype.Logging
             where T : MethodBase
         {
             if (obj is T tObj)
-                return MethodBase.Equals(tObj);
+                return tObj.Equals(MethodBase as T);
 
             return base.Equals(obj);
         }

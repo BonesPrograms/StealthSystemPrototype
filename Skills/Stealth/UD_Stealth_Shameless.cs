@@ -10,10 +10,12 @@ namespace XRL.World.Parts.Skill
 {
     public class UD_Stealth_Shameless : BaseSkill, ISneakEventHandler
     {
+        public override bool AllowStaticRegistration()
+            => true;
 
         public override void Register(GameObject Object, IEventRegistrar Registrar)
         {
-            Registrar.Register(GetSneakPerformanceEvent.ID, EventOrder.EXTREMELY_LATE);
+            Registrar.Register(GetSneakPerformanceEvent.ID, EventOrder.EXTREMELY_EARLY + EventOrder.SLIGHTLY_LATE);
             base.Register(Object, Registrar);
         }
         public override bool WantEvent(int ID, int cascade)
