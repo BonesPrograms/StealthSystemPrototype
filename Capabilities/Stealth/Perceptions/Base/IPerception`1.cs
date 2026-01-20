@@ -21,55 +21,33 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public abstract class IPerception
-        : IComponent<GameObject>,
-        IWitnessEventHandler,
-        IPerceptionEventHandler
+    public class IPerception<T>
+        : IPerception,
+        IComparable<IPerception<T>>
+        where T : ISense, new()
     {
         #region Helpers
 
-        public class EventBinder : IEventBinder
-        {
-            public static readonly EventBinder Instance = new();
-
-            public override void WriteBind(SerializationWriter Writer, IEventHandler Handler, int ID)
-            {
-                Writer.WriteGameObject(((IPerception)Handler).Owner, Reference: true);
-                Writer.WriteTokenized(Handler.GetType());
-            }
-
-            public override IEventHandler ReadBind(SerializationReader Reader, int ID)
-            {
-                GameObject owner = Reader.ReadGameObject();
-                Type type = Reader.ReadTokenizedType();
-                foreach (IPerception perception in owner?.GetPerceptions() ?? new())
-                    if ((object)perception.GetType() == type)
-                        return perception;
-
-                return null;
-            }
-        }
-
-        public class RatingComparer : IComparer<IPerception>
+        public class TypedRatingComparer : IComparer<IPerception<T>>
         {
             protected GameObject Entity;
 
-            private RatingComparer()
+            private TypedRatingComparer()
             {
                 Entity = null;
             }
-            public RatingComparer(GameObject Entity)
+            public TypedRatingComparer(GameObject Entity)
                 : base()
             {
                 this.Entity = Entity;
             }
 
-            public virtual int Compare(IPerception x, IPerception y)
+            public virtual int Compare(IPerception<T> x, IPerception<T> y)
             {
                 if (EitherNull(x, y, out int comparison))
                     return comparison;
 
-                if (Entity != null)
+                if (Entity!= null)
                 {
                     AwarenessLevel awarenessX = x.GetAwareness(Entity, out int rollX);
                     AwarenessLevel awarenessY = y.GetAwareness(Entity, out int rollY);
@@ -89,97 +67,33 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Const & Static Values
 
-        public const int MIN_DIE_ROLL = 0;
-        public const int MAX_DIE_ROLL = 100;
-        public static ClampedDieRoll BASE_DIE_ROLL => new(30..50, DIE_ROLL_CLAMP); // ~10 either side of AwarenessLevel.Suspect
-
-        public const int MIN_RADIUS = 0;
-        public const int MAX_RADIUS = 84; // corner to corner of a single zone.
-        public static Radius BASE_RADIUS => new(10, RADIUS_CLAMP, Radius.DefaultDiffuser);
-
-        public static InclusiveRange DIE_ROLL_CLAMP => new(MIN_DIE_ROLL, MAX_DIE_ROLL);
-        public static InclusiveRange RADIUS_CLAMP => new(MIN_RADIUS, MAX_RADIUS);
-
-        public static Radius.RadiusFlags VisualFlag => Radius.RadiusFlags.Line | Radius.RadiusFlags.Occludes | Radius.RadiusFlags.Diffuses;
-        public static Radius.RadiusFlags AuditoryFlag => Radius.RadiusFlags.Area | Radius.RadiusFlags.Pathing | Radius.RadiusFlags.Diffuses;
-        public static Radius.RadiusFlags OlfactoryFlag => Radius.RadiusFlags.Area | Radius.RadiusFlags.Pathing | Radius.RadiusFlags.Diffuses;
-        public static Radius.RadiusFlags PsionicFlag => Radius.RadiusFlags.Line | Radius.RadiusFlags.Area | Radius.RadiusFlags.Diffuses;
+        // Add as necessary.
 
         #endregion
         #region Instance Fields & Properties
 
-        public sealed override IEventBinder Binder => EventBinder.Instance;
+        public Type Sense => typeof(T);
 
-        private string _Name;
-        public string Name => _Name ??= GetName();
-
-        private string _ShortName;
-        public string ShortName => _ShortName ??= GetName(true);
-
-        public GameObject Owner;
-
-        public PerceptionRack Rack => Owner?.GetPerceptions();
-
-        [NonSerialized]
-        public ClampedDieRoll BaseDieRoll;
-
-        [NonSerialized]
-        public Radius BaseRadius;
-
-        protected ClampedDieRoll _DieRoll;
-        public abstract ClampedDieRoll DieRoll { get; }
-
-        protected Radius _Radius;
-        public abstract Radius Radius { get; }
-
-        public Radius.RadiusFlags RadiusFlags => Radius.Flags;
-        public bool Occludes => Radius.Occludes();
-        public bool Diffuses => Radius.Diffuses();
-
-        protected int? LastRoll;
-        protected string LastEntityID;
-
-        [NonSerialized]
-        protected bool WantsToClearRating;
-
-        [NonSerialized]
-        protected List<Cell> _RadiusAreaCells;
-
-        public List<Cell> RadiusAreaCells => _RadiusAreaCells ??= GetRadiusAreaCells();
+        public override ClampedDieRoll DieRoll => _DieRoll ??= GetDieRoll(this, new T());
+        public override Radius Radius => _Radius ??= GetRadius(this, new T());
 
         #endregion
         #region Constructors
 
         public IPerception()
+            : base()
         {
-            Owner = null;
-
-            BaseDieRoll = BASE_DIE_ROLL;
-            BaseRadius = BASE_RADIUS;
-
-            _DieRoll = null;
-            _Radius = null;
-
-            LastRoll = null;
-            LastEntityID = null;
-
-            WantsToClearRating = false;
-
-            _RadiusAreaCells = null;
         }
         public IPerception(GameObject Owner)
-            : this()
+            : base(Owner)
         {
-            this.Owner = Owner;
         }
         public IPerception(
             GameObject Owner,
             ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : this(Owner)
+            : base(Owner, BaseDieRoll, BaseRadius)
         {
-            this.BaseDieRoll = BaseDieRoll;
-            this.BaseRadius = BaseRadius;
         }
 
         #endregion
@@ -188,18 +102,12 @@ namespace StealthSystemPrototype.Perceptions
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
-            ClampedDieRoll.WriteOptimized(Writer, BaseDieRoll);
-            Radius.WriteOptimized(Writer, BaseRadius);
-            ClampedDieRoll.WriteOptimized(Writer, DieRoll);
-            Radius.WriteOptimized(Writer, Radius);
+            // do writing here
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
-            BaseDieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
-            BaseRadius = Radius.ReadOptimizedRadius(Reader);
-            _DieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
-            _Radius = Radius.ReadOptimizedRadius(Reader);
+            // do reading here
         }
 
         public virtual void FinalizeRead(SerializationReader Reader)
@@ -208,20 +116,26 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public override GameObject GetComponentBasis()
-            => Owner;
-
         #region Base Methods
 
-        public abstract void Initialize();
 
-        public abstract void Attach();
+        public override void Initialize()
+        {
+        }
 
-        public abstract void AddedAfterCreation();
+        public override void Attach()
+        {
+        }
 
-        public abstract void Remove();
+        public override void AddedAfterCreation()
+        {
+        }
 
-        public virtual IPerception DeepCopy(GameObject Parent)
+        public override void Remove()
+        {
+        }
+
+        public override IPerception DeepCopy(GameObject Parent)
         {
             IPerception perception = (IPerception)Activator.CreateInstance(GetType());
 
@@ -237,143 +151,19 @@ namespace StealthSystemPrototype.Perceptions
             return perception;
         }
 
-        public virtual bool Validate()
-        {
-            if (Owner == null)
-                return false;
+        public override int GetBonusBaseDieRoll()
+            => 0;
 
-            return true;
-        }
+        public override int GetBonusBaseRadius()
+            => 0;
 
-        public abstract int GetBonusBaseDieRoll();
+        public override int GetBonusDieRoll()
+            => 0;
 
-        public abstract int GetBonusBaseRadius();
-
-        public abstract int GetBonusDieRoll();
-
-        public abstract int GetBonusRadius();
+        public override int GetBonusRadius()
+            => 0;
 
         #endregion
-        #region Virtual Event Registration
-
-        public virtual void ApplyRegistrar(GameObject Object, bool Active = false)
-        {
-            if (Active)
-            {
-                RegisterActive(Object, EventRegistrar.Get(Object, this));
-                return;
-            }
-            Register(Object, EventRegistrar.Get(Object, this));
-            /* This is base game code which should be investigated and possibly emulated 
-            if (ComponentReflection.EffectEvents.TryGetValue(GetType(), out var value))
-            {
-                Object.CurrentCell?.FlushRenderCache();
-                for (int i = 0; i < value.Length; i++)
-                    Object.RegisterEvent(this, value[i]);
-            }
-            */
-            if (WantEvent(EndTurnEvent.ID, EndTurnEvent.CascadeLevel))
-                Object.RegisterEvent(this, EndTurnEvent.ID);
-        }
-
-        public virtual void ApplyUnregistrar(GameObject Object, bool Active = false)
-        {
-            EventUnregistrar registrar = EventUnregistrar.Get(Object, this);
-            if (!Active)
-            {
-                Register(Object, registrar);
-                /* This is base game code which should be investigated and possibly emulated 
-                if (ComponentReflection.PartEvents.TryGetValue(GetType(), out var value))
-                    for (int i = 0; i < value.Length; i++)
-                        Object.UnregisterEvent(this, value[i]);
-                */
-                if (WantEvent(EndTurnEvent.ID, EndTurnEvent.CascadeLevel))
-                    Object.UnregisterEvent(this, EndTurnEvent.ID);
-            }
-            RegisterActive(Object, registrar);
-        }
-
-        /// <summary>Register to events from the <see cref="GameObject" /> while it is active in the action queue.</summary>
-        /// <remarks>It is safer to register for external events here, since they're guaranteed to be cleaned up once the object goes out of scope.</remarks>
-        /// <param name="Object">The current <see cref="GameObject" />.</param>
-        /// <param name="Registrar">An <see cref="IEventRegistrar" /> with this <see cref="IPerception" /> and <see cref="GameObject" />  provisioned as defaults.</param>
-        public virtual void RegisterActive(GameObject Object, IEventRegistrar Registrar)
-        {
-        }
-        /// <summary>Register to events from the <see cref="GameObject" />.</summary>
-        /// <param name="Object">The current <see cref="GameObject" />.</param>
-        /// <param name="Registrar">An <see cref="IEventRegistrar" /> with this <see cref="IPerception" /> and <see cref="GameObject" /> provisioned as defaults.</param>
-        public virtual void Register(GameObject Object, IEventRegistrar Registrar)
-        {
-        }
-
-        #endregion
-        #region Virtual HandleEvent
-
-        public virtual bool HandleEvent(GetWitnessesEvent E)
-            => true;
-
-        // this currently unlikely to ever be called, based on how collection and dispatch happens,
-        // but it is a goal to get it working.
-        public virtual bool HandleEvent(GetPerceptionsEvent E)
-            => true;
-
-        public virtual bool HandleEvent(GetPerceptionDieRollEvent E)
-            => true;
-
-        public virtual bool HandleEvent(GetPerceptionRadiusEvent E)
-            => true;
-
-        #endregion
-
-        protected ClampedDieRoll GetDieRoll<T, S>(T Perception = null, S Sense = null)
-            where T : IPerception<S>, new()
-            where S : ISense, new()
-            => GetPerceptionDieRollEvent.GetFor(
-                    Perceiver: Owner,
-                    Perception: Perception ?? (T)this,
-                    Sense: Sense,
-                    BaseDieRoll: BaseDieRoll.AdjustBy(GetBonusBaseDieRoll()))
-                ?.AdjustBy(GetBonusDieRoll());
-
-        protected Radius GetRadius<T, S>(T Perception = null, S Sense = null)
-            where T : IPerception<S>, new()
-            where S : ISense, new()
-            => GetPerceptionRadiusEvent.GetFor(
-                    Perceiver: Owner,
-                    Perception: Perception ?? (T)this,
-                    Sense: Sense,
-                    BaseRadius: BaseRadius.AdjustBy(GetBonusBaseRadius()))
-                ?.AdjustBy(GetBonusRadius());
-
-        public virtual string GetName(bool Short = false)
-            => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
-
-        public virtual string ToString(bool Short, GameObject Entity = null, bool UseLastRoll = false)
-        {
-            string rollString = null;
-            if (Entity != null)
-            {
-                AwarenessLevel awareness = GetAwareness(Entity, out int rollValue, UseLastRoll);
-                rollString = "(" + awareness.ToString() + ":" + rollValue + ")";
-            }
-            return ShortName + "[" + BaseDieRoll + ":@R:" + BaseRadius + "]" + rollString;
-        }
-
-        public override string ToString()
-            => ToString(false);
-
-        public void ClearDieRoll()
-            => _DieRoll = null;
-
-        public void ClearRadius()
-            => _Radius = null;
-
-        public void ClearRating()
-        {
-            ClearDieRoll();
-            ClearRadius();
-        }
 
         public virtual List<Cell> GetRadiusAreaCells()
             => Radius.IsArea()
@@ -575,44 +365,35 @@ namespace StealthSystemPrototype.Perceptions
 
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
-            || ID == EnteredCellEvent.ID
+            // || ID == EnteredCellEvent.ID
             ;
         public override bool HandleEvent(EnteredCellEvent E)
         {
-            _RadiusAreaCells = null;
+            // placeholder of the base
             return base.HandleEvent(E);
         }
 
         #endregion
         #region Comparison
 
-        public int CompareTo(IPerception Other)
-        {
-            if (EitherNull(this, Other, out int comparison))
-                return comparison;
-
-            int dieRollComp = (DieRoll.Average() - Other.DieRoll.Average()) - (Other.DieRoll.Breadth() - DieRoll.Breadth());
-            if (dieRollComp != 0)
-                return dieRollComp;
-
-            return Radius.CompareTo(Other.Radius);
-        }
+        public int CompareTo(IPerception<T> Other)
+            => base.CompareTo(Other);
 
         #endregion
         #region Operator Overloads
 
         #region Comparison
 
-        public static bool operator <(IPerception Op1, IPerception Op2)
+        public static bool operator <(IPerception<T> Op1, IPerception<T> Op2)
             => Op1.CompareTo(Op2) < 0;
 
-        public static bool operator >(IPerception Op1, IPerception Op2)
+        public static bool operator >(IPerception<T> Op1, IPerception<T> Op2)
             => Op1.CompareTo(Op2) > 0;
 
-        public static bool operator <=(IPerception Op1, IPerception Op2)
+        public static bool operator <=(IPerception<T> Op1, IPerception<T> Op2)
             => Op1.CompareTo(Op2) <= 0;
 
-        public static bool operator >=(IPerception Op1, IPerception Op2)
+        public static bool operator >=(IPerception<T> Op1, IPerception<T> Op2)
             => Op1.CompareTo(Op2) >= 0;
 
         #endregion

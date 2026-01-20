@@ -11,12 +11,14 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class Perception<T> : IPerception
+    public abstract class Perception<T, S> : IPerception<S>
         where T : class, new()
+        where S : ISense, new()
     {
         [NonSerialized]
         protected T _Source;
@@ -32,18 +34,16 @@ namespace StealthSystemPrototype.Perceptions
         public Perception(
             GameObject Owner,
             T Source,
-            PerceptionSense Sense,
             ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : base(Owner, Sense, BaseDieRoll, BaseRadius)
+            : base(Owner, BaseDieRoll, BaseRadius)
         {
             _Source = Source;
         }
         public Perception(
             GameObject Owner,
-            T Source,
-            PerceptionSense Sense)
-            : this(Owner, Source, Sense, BASE_DIE_ROLL, BASE_RADIUS)
+            T Source)
+            : this(Owner, Source, BASE_DIE_ROLL, BASE_RADIUS)
         {
         }
 

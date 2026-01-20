@@ -18,6 +18,7 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Const;
 using static StealthSystemPrototype.Perceptions.IPerception;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -177,7 +178,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public override string ToString()
             => ToString(Short: false, Entity: null);
 
-        public override void Add(IPerception Item)
+        public sealed override void Add(IPerception Item)
             => Add(Item);
 
         public void Add<T>(
@@ -185,7 +186,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where T : IPerception, new()
+            where T : IPerception
         {
             if (Items == null)
                 throw new InnerArrayNullException(nameof(Items));
@@ -216,22 +217,24 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-        public T Add<T>(
+        public T Add<T, S>(
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where T : IPerception, new()
+            where T : IPerception<S>, new()
+            where S : ISense, new()
         {
             T perception = new ();
             Add(perception, DoRegistration, Initial, Creation);
             return perception;
         }
 
-        public T Add<T>(
+        public T Add<T, S>(
             bool DoRegistration = true,
             bool Creation = false)
-            where T : IPerception, new()
-            => Add<T>(DoRegistration, false, Creation);
+            where T : IPerception<S>, new()
+            where S : ISense, new()
+            => Add<T, S>(DoRegistration, false, Creation);
 
         public bool Has<T>()
             where T : IPerception, new()
@@ -240,6 +243,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public bool Has<T>(T Perception)
             where T : IPerception, new()
             => Contains(Perception);
+
+        public bool HasSense<T>()
+            where T : ISense, new()
+            => Contains<T>();
 
         public bool Has(string Name)
             => AsEnumerable(
@@ -272,8 +279,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 }))
             ?.FirstOrDefault();
 
-        public IPerception GetFirstOfSense(PerceptionSense Sense)
-            => AsEnumerable(p => p.Sense == Sense)?.FirstOrDefault();
+        private static bool IsPerceptionOfSense<T>(IPerception IPerception)
+            where T : ISense, new()
+            => IPerception is IPerception<T> perception
+            && perception.Sense == typeof(T);
+
+        public IPerception<T> GetFirstOfSense<T>()
+            where T : ISense, new()
+            => AsEnumerable(IsPerceptionOfSense<T>)
+                ?.FirstOrDefault() as IPerception<T>;
 
         public bool TryGet<T>(out T Perception)
             where T : IPerception, new()
@@ -282,14 +296,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public bool TryGet(string Name, out IPerception Perception)
             => (Perception = Get(Name)) != null;
 
-        public T Require<T>(
+        public T Require<T, S>(
             bool Creation = false)
-            where T : IPerception, new()
+            where T : IPerception<S>, new()
+            where S : ISense, new()
         {
             if (TryGet(out T perception))
                 return perception;
 
-            return Add<T>(DoRegistration: true, Creation);
+            return Add<T, S>(DoRegistration: true, Creation);
         }
 
         protected IPerception RemovePerceptionAt(int Index)
@@ -688,12 +703,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return false;
         }
+
+        public virtual bool ContainsSense<T>()
+            where T : ISense, new()
+        {
+            for (int i = 0; i < Length; i++)
+                if (Items[i] is IPerception<T> typedPerception
+                    && typedPerception.Sense == typeof(T))
+                    return true;
+
+            return false;
+        }
         public virtual bool ContainsType(IPerception Item)
             => ContainsType(Item.GetType());
 
         public virtual bool Contains<T>(T Item = null)
             where T : IPerception
             => ContainsType(Item?.GetType() ?? typeof(T));
+
+        public virtual bool Contains<T>()
+            where T : ISense, new()
+            => ContainsSense<T>();
 
         #endregion
         #region Conversion Methods

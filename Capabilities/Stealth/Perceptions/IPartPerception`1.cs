@@ -12,12 +12,14 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class IPartPerception<T> : Perception<T>
+    public class IPartPerception<T, S> : Perception<T, S>
         where T : IPart, new()
+        where S : ISense, new()
     {
         public override T Source => _Source ??= GetBestSource(); 
 

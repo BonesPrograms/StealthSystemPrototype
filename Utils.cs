@@ -13,6 +13,7 @@ using Range = System.Range;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Perceptions;
 using static StealthSystemPrototype.Const;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype
 {
@@ -65,6 +66,36 @@ namespace StealthSystemPrototype
         }
         public static bool TryGetFirstCallingModNot(ModInfo ThisMod, out ModInfo FirstCallingMod)
             => (FirstCallingMod = GetFirstCallingModNot(ThisMod)) != null;
+
+        #endregion
+        #region Senses
+
+        public static IEnumerable<Type> GetSenseTypes(bool NamespaceLocked = true)
+        {
+            if (ModManager.GetTypesAssignableFrom(typeof(ISense)) is List<Type> iSenseTypes)
+                foreach (Type iSenseType in iSenseTypes)
+                    if (iSenseType.Name is string typeName
+                        && iSenseType.AssemblyQualifiedName[..^(typeName.Length + 1)] is string namespaceName
+                        && (!NamespaceLocked
+                            || namespaceName == "StealthSystemPrototype.Senses"))
+                        yield return iSenseType;
+        }
+
+        public static SortedDictionary<string, ISense> GetSenses()
+        {
+            SortedDictionary<string, ISense> output = new();
+            List<ISense> senseList = new();
+            foreach (Type iSenseType in GetSenseTypes())
+                if (ModManager.CreateInstance<ISense>(iSenseType.AssemblyQualifiedName) is ISense sense)
+                    senseList.Add(sense);
+
+            senseList.OrderInPlace((s1, s2) => s2.Order.CompareTo(s1.Order));
+
+            foreach (ISense sense in senseList)
+                output[sense.Name] = sense;
+
+            return output;
+        }
 
         #endregion
         #region Exceptions

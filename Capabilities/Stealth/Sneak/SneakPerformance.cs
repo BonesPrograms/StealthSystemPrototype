@@ -14,7 +14,7 @@ using SerializeField = UnityEngine.SerializeField;
 
 using StealthSystemPrototype.Perceptions;
 
-using Sense = StealthSystemPrototype.Perceptions.PerceptionSense;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 {
@@ -27,20 +27,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
         [ModSensitiveStaticCache]
         [GameBasedStaticCache(CreateInstance = false)]
-        private static Dictionary<string, Sense> _PerceptionSenses;
-        public static Dictionary<string, Sense> PerceptionSenses => Utils.GetValuesDictionary(ref _PerceptionSenses);
+        private static SortedDictionary<string, ISense> _PerceptionSenses;
+        public static SortedDictionary<string, ISense> PerceptionSenses => _PerceptionSenses ??= Utils.GetSenses();
 
-        public static Dictionary<Sense, Dictionary<string, Entry>> DefaultSneakPerformances => PerceptionSenses
+        public static Dictionary<string, Entry> DefaultSneakPerformances => PerceptionSenses
             ?.Aggregate(
-                seed: new Dictionary<Sense, Dictionary<string, Entry>>(),
-                func: delegate (Dictionary<Sense, Dictionary<string, Entry>> Accumulator, KeyValuePair<string, Sense> Next)
+                seed: new Dictionary<string, Entry>(),
+                func: delegate (Dictionary<string, Entry> Accumulator, KeyValuePair<string, ISense> Next)
                 {
-                    (string Name, Sense Sense) = Next;
-
-                    Accumulator[Sense] = new();
-                    if (Sense.Twixt(Sense.None, Sense.Other))
-                        Accumulator[Sense][Name] = new Entry(Name, 5);
-
+                    Accumulator[Next.Key] = new Entry(Next.Value);
                     return Accumulator;
                 })
             ?? new();
@@ -58,18 +53,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
             #region Instance Fields & Properties
 
-            private Sense _Sense;
-            public Sense Sense
+            private ISense _Sense;
+            public virtual ISense Sense
             {
                 get => _Sense;
-                private set => _Sense = value;
-            }
-
-            private string _Name;
-            public string Name
-            {
-                get => _Name;
-                private set => SetName(value);
+                protected set => _Sense = value;
             }
 
             private int _Rating;
@@ -91,33 +79,22 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             #endregion 
             #region Constructors
 
-            private Entry()
+            protected Entry()
             {
-                Sense = Sense.None;
-                _Name = null;
+                Sense = null;
                 Rating = 0;
                 Clamp = default;
             }
-
-            private Entry(int Rating, InclusiveRange Clamp)
+            public Entry(ISense Sense, int Rating, InclusiveRange Clamp)
+                : this()
             {
+                this.Sense = Sense;
                 this.Rating = Rating;
                 this.Clamp = Clamp;
             }
-            private Entry(Sense Sense, int Rating, InclusiveRange Clamp)
-                : this(Rating, Clamp)
+            public Entry(ISense Sense)
+                : this(Sense, 5, DefaultClamp)
             {
-                this.Sense = Sense;
-                Name = Sense.ToString();
-            }
-            public Entry(string SenseName, int Rating)
-                : this(Sense.Other, Rating, DefaultClamp)
-            {
-                if (PerceptionSenses.ContainsKey(SenseName)
-                    && PerceptionSenses[SenseName] < Sense.Other)
-                    this.Sense = PerceptionSenses[SenseName];
-
-                Name = SenseName;
             }
 
             #endregion
@@ -125,38 +102,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
             public virtual void Write(SerializationWriter Writer)
             {
-                Writer.WriteOptimized((int)Sense);
-                Writer.WriteOptimized(Name);
+                Sense.Write(Writer);
                 Writer.WriteOptimized(Rating);
+                Clamp.WriteOptimized(Writer);
             }
             public virtual void Read(SerializationReader Reader)
             {
-                Sense = (Sense)Reader.ReadOptimizedInt32();
-                _Name = Reader.ReadOptimizedString();
+                Sense = Reader.ReadComposite() as ISense;
                 Rating = Reader.ReadOptimizedInt32();
+                Clamp = InclusiveRange.ReadOptimizedInclusiveRange(Reader);
             }
 
             #endregion
 
             public override string ToString()
-                => Name + "(" + Sense + "): " + Rating + "[" + Clamp.ToString() + "]";
-
-            private bool SetName(string Name = null)
-            {
-                if (Sense < Sense.Other)
-                {
-                    _Name = Sense.ToString();
-                    return false;
-                }
-                if (Name == null)
-                {
-                    Sense = Sense.None;
-                    return SetName();
-                }
-
-                _Name = Name;
-                return true;
-            }
+                => Sense.Name + "(" + Sense + "): " + Rating + "[" + Clamp.ToString() + "]";
 
             public Entry SetClamp(InclusiveRange Clamp)
             {
@@ -183,8 +143,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                 if (Sense != Other.Sense)
                     return false;
 
-                if (!Sense.Twixt(PerceptionSense.None, PerceptionSense.Other)
-                    && Name != Other.Name)
+                if (Sense.Order != Other.Sense.Order)
                     return false;
 
                 return true;
@@ -233,12 +192,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             #region Conversions
 
             public static implicit operator KeyValuePair<string, int>(Entry Operand)
-                => new(Operand.Name, Operand.Rating);
+                => new(Operand.Sense.Name, Operand.Rating);
 
-            public static explicit operator Entry(KeyValuePair<string, int>  Operand)
-                => new(Operand.Key, Operand.Value);
+            public static explicit operator Entry(KeyValuePair<ISense, int>  Operand)
+                => new(Operand.Key, Operand.Value, DefaultClamp);
 
-            public static implicit operator KeyValuePair<Sense, int>(Entry Operand)
+            public static implicit operator KeyValuePair<ISense, int>(Entry Operand)
                 => new(Operand.Sense, Operand.Rating);
 
             #endregion
@@ -275,7 +234,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
         #endregion
 
-        private Dictionary<Sense, Dictionary<string, Entry>> PerformanceEntries;
+        private Dictionary<string, Entry> PerformanceEntries;
 
         public StringMap<List<StatCollectorEntry>> CollectedStats;
         public float MoveSpeedMultiplier => (GetCollectedStats(MS_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
@@ -303,13 +262,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
         public void Write(SerializationWriter Writer)
         {
-            Writer.WriteComposite(GetEntries(e => e > Sense.None).ToList());
+            Writer.WriteComposite(GetEntries().ToList());
         }
         public void Read(SerializationReader Reader)
         {
             PerformanceEntries = new(DefaultSneakPerformances);
             foreach (Entry entry in Reader.ReadCompositeList<Entry>() ?? new())
-                PerformanceEntries[entry.Sense][entry.Name] = entry;
+                PerformanceEntries[entry.Sense.Name] = entry;
         }
 
         #endregion
@@ -325,7 +284,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             };
         }
 
-        public IEnumerable<Entry> this[Sense Sense] => PerformanceEntries[Sense].Select(kvp => kvp.Value);
+        public Entry this[ISense Sense] => PerformanceEntries[Sense.Name];
 
         public Entry this[string SenseName]
         {
@@ -333,15 +292,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             {
                 Entry output = null;
                 if (!PerceptionSenses.ContainsKey(SenseName))
-                    output = PerformanceEntries[Sense.Other][SenseName] = new Entry(SenseName, 5);
+                    output = PerformanceEntries[ISense.Other][SenseName] = new Entry(SenseName, 5);
                 else 
                 {
-                    Sense sense = PerceptionSenses[SenseName];
-                    if (sense.Twixt(Sense.None, Sense.Other))
+                    ISense sense = PerceptionSenses[SenseName];
+                    if (sense.Twixt(ISense.None, ISense.Other))
                         output = this[sense].First();
                     else
-                    if (sense != Sense.None)
-                        output = PerformanceEntries[Sense.Other][SenseName];
+                    if (sense != ISense.None)
+                        output = PerformanceEntries[ISense.Other][SenseName];
                 }
                 return output;
             }
@@ -461,8 +420,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
         public IEnumerable<Entry> GetEntries(Predicate<Entry> Filter)
         {
-            foreach ((Sense sense, Dictionary<string, Entry> senseDict) in PerformanceEntries ?? new())
-                if (sense == Sense.None)
+            foreach ((ISense sense, Dictionary<string, Entry> senseDict) in PerformanceEntries ?? new())
+                if (sense == ISense.None)
                     continue;
                 else
                     foreach ((string _, Entry entry) in senseDict)
@@ -474,7 +433,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
         public IEnumerable<Entry> GetEntries()
             => GetEntries((Predicate<Entry>)null);
 
-        public IEnumerable<Entry> GetEntries(Predicate<Sense> Filter)
+        public IEnumerable<Entry> GetEntries(Predicate<ISense> Filter)
             => GetEntries((Entry e) => Filter == null || Filter(e.Sense));
 
         public IEnumerable<Entry> GetEntries(Predicate<InclusiveRange> Filter)

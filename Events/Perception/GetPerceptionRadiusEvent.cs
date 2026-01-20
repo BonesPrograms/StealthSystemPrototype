@@ -12,6 +12,7 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 
 using static StealthSystemPrototype.Perceptions.IPerception;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Events
 {
@@ -24,7 +25,7 @@ namespace StealthSystemPrototype.Events
 
         public Type Type;
 
-        public PerceptionSense Sense;
+        public ISense Sense;
 
         public Radius BaseRadius;
 
@@ -35,7 +36,7 @@ namespace StealthSystemPrototype.Events
         {
             Name = null;
             Type = null;
-            Sense = PerceptionSense.None;
+            Sense = null;
             BaseRadius = null;
             Radius = null;
         }
@@ -45,16 +46,18 @@ namespace StealthSystemPrototype.Events
             base.Reset();
             Name = null;
             Type = null;
-            Sense = PerceptionSense.None;
+            Sense = null;
             BaseRadius = null;
             Radius = null;
         }
 
-        public static GetPerceptionRadiusEvent FromPool<T>(
+        public static GetPerceptionRadiusEvent FromPool<T, S>(
             GameObject Perceiver,
             T Perception,
+            S Sense,
             Radius BaseRadius)
-            where T : IPerception
+            where T : IPerception<S>, new()
+            where S : ISense, new()
         {
             if (Perception == null
                 || FromPool(Perceiver) is not GetPerceptionRadiusEvent E)
@@ -62,7 +65,7 @@ namespace StealthSystemPrototype.Events
 
             E.Name = Perception.Name;
             E.Type = Perception.GetType();
-            E.Sense = Perception.Sense;
+            E.Sense = Sense ?? new();
             E.BaseRadius = BaseRadius;
             E.Radius = BaseRadius;
             E.StringyEvent = E.GetStringyEvent();
@@ -89,24 +92,27 @@ namespace StealthSystemPrototype.Events
                 Radius = radius;
         }
 
-        public static Radius GetFor<T>(
+        public static Radius GetFor<T, S>(
             GameObject Perceiver,
             T Perception,
+            S Sense,
             Radius BaseRadius)
-            where T : IPerception
+            where T : IPerception<S>, new ()
+            where S : ISense, new ()
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                        Debug.Arg(Perceiver?.DebugName ?? "null"),
-                        Debug.Arg(Perception.ToString()),
+                    Debug.Arg(Perceiver?.DebugName ?? "null"),
+                    Debug.Arg(Perception.ToString()),
                 });
 
             if (!GameObject.Validate(ref Perceiver)
                 || FromPool(
                     Perceiver: Perceiver,
                     Perception: Perception,
+                    Sense: Sense,
                     BaseRadius: BaseRadius) is not GetPerceptionRadiusEvent E)
                 return null;
 
