@@ -17,6 +17,17 @@ namespace StealthSystemPrototype.Events
     [GameEvent(Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
     public class GetPerceptionsEvent : IPerceptionEvent<GetPerceptionsEvent>
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+            => Registry.RegisterEachFalse(
+                Type: typeof(StealthSystemPrototype.Events.GetPerceptionsEvent),
+                Methods: new string[]
+                {
+                    nameof(AddPerception),
+                });
+        #endregion
+
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
         public GetPerceptionsEvent()
@@ -62,7 +73,7 @@ namespace StealthSystemPrototype.Events
             where T : IPerception, new()
         {
             using Indent indent = new(1);
-            Debug.LogCaller(indent,
+            Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(Perceiver?.MiniDebugName() ?? "null"),
@@ -85,7 +96,7 @@ namespace StealthSystemPrototype.Events
             where T : IPerception, new()
         {
             using Indent indent = new(1);
-            Debug.LogCaller(indent,
+            Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(Perception?.ToString()),

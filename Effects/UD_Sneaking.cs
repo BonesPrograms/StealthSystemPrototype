@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 using XRL.Collections;
 using XRL.Rules;
@@ -10,9 +11,11 @@ using XRL.World.Parts.Skill;
 
 using SerializeField = UnityEngine.SerializeField;
 
-using StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
-using System.Linq;
+using StealthSystemPrototype.Capabilities.Stealth.Sneak;
+
+using static StealthSystemPrototype.Capabilities.Stealth.Sneak.SneakPerformance;
 
 namespace XRL.World.Effects
 {
@@ -20,6 +23,9 @@ namespace XRL.World.Effects
     {
         public const string DISPLAY_NAME = "{{K|light footed}}";
         public const string VERBING = "sneaking";
+
+        public const string MS_NAME = "MoveSpeed";
+        public const string QN_NAME = "Speed";
 
         public SneakPerformance SneakPerformance => Object?.GetPart<UD_Sneak>()?.SneakPerformance;
 
@@ -33,13 +39,22 @@ namespace XRL.World.Effects
         [SerializeField]
         private int AppliedMoveSpeedMultiplierAmount;
 
+        [SerializeField]
+        private bool IsQuicknessMultiplierApplied;
+
+        [SerializeField]
+        private int AppliedQuicknessMultiplierAmount;
+
         public bool IsBeingPerceived;
 
         public UD_Sneaking()
         {
             DisplayName = DISPLAY_NAME;
             Duration = DURATION_INDEFINITE;
+            IsMoveSpeedMultiplierApplied = false;
             AppliedMoveSpeedMultiplierAmount = 0;
+            IsQuicknessMultiplierApplied = false;
+            AppliedQuicknessMultiplierAmount = 0;
             IsBeingPerceived = false;
             _DetailsEntries = null;
         }
@@ -83,9 +98,8 @@ namespace XRL.World.Effects
             StatShifter.DefaultDisplayName = DisplayName;
             Object.MovementModeChanged(VERBING);
             DidX("begin", VERBING, "!");
-            RecalcMovespeedBonus();
+            RecalcStatMultipliers();
             return true;
-        
         }
 
         public override void Remove(GameObject Object)
@@ -110,17 +124,25 @@ namespace XRL.World.Effects
             => _DetailsEntries = null;
 
         public static int GetMoveSpeedShiftAmount(GameObject Object, float Multiplier)
-            => (int)((100 - Object.Stat("MoveSpeed") + 100) * (Multiplier - 1f));
+            => (int)((100 - Object.Stat(MS_NAME) + 100) * (Multiplier - 1f));
 
-        public void RecalcMovespeedBonus()
+        public static int GetQuicknessShiftAmount(GameObject Object, float Multiplier)
+            => (int)(Object.Stat(QN_NAME) * (Multiplier - 1f));
+
+        public void RecalcStatMultipliers()
         {
             if (Duration > 0)
             {
                 ClearDetailsEntries();
-                StatShifter.RemoveStatShift(Object, "MoveSpeed");
+                StatShifter.RemoveStatShift(Object, MS_NAME);
                 AppliedMoveSpeedMultiplierAmount = GetMoveSpeedShiftAmount(Object, GetMovespeedMultiplier());
-                if (!(IsMoveSpeedMultiplierApplied = StatShifter.SetStatShift("MoveSpeed", -AppliedMoveSpeedMultiplierAmount)))
+                if (!(IsMoveSpeedMultiplierApplied = StatShifter.SetStatShift(MS_NAME, -AppliedMoveSpeedMultiplierAmount)))
                     AppliedMoveSpeedMultiplierAmount = 0;
+
+                StatShifter.RemoveStatShift(Object, QN_NAME);
+                AppliedQuicknessMultiplierAmount = GetQuicknessShiftAmount(Object, GetQuicknessMultiplier());
+                if (!(IsQuicknessMultiplierApplied = StatShifter.SetStatShift(QN_NAME, AppliedQuicknessMultiplierAmount)))
+                    AppliedQuicknessMultiplierAmount = 0;
             }
         }
 
@@ -129,17 +151,32 @@ namespace XRL.World.Effects
             float multiplier = 1f;
             if ((SneakPerformance ??= Object?.GetPart<UD_Sneak>()?.SneakPerformance) != null)
             {
-                foreach ((int multi, string source) in SneakPerformance.GetCollectedStats(SneakPerformance.MOVESPEED_MULTI))
-                    stats?.AddPercentageBonusModifier(SneakPerformance.MOVESPEED_MULTI, multi, source);
+                foreach ((int multi, string source) in SneakPerformance.GetCollectedStats(MS_MULTI))
+                    stats?.AddPercentageBonusModifier(MS_MULTI, multi, source);
 
                 multiplier += SneakPerformance.MoveSpeedMultiplier;
-                stats?.Set(SneakPerformance.MOVESPEED_MULTI, (int)((multiplier - 1f) * 100f), multiplier != 1f, multiplier.CompareTo(1f));
+                stats?.Set(MS_MULTI, (int)((multiplier - 1f) * 100f), multiplier != 1f, multiplier.CompareTo(1f));
             }
             return multiplier;
         }
-
         public float GetMovespeedMultiplier()
             => GetMovespeedMultiplier(Object, SneakPerformance);
+
+        public static float GetQuicknessMultiplier(GameObject Object, SneakPerformance SneakPerformance, Templates.StatCollector stats = null)
+        {
+            float multiplier = 1f;
+            if ((SneakPerformance ??= Object?.GetPart<UD_Sneak>()?.SneakPerformance) != null)
+            {
+                foreach ((int multi, string source) in SneakPerformance.GetCollectedStats(QN_MULTI))
+                    stats?.AddPercentageBonusModifier(QN_MULTI, multi, source);
+
+                multiplier += SneakPerformance.QuicknessMultiplier;
+                stats?.Set(QN_MULTI, (int)((multiplier - 1f) * 100f), multiplier != 1f, multiplier.CompareTo(1f));
+            }
+            return multiplier;
+        }
+        public float GetQuicknessMultiplier()
+            => GetQuicknessMultiplier(Object, SneakPerformance);
 
         #region Event Handling
 
@@ -158,27 +195,72 @@ namespace XRL.World.Effects
             ;
         public virtual bool HandleEvent(GetSneakDetailsEvent E)
         {
-            if (IsMoveSpeedMultiplierApplied)
+            if (SneakPerformance != null)
             {
-                StringBuilder SB = Event.NewStringBuilder();
-                SB.Compound("Moves at " + GetMovespeedMultiplier() + "X the normal speed. (" + AppliedMoveSpeedMultiplierAmount.Signed() + " move speed)", '\n');
-                if (SneakPerformance != null)
+                if (IsMoveSpeedMultiplierApplied
+                || IsQuicknessMultiplierApplied)
                 {
-                    IList<(int multi, string source)> entries = (IList<(int, string)>)SneakPerformance
-                        ?.GetCollectedStats(SneakPerformance.MOVESPEED_MULTI)
-                        ?.Select(e => ((100 - e.Value) / 100f, e.Source));
-
-                    if (!entries.IsNullOrEmpty())
+                    StringBuilder SB = Event.NewStringBuilder();
+                    if (IsMoveSpeedMultiplierApplied)
                     {
-                        int count = entries.Count;
-                        SB.Compound("Multiplier sources:", '\n');
-                        for (int i = 0; i < count; i++)
-                            SB.Compound(
-                                Text: entries[i].source + ": " + entries[i].multi + "X (" + GetMoveSpeedShiftAmount(Object, entries[i].multi).Signed(), 
-                                With: (i < count - 1 ? "\n" : null));
+                        if (!SB.IsNullOrEmpty())
+                            SB.AppendLine().AppendLine();
+
+                        float totalMSMulti = GetMovespeedMultiplier();
+                        bool mSTotalGood = totalMSMulti >= 1f;
+                        SB.Append("Moves at ").AppendColored(mSTotalGood ? "g" : "r", totalMSMulti.ToString()).Append("X the normal speed. ")
+                            .Append("(").AppendColored(mSTotalGood ? "g" : "r", AppliedMoveSpeedMultiplierAmount.Signed()).Append(" move speed)");
+
+                        if (SneakPerformance.GetCollectedStats(MS_MULTI)
+                            ?.ToList() is List<StatCollectorEntry> mSEntries)
+                        {
+                            SB.Append("Sources:").AppendLine();
+                            int count = mSEntries.Count;
+                            for (int i = 0; i < count; i++)
+                            {
+                                float mSMulti = mSEntries[i].GetMulti();
+                                bool mSMultiGood = mSMulti >= 0;
+                                string mSMultiAmount = (mSMulti -1f).Signed();
+                                string mSShiftAmount = GetMoveSpeedShiftAmount(Object, mSMulti).Signed();
+                                SB.Append(mSEntries[i].Source + ": ")
+                                    .AppendColored(mSMultiGood ? "g" : "r", mSMultiAmount).Append("X ")
+                                    .Append("(").AppendColored(mSMultiGood ? "g" : "r", mSShiftAmount).Append(" MS)");
+                                if (i < count - 1)
+                                    SB.AppendLine();
+                            }
+                        }
                     }
+                    if (IsQuicknessMultiplierApplied)
+                    {
+                        if (!SB.IsNullOrEmpty())
+                            SB.AppendLine().AppendLine();
+
+                        float totalQNMulti = GetQuicknessMultiplier();
+                        bool qNTotalGood = totalQNMulti >= 1f;
+                        SB.Append("Acts at ").AppendColored(qNTotalGood ? "g" : "r", totalQNMulti.ToString()).Append("X the normal speed. ")
+                            .Append("(").AppendColored(qNTotalGood ? "g" : "r", AppliedQuicknessMultiplierAmount.Signed()).Append(" quickness)");
+
+                        if (SneakPerformance.GetCollectedStats(QN_MULTI)
+                            ?.ToList() is List<StatCollectorEntry> qNEntries)
+                        {
+                            SB.Append("Sources:").AppendLine();
+                            int count = qNEntries.Count;
+                            for (int i = 0; i < count; i++)
+                            {
+                                float qNMulti = qNEntries[i].GetMulti();
+                                bool qNMultiGood = qNMulti >= 0;
+                                string qNMultiAmount = (qNMulti - 1f).Signed();
+                                string qNShiftAmount = GetQuicknessShiftAmount(Object, qNMulti).Signed();
+                                SB.Append(qNEntries[i].Source + ": ")
+                                    .AppendColored(qNMultiGood ? "g" : "r", qNMultiAmount).Append("X ")
+                                    .Append("(").AppendColored(qNMultiGood ? "g" : "r", qNShiftAmount).Append(" QN)");
+                                if (i < count - 1)
+                                    SB.AppendLine();
+                            }
+                        }
+                    }
+                    E.Add(this, SB.ToString());
                 }
-                E.Add(this, SB.ToString());
             }
             return base.HandleEvent(E);
         }
@@ -199,11 +281,11 @@ namespace XRL.World.Effects
             if (Duration > 0)
             {
                 if (!IsBeingPerceived)
-                    E.ApplyColors("k", "K", int.MaxValue, int.MaxValue);
+                    E.ApplyColors("&K", "w", int.MaxValue, int.MaxValue);
                 else
-                    E.ApplyColors("K", "W", int.MaxValue, int.MaxValue);
+                    E.ApplyColors("&K", "W", int.MaxValue, int.MaxValue);
 
-                E.RenderEffectIndicator("_", "Tiles2/status_sprinting.bmp", "&w", "K", 35);
+                E.RenderEffectIndicator("?", null, "&K", "K", 35);
             }
             return base.Render(E);
         }
@@ -220,7 +302,7 @@ namespace XRL.World.Effects
                         && !Object.HasPart<Tactics_Hurdle>())
                         Object.RemoveEffect(this);
                     else
-                        RecalcMovespeedBonus();
+                        RecalcStatMultipliers();
                 }
 
             return base.FireEvent(E);

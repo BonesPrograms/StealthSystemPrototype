@@ -5,6 +5,10 @@ using System.Text;
 
 using XRL.Wish;
 using XRL.UI;
+using XRL.World.Effects;
+using XRL.World.Parts.Skill;
+
+using SerializeField = UnityEngine.SerializeField;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
@@ -12,8 +16,6 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Capabilities.Stealth.Sneak;
-using XRL.World.Effects;
-using XRL.World.Parts.Skill;
 
 namespace XRL.World.Parts
 {
@@ -27,16 +29,23 @@ namespace XRL.World.Parts
         private SneakPerformance _SneakPerformance;
         public SneakPerformance SneakPerformance
         {
-            get => _SneakPerformance ??= GetSneakPerformanceEvent.GetFor(ParentObject);
+            get => _SneakPerformance == null
+                    || _SneakPerformance.WantsSync
+                ? GetSneakPerformanceEvent.GetFor(ParentObject, ref _SneakPerformance)
+                : _SneakPerformance;
             protected set => _SneakPerformance = value;
         }
 
         public Guid ActivatedAbilityID;
 
+        [SerializeField]
+        private bool WantRecalc;
+
         public UD_Sneak()
         {
             SneakPerformance = null;
             ActivatedAbilityID = Guid.Empty;
+            WantRecalc = false;
         }
 
         public override void Remove()
@@ -45,13 +54,21 @@ namespace XRL.World.Parts
             base.Remove();
         }
 
-        public void SyncAbility(bool Silent = false)
+        public UD_Sneak WantsSync()
         {
-            if (SneakPerformance.WantsSync)
+            SneakPerformance.WantsSync = true;
+            WantRecalc = true;
+            return this;
+        }
+        public static UD_Sneak WantsSync(GameObject Who)
+            => Who?.GetPart<UD_Sneak>()?.WantsSync();
+
+        public UD_Sneak SyncAbility(bool Silent = false)
+        {
+            if (WantRecalc)
             {
-                SneakPerformance = null;
-                if (ParentObject.TryGetEffect(out UD_Sneaking sneaking))
-                    sneaking.ClearDetailsEntries();
+                ParentObject.ForeachEffect((UD_Sneaking fx) => fx.RecalcStatMultipliers());
+                WantRecalc = false;
             }
 
             bool removed = false;
@@ -76,9 +93,10 @@ namespace XRL.World.Parts
                     ActiveToggle: true,
                     Silent: Silent || removed);
             }
+            return this;
         }
-        public static void SyncAbility(GameObject Who, bool Silent = false)
-            => Who.GetPart<UD_Sneak>()?.SyncAbility(Silent);
+        public static UD_Sneak SyncAbility(GameObject Who, bool Silent = false)
+            => Who?.GetPart<UD_Sneak>()?.SyncAbility(Silent);
 
         public bool IsSneaking()
             => ParentObject.HasEffect<UD_Sneaking>();
@@ -133,7 +151,10 @@ namespace XRL.World.Parts
         {
             if (E.Hider == ParentObject
                 && !E.Hider.HasSkill(nameof(UD_Stealth_LightFooted)))
+            {
                 E.AdjustMoveSpeedMultiplier(this, -10);
+                E.AdjustQuicknessMultiplier(this, -10);
+            }
             return base.HandleEvent(E);
         }
 

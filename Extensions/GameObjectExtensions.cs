@@ -28,10 +28,10 @@ namespace StealthSystemPrototype
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
             => Registry.RegisterEach(
-                Type: typeof(StealthSystemPrototype.Extensions),
+                Type: typeof(StealthSystemPrototype.GameObjectExtensions),
                 MethodNameValues: new Dictionary<string, bool>()
                 {
-                    //{ nameof(SetMin), false },
+                    { nameof(GetPerceptions), false },
                 });
 
         public static PerceptionRack GetPerceptions(this GameObject Object)
@@ -98,6 +98,17 @@ namespace StealthSystemPrototype
                 return false;
             }
             return true;
+        }
+
+        public static void ForeachEffect<T>(
+            this GameObject Object,
+            Action<T> Proc)
+            where T : Effect
+        {
+            if (Object._Effects is EffectRack effects)
+                foreach (Effect effect in effects)
+                    if (effect is T tEffect)
+                        Proc(tEffect);
         }
     }
 }

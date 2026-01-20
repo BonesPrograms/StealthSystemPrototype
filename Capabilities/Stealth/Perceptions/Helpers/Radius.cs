@@ -202,8 +202,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public double GetDiffusion(int Distance)
             => Diffusions()[Distance.Clamp(AsInclusiveRange())];
 
-        public string GetDiffusionDebug()
-            => DiffusionSequence.ToString(false);
+        public string GetDiffusionDebug(bool Inline = true)
+            => DiffusionSequence.ToString(Short: false, Inline: Inline);
 
         #region Comparison
 

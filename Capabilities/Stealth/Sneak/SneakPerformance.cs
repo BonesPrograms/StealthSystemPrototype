@@ -10,18 +10,25 @@ using XRL.World.Parts.Mutation;
 using XRL.Collections;
 using XRL.World;
 
+using SerializeField = UnityEngine.SerializeField;
+
 using StealthSystemPrototype.Perceptions;
 
 using Sense = StealthSystemPrototype.Perceptions.PerceptionSense;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 {
+    [HasModSensitiveStaticCache]
+    [HasGameBasedStaticCache]
     [Serializable]
     public class SneakPerformance : IComposite
     {
         #region Const & Static
 
-        public static Dictionary<string, Sense> PerceptionSenses => Utils.GetValuesDictionary<Sense>() ?? new();
+        [ModSensitiveStaticCache]
+        [GameBasedStaticCache(CreateInstance = false)]
+        private static Dictionary<string, Sense> _PerceptionSenses;
+        public static Dictionary<string, Sense> PerceptionSenses => Utils.GetValuesDictionary(ref _PerceptionSenses);
 
         public static Dictionary<Sense, Dictionary<string, Entry>> DefaultSneakPerformances => PerceptionSenses
             ?.Aggregate(
@@ -38,7 +45,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                 })
             ?? new();
 
-        public static string MOVESPEED_MULTI => "MoveSpeed_Multiplier";
+        public static string MS_MULTI => "MoveSpeed_Multiplier";
+        public static string QN_MULTI => "Quickness_Multiplier";
 
         #endregion
         #region Helpers
@@ -261,8 +269,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                 ? areEqual
                 : Class == other.Class;
 
-            public static explicit operator (int Multi, string Source)(StatCollectorEntry Operand)
-                => (Operand.Value, Operand.Source);
+            public readonly float GetMulti()
+                => 1f + (Value / 100f);
         }
 
         #endregion
@@ -270,18 +278,25 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
         private Dictionary<Sense, Dictionary<string, Entry>> PerformanceEntries;
 
         public StringMap<List<StatCollectorEntry>> CollectedStats;
-        public float MoveSpeedMultiplier => (GetCollectedStats(MOVESPEED_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
+        public float MoveSpeedMultiplier => (GetCollectedStats(MS_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
+        public float QuicknessMultiplier => (GetCollectedStats(QN_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
 
-        public bool WantsSync;
+        [SerializeField]
+        private bool _WantsSync;
+        public bool WantsSync
+        {
+            get => _WantsSync;
+            set
+            {
+                if (value)
+                    Reset();
+                _WantsSync = value;
+            }
+        }
 
         public SneakPerformance()
         {
-            PerformanceEntries = new(DefaultSneakPerformances);
-            WantsSync = false;
-            CollectedStats = new()
-            {
-                { "MoveSpeed Multiplier", new() },
-            };
+            Reset();
         }
 
         #region Serialization
@@ -298,6 +313,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
         }
 
         #endregion
+
+        public void Reset()
+        {
+            PerformanceEntries = new(DefaultSneakPerformances);
+            _WantsSync = false;
+            CollectedStats = new()
+            {
+                { MS_MULTI, new() },
+                { QN_MULTI, new() },
+            };
+        }
 
         public IEnumerable<Entry> this[Sense Sense] => PerformanceEntries[Sense].Select(kvp => kvp.Value);
 
@@ -341,7 +367,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             return nameof(CollectedStats);
         }
 
-        public SneakPerformance AdjustMoveSpeedMultiplier<T>(T Source, int Value, string SourceDisplay = null)
+        protected SneakPerformance AdjustStatMultiplier<T>(
+            string STAT_MULTI,
+            T Source,
+            int Value,
+            string SourceDisplay = null)
             where T : IComponent<GameObject>, new()
         {
             string className = Source?.TypeStringWithGenerics();
@@ -358,20 +388,37 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                     SourceDisplay = sourceEffect.DisplayName;
             }
             StatCollectorEntry newEntry = new(className, Value, SourceDisplay);
-            if (CollectedStats[MOVESPEED_MULTI] is List<StatCollectorEntry> collectedStatsList
-                && collectedStatsList.Any(e => e.Class == className))
-                for (int i = 0; i < collectedStatsList.Count; i++)
-                {
-                    if (collectedStatsList[i].Equals(newEntry))
+            CollectedStats[STAT_MULTI] ??= new();
+            if (CollectedStats[STAT_MULTI] is List<StatCollectorEntry> collectedStatsList)
+            {
+                if (collectedStatsList.Any(e => e.Class == className))
+                    for (int i = 0; i < collectedStatsList.Count; i++)
                     {
-                        collectedStatsList[i] = newEntry;
-                        break;
+                        if (collectedStatsList[i].Equals(newEntry))
+                        {
+                            collectedStatsList[i] = newEntry;
+                            break;
+                        }
                     }
-                }
-            else
-                CollectedStats[MOVESPEED_MULTI].Add(newEntry);
+                else
+                    CollectedStats[STAT_MULTI].Add(newEntry);
+            }
             return this;
         }
+
+        public SneakPerformance AdjustMoveSpeedMultiplier<T>(
+            T Source,
+            int Value,
+            string SourceDisplay = null)
+            where T : IComponent<GameObject>, new()
+            => AdjustStatMultiplier(MS_MULTI, Source, Value, SourceDisplay);
+
+        public SneakPerformance AdjustQuicknessMultiplier<T>(
+            T Source,
+            int Value,
+            string SourceDisplay = null)
+            where T : IComponent<GameObject>, new()
+            => AdjustStatMultiplier(QN_MULTI, Source, Value, SourceDisplay);
 
         public IEnumerable<StatCollectorEntry> GetCollectedStats(string Stat, Predicate<StatCollectorEntry> Filter)
         {

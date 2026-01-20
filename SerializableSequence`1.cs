@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using StealthSystemPrototype.Logging;
+
 using XRL.World;
 
 namespace StealthSystemPrototype
@@ -149,14 +151,27 @@ namespace StealthSystemPrototype
         public virtual string GetName(bool Short = false)
             => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
 
-        public virtual string ToString(bool Short, string FormatString = "{0:0.00}")
+        private static string LastIndent(int Offset = 0)
+        {
+            using Indent indent = new(Offset);
+            return " ".ThisManyTimes(indent);
+        }
+        private static string IndentOrComma(bool Comma, int Offset = 0)
+            => Comma 
+            ? ", "
+            : LastIndent(Offset);
+
+        public virtual string ToString(bool Short, bool Inline, string FormatString = "{0:0.00}")
             => GetName(Short) +
-            "(){" +
+            "()" + (Inline ? null : "\n" + LastIndent()) + "{ " + (Inline ? null : "\n" + LastIndent(1)) +
             GetStepValues()
                 ?.Aggregate(
                     seed: "",
-                    func: (a, n) => a + (!a.IsNullOrEmpty() ? "," : null) + String.Format(FormatString, n)) +
-            "}";
+                    func: (a, n) => a + (!a.IsNullOrEmpty() ? IndentOrComma(Inline, 1) : null) + String.Format(FormatString, n)) +
+            (Inline ? null : "\n" + LastIndent()) + " }";
+
+        public virtual string ToString(bool Short, string FormatString = "{0:0.00}")
+            => ToString(Short, true, FormatString);
 
         public override string ToString()
             => ToString(false);

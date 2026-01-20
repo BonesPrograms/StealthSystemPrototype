@@ -282,32 +282,58 @@ namespace StealthSystemPrototype
         public static string YehNah(bool? Yeh = null)
             => "[" + (Yeh == null ? "-" : (Yeh.GetValueOrDefault() ? TICK : CROSS)) + "]";
 
+        public static string DelimitedAggregator<T>(string Accumulator, T Next, string Delimiter)
+            => Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next;
+
+        public static string CommaDelimitedAggregator<T>(string Accumulator, T Next)
+            => DelimitedAggregator(Accumulator, Next, ",");
+
+        public static string CommaSpaceDelimitedAggregator<T>(string Accumulator, T Next)
+            => DelimitedAggregator(Accumulator, Next, ", ");
+
+        public static string NewLineDelimitedAggregator<T>(string Accumulator, T Next)
+            => DelimitedAggregator(Accumulator, Next, "\n");
+
         #endregion
         #region Generic Conditionals
 
-        public static bool EitherNull<T1, T2>(T1 x, T2 y, out bool AreEqual)
+        public static bool EitherNull<Tx, Ty>(Tx X, Ty Y, out bool AreEqual)
         {
-            AreEqual = (x is null) == (y is null);
-            return x is null 
-                || y is null;
+            AreEqual = (X is null) == (Y is null);
+            return X is null 
+                || Y is null;
         }
 
-        public static bool EitherNull<T1, T2>(T1 x, T2 y, out int Comparison)
+        public static bool EitherNull<Tx, Ty>(Tx X, Ty Y, out int Comparison)
         {
             Comparison = 0;
-            if ((x is not null)
-                && (y is not null))
+
+            bool xNull = X is null;
+            bool yNull = Y is null;
+
+            if (!xNull
+                && !yNull)
                 return false;
 
-            if (x is not null
-                && y is null)
+            if (!xNull
+                && yNull)
                 Comparison = 1;
 
-            if (x is null
-                && y is not null)
+            if (xNull
+                && !yNull)
                 Comparison = -1;
 
             return true;
+        }
+
+        public static bool EitherNullOrEmpty<Tx, Ty>(Tx[] X, Ty[] Y, out bool AreEqual)
+        {
+            if (EitherNull(X, Y, out AreEqual))
+                return AreEqual;
+
+            AreEqual = (X.Length > 0) == (Y.Length > 0);
+            return X.Length > 0
+                || Y.Length > 0;
         }
 
         #endregion
@@ -358,29 +384,17 @@ namespace StealthSystemPrototype
         #endregion
         #region Enums
 
-        [ModSensitiveStaticCache]
-        [GameBasedStaticCache(CreateInstance = false)]
-        public static Dictionary<Type, Dictionary<string, Enum>> EnumValueCaches = new();
-
-        public static Dictionary<string, T> GetValuesDictionary<T>()
+        public static Dictionary<string, T> GetValuesDictionary<T>(ref Dictionary<string, T> CachedValues)
             where T : struct, Enum
         {
-            EnumValueCaches ??= new();
-            Dictionary<string, Enum> input = new();
-            if (!EnumValueCaches.ContainsKey(typeof(T)))
+            if (CachedValues.IsNullOrEmpty())
             {
-                T[] valuesArray = Enum.GetValues(typeof(T)) as T[];
-                EnumValueCaches[typeof(T)] = input;
-                foreach (T value in valuesArray ?? new T[0])
-                    input[value.ToString()] = value;
+                CachedValues ??= new();
+                if (Enum.GetValues(typeof(T)) is IEnumerable<T> values)
+                    foreach (T value in values)
+                        CachedValues[value.ToString()] = value;
             }
-            input = EnumValueCaches[typeof(T)];
-            Dictionary<string, T> output = new();
-            if (!input.IsNullOrEmpty())
-                foreach ((string key, Enum value) in input)
-                    output[key] = (T)value;
-
-            return output;
+            return CachedValues;
         }
 
         #endregion

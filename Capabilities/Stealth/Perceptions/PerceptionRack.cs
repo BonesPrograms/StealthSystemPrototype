@@ -24,6 +24,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [Serializable]
     public partial class PerceptionRack : Rack<IPerception>
     {
+        #region Debug
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
             => Registry.RegisterEach(
@@ -34,6 +35,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     { nameof(HasWantEvent), false },
                     { nameof(PerceptionWantsEvent), false },
                 });
+        #endregion
 
         private GameObject _Owner;
 
@@ -358,8 +360,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                         allValid = false;
                 }
             }
-            foreach (int index in removeList)
-                RemovePerceptionAt(index);
+            for (int i = removeList.Count -1; i >= 0; i--)
+                RemovePerceptionAt(i);
 
             removeList.Clear();
 

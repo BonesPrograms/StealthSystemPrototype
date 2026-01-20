@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Logging;
 
 using XRL.World.Skills;
 
@@ -12,12 +13,26 @@ namespace XRL.World.Parts.Skill
     {
         public override void Initialize()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(ParentObject?.DebugName ?? "null"),
+                });
+
             base.Initialize();
             UD_Sneak.SyncAbility(ParentObject);
         }
 
         public override bool AddSkill(GameObject GO)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(ParentObject?.DebugName ?? "null"),
+                });
+
             GO.RequirePart<UD_Sneak>();
             return base.AddSkill(GO);
         }
@@ -55,7 +70,10 @@ namespace XRL.World.Parts.Skill
         public virtual bool HandleEvent(GetSneakPerformanceEvent E)
         {
             if (E.Hider == ParentObject)
+            {
                 E.AdjustMoveSpeedMultiplier(this, -10);
+                E.AdjustQuicknessMultiplier(this, -10);
+            }
             return base.HandleEvent(E);
         }
 

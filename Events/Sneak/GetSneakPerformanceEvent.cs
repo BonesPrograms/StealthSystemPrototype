@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Events
         {
         }
 
-        public static SneakPerformance GetFor(GameObject Hider)
+        public static SneakPerformance GetFor(GameObject Hider, ref SneakPerformance Performance)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -36,7 +36,7 @@ namespace StealthSystemPrototype.Events
             if (!GameObject.Validate(ref Hider)
                 || Process(
                     Hider: Hider,
-                    Performance: new(), 
+                    Performance: ref Performance, 
                     Success: out bool success) is not GetSneakPerformanceEvent E
                 || !success)
                 return null;
@@ -50,6 +50,7 @@ namespace StealthSystemPrototype.Events
             if (success)
                 success = E.Witnesses.HandleEvent(E, true);
 
+            E.Performance.WantsSync = false;
             return E.Performance;
         }
 
@@ -83,6 +84,13 @@ namespace StealthSystemPrototype.Events
             where T : IComponent<GameObject>, new()
         {
             Performance.AdjustMoveSpeedMultiplier(Source, Value, SourceDisplay);
+            return this;
+        }
+
+        public GetSneakPerformanceEvent AdjustQuicknessMultiplier<T>(T Source, int Value, string SourceDisplay = null)
+            where T : IComponent<GameObject>, new()
+        {
+            Performance.AdjustQuicknessMultiplier(Source, Value, SourceDisplay);
             return this;
         }
     }

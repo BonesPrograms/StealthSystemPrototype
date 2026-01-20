@@ -521,7 +521,7 @@ namespace StealthSystemPrototype.Perceptions
             string diffussesString = Diffuses.ToString() + ", " + diffusion.WithDigits(3);
             string diffusionCountString = distance.Clamp(new(Radius.GetValue())) + "/" + (Radius.Diffusions()?.Count() ?? 0);
             Debug.Log(nameof(Diffuses), diffussesString + " (" + diffusionCountString + ")", Indent: indent[1]);
-            Debug.Log(Radius.GetDiffusionDebug(), Indent: indent[2]);
+            Debug.Log(Radius.GetDiffusionDebug(Inline: false), Indent: indent[2]);
 
             Debug.Log(nameof(DieRoll), DieRoll, Indent: indent[1]);
 

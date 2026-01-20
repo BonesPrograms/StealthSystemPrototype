@@ -16,13 +16,11 @@ using XRL.World;
 namespace StealthSystemPrototype.Logging
 {
     [HasModSensitiveStaticCache]
-    [HasGameBasedStaticCache]
     public class DebugMethodRegistry : List<MethodRegistryEntry>
     {
         [ModSensitiveStaticCache(CreateEmptyInstance = false)]
-        [GameBasedStaticCache(ClearInstance = false)]
         private static DebugMethodRegistry _Instance;
-        public static DebugMethodRegistry Instance => _Instance ??= GetRegistry();
+        public static DebugMethodRegistry Instance => GetRegistry(ref _Instance);
 
         private static bool _GotRegistry = false;
 
@@ -30,11 +28,20 @@ namespace StealthSystemPrototype.Logging
         {
         }
 
-        public static DebugMethodRegistry GetRegistry()
+        public bool this[MethodBase MethodBase]
+            => !TryGetValue(MethodBase, out bool value)
+            || value;
+
+        public bool this[MethodInfo MethodInfo]
+            => !TryGetValue(MethodInfo, out bool value)
+            || value;
+
+        public static DebugMethodRegistry GetRegistry(ref DebugMethodRegistry Registry)
         {
-            DebugMethodRegistry registry = new();
+            Registry ??= new();
+
             if (_GotRegistry)
-                return registry;
+                return Registry;
 
             try
             {
@@ -47,24 +54,21 @@ namespace StealthSystemPrototype.Logging
                             nameof(UD_DebugRegistryAttribute) + " decorated methods");
 
                 foreach (MethodInfo debugRegistryMethod in debugRegistryMethods)
-                    debugRegistryMethod.Invoke(null, new object[] { registry });
+                    debugRegistryMethod.Invoke(null, new object[] { Registry });
             }
             catch (Exception x)
             {
-                MetricsManager.LogException(CallChain(nameof(DebugMethodRegistry), nameof(GetRegistry)), x, GAME_MOD_EXCEPTION);
-                _GotRegistry = true;
+                MetricsManager.LogException(CallChain(typeof(DebugMethodRegistry).ToString(), nameof(GetRegistry)), x, GAME_MOD_EXCEPTION);
             }
-            _GotRegistry = true;
-            return registry;
+            return Registry;
         }
 
-
         [ModSensitiveCacheInit]
-        [GameBasedCacheInit]
-        public static void CacheDoDebugRegistry()
+        public static void CacheDebugRegistry()
         {
-            if (Instance != null)
-                LogRegistry();
+            _GotRegistry = false;
+            LogRegistry();
+            _GotRegistry = true;
         }
 
         public static bool GetDoDebug(string CallingMethod = null)
@@ -75,15 +79,13 @@ namespace StealthSystemPrototype.Logging
             if (CallingMethod.IsNullOrEmpty())
                 return DoDebugSetting;
 
-            if (Instance is DebugMethodRegistry doDebugRegistry
-                && !doDebugRegistry.Contains(CallingMethod))
+            if (Instance.IsNullOrEmpty())
                 return DoDebugSetting;
 
             try
             {
-                if (Instance is DebugMethodRegistry registry
-                    && TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod)
-                    && registry.TryGetValue(callingMethod, out bool registryMethodValue)
+                if (TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod)
+                    && Instance.TryGetValue(callingMethod, out bool registryMethodValue)
                     && !registryMethodValue
                     && !DebugEnableAllLogging)
                     return false;
@@ -97,16 +99,19 @@ namespace StealthSystemPrototype.Logging
 
         public static void LogRegistry()
         {
-            UnityEngine.Debug.Log("DEBUG [" + ThisMod.DisplayTitleStripped + "] - Start of " + CallChain(nameof(DebugMethodRegistry), nameof(LogRegistry)));
-            if (_GotRegistry)
+            if (!Instance.IsNullOrEmpty())
             {
-                foreach (MethodRegistryEntry methodEntry in Instance ?? new())
-                    UnityEngine.Debug.Log(" ".ThisManyTimes(4) + methodEntry.ToString(IncludeSourceMod: true));
+                UnityEngine.Debug.Log("DEBUG [" + ThisMod.DisplayTitleStripped + "] - Start of " + CallChain(nameof(DebugMethodRegistry), nameof(LogRegistry)));
+
+                    foreach (MethodRegistryEntry methodEntry in Instance)
+                        UnityEngine.Debug.Log(" ".ThisManyTimes(4) + methodEntry.ToString(IncludeSourceMod: true, FullSignature: true));
 
                 UnityEngine.Debug.Log("DEBUG [" + ThisMod.DisplayTitleStripped + "] - End of " + CallChain(nameof(DebugMethodRegistry), nameof(LogRegistry)));
             }
             else
-                UnityEngine.Debug.Log(" ".ThisManyTimes(4) + YehNah(false) + " registry not cached yet");
+                UnityEngine.Debug.Log("DEBUG [" + ThisMod.DisplayTitleStripped + "] - " + CallChain(nameof(DebugMethodRegistry), nameof(LogRegistry)) + 
+                    " called but " + nameof(Instance) + " not ready");
+
         }
 
         public DebugMethodRegistry Register(MethodRegistryEntry RegisterEntry)
@@ -337,14 +342,16 @@ namespace StealthSystemPrototype.Logging
         public bool Contains<T>(T MethodBase)
             where T : MethodBase
             => MethodBase is not null
-            && this.Any(e => e.Equals(MethodBase));
+            && this.Any(e => e.Equals(MethodBase as MethodBase));
 
         public bool Contains(Type DeclaringType, string MethodName)
             => !MethodName.IsNullOrEmpty()
-            && this.Any(e
-                => e.GetMethod() is MethodBase methodBase
-                && methodBase.Name == MethodName
-                && methodBase.DeclaringType == DeclaringType);
+            && DeclaringType
+                ?.GetMethods()
+                ?.Where(m => m.Name == MethodName)
+                ?.Select(m => m as MethodBase) is MethodBase[] declaredTypeMethods
+            && !declaredTypeMethods.IsNullOrEmpty()
+            && declaredTypeMethods.Any(m => Contains(m));
 
         public bool Contains(string MethodName)
             => !MethodName.IsNullOrEmpty()
@@ -354,7 +361,7 @@ namespace StealthSystemPrototype.Logging
             where T : MethodBase
         {
             foreach (MethodRegistryEntry registryEntry in this)
-                if (registryEntry.Equals(MethodBase))
+                if (registryEntry.Equals(MethodBase as MethodBase))
                     return (bool)registryEntry;
 
             throw new ArgumentOutOfRangeException(nameof(MethodBase), "Not found.");
@@ -366,8 +373,7 @@ namespace StealthSystemPrototype.Logging
             where T : MethodBase
         {
             Value = default;
-            if (MethodBase is not null
-                && Contains(MethodBase))
+            if (Contains(MethodBase))
             {
                 Value = GetValue(MethodBase);
                 return true;

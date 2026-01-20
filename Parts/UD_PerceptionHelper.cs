@@ -30,6 +30,7 @@ namespace XRL.World.Parts
                 MethodNameValues: new Dictionary<string, bool>()
                 {
                     { nameof(WantEvent), false },
+                    { nameof(ProcessPerceptionAlteringEvent), false },
                 });
             Registry.RegisterHandleEventVariants(
                 Type: typeof(XRL.World.Parts.UD_PerceptionHelper),
@@ -80,6 +81,8 @@ namespace XRL.World.Parts
             }
         }
 
+        public bool WantSync;
+
         #region Debugging
 
         private IPerception _BestPerception;
@@ -91,6 +94,8 @@ namespace XRL.World.Parts
         public UD_PerceptionHelper()
         {
             _Perceptions = null;
+            WantSync = false;
+
             _BestPerception = null;
         }
 
@@ -129,6 +134,8 @@ namespace XRL.World.Parts
 
             GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
             _Perceptions?.Validate();
+
+            WantSync = false;
         }
 
         public void ClearBestPerception()
@@ -155,7 +162,7 @@ namespace XRL.World.Parts
             if (!IsClearPerceptionsMinEvent(E.ID))
                 return false;
 
-            SyncPerceptions();
+            WantSync = true;
             return true;
         }
         private bool ProcessPerceptionAlteringEvent(Event E)
@@ -171,7 +178,7 @@ namespace XRL.World.Parts
             if (!IsClearPerceptionsStringyEvent(E.ID))
                 return false;
 
-            SyncPerceptions();
+            WantSync = true;
             return true;
         }
 
@@ -311,6 +318,9 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
 
+            if (WantSync)
+                SyncPerceptions();
+
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
@@ -353,6 +363,9 @@ namespace XRL.World.Parts
                     Debug.Arg(E.Name),
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
+
+            if (WantSync)
+                SyncPerceptions();
 
             if (E.Sense == PerceptionSense.Visual
                 && ParentObject.RequirePart<Mutations>() is var mutations

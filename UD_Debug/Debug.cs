@@ -73,7 +73,6 @@ namespace StealthSystemPrototype.Logging
             ")";
 
         [ModSensitiveStaticCache(CreateEmptyInstance = true)]
-        [GameBasedStaticCache(ClearInstance = false)]
         private static Stack<Indent> Indents = new();
 
         public static Indent LastIndent
@@ -447,11 +446,81 @@ namespace StealthSystemPrototype.Logging
             MetricsManager.LogModError(callingMod, Message);
         }
 
+        #region Extensions
+
+        public static string GenericsString(this Type[] GenericTypes)
+            => !GenericTypes.IsNullOrEmpty()
+            ? "<" + 
+                GenericTypes
+                    ?.Select(t => t.ToStringWithGenerics())
+                    ?.Aggregate("", CommaSpaceDelimitedAggregator) + 
+                ">"
+            : null;
+
+        public static string ParamsString(this ParameterInfo[] ParamTypes)
+            => "(" + 
+                ParamTypes
+                    ?.Select(p => p.ParameterType.ToStringWithGenerics())
+                    ?.Aggregate("", CommaSpaceDelimitedAggregator) + 
+                ")";
+
+        public static string MethodSignature<T>(this T MethodBase, bool IndicateNull = false)
+            where T : MethodBase
+        {
+            if (MethodBase is null)
+                return IndicateNull
+                    ? "NULL_METHOD"
+                    : null;
+
+            return MethodBase.Name +
+                MethodBase.GetGenericArguments().GenericsString() +
+                MethodBase.GetParameters().ParamsString();
+        }
+
+        public static bool SuperficiallyEquivalent<Tx, Ty>(this Tx X, Ty Y)
+            where Tx : MethodBase
+            where Ty : MethodBase
+            => X?.Name == Y?.Name
+            && Equals(X?.DeclaringType, Y?.DeclaringType)
+            && Equals(X?.DeclaringType?.Assembly, Y?.DeclaringType?.Assembly);
+
+        public static bool MatchingGenerics<Tx, Ty>(this Tx X, Ty Y)
+            where Tx : MethodBase
+            where Ty : MethodBase
+        {
+            if (EitherNull(X, Y, out bool areEqual))
+                return areEqual;
+
+            if (X.ContainsGenericParameters != Y.ContainsGenericParameters)
+                return false;
+
+            Type[] xGenerics = X.GetGenericArguments();
+            Type[] yGenerics = Y.GetGenericArguments();
+
+            return xGenerics.ElementsMatch(yGenerics);
+        }
+
+        public static bool MatchingParams<Tx, Ty>(this Tx X, Ty Y)
+            where Tx : MethodBase
+            where Ty : MethodBase
+        {
+            if (EitherNull(X, Y, out bool areEqual))
+                return areEqual;
+
+            Type[] xParams = X.GetParameters()?.Select(p => p.ParameterType)?.ToArray();
+            Type[] yParams = Y.GetParameters()?.Select(p => p.ParameterType)?.ToArray();
+
+            return xParams.ElementsMatch(yParams);
+        }
+
+
+        #endregion
+
         /*
          * 
          * Wishes!
          * 
          */
-        
+
     }
 }

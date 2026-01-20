@@ -69,6 +69,19 @@ namespace StealthSystemPrototype.Events
 
         public static T FromPool(
             GameObject Hider,
+            ref SneakPerformance Performance)
+        {
+            if (Hider == null
+                || FromPool(Hider) is not T E)
+                return null;
+
+            E.Performance = (Performance ??= new());
+            E.StringyEvent = E.GetStringyEvent();
+            return E;
+        }
+
+        public static T FromPool(
+            GameObject Hider,
             SneakPerformance Performance)
         {
             if (Hider == null
@@ -138,9 +151,9 @@ namespace StealthSystemPrototype.Events
 
         protected static T Process(
             GameObject Hider,
-            SneakPerformance Performance,
+            ref SneakPerformance Performance,
             out bool Success)
-            => Process(FromPool(Hider, Performance), out Success);
+            => Process(FromPool(Hider, ref Performance), out Success);
 
         protected static T Process(
             GameObject Hider,

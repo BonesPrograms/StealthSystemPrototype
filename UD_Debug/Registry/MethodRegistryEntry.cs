@@ -35,12 +35,12 @@ namespace StealthSystemPrototype.Logging
             =>  ModManager.GetMod(DeclaringType.Assembly)?.DisplayTitleStripped
             ?? "NO_MOD";
 
-        public readonly string GetTypeAndMethodName()
-            => CallChain(DeclaringTypeName, MethodName);
+        public readonly string GetTypeAndMethodName(bool FullSignature = false)
+            => CallChain(DeclaringTypeName, !FullSignature ? MethodName : MethodBase.MethodSignature(true));
 
-        public readonly string ToString(bool IncludeSourceMod) 
+        public readonly string ToString(bool IncludeSourceMod, bool FullSignature = false) 
             => (IncludeSourceMod ? "[" + GetSourceModName() + "] - " : null) +
-                GetTypeAndMethodName() + ": " + Value;
+                GetTypeAndMethodName(FullSignature) + ": " + Value;
 
         public override readonly string ToString() 
             => ToString(false);
@@ -57,13 +57,19 @@ namespace StealthSystemPrototype.Logging
         public static explicit operator MethodBase(MethodRegistryEntry Operand)
             => Operand.MethodBase;
 
-        public static explicit operator MethodRegistryEntry(MethodBase Operand)
-            => new(Operand, true);
+        public static explicit operator MethodInfo(MethodRegistryEntry Operand)
+            => Operand.MethodBase as MethodInfo;
 
         public static explicit operator KeyValuePair<MethodBase, bool>(MethodRegistryEntry Operand)
             => new(Operand.MethodBase, Operand.Value);
 
+        public static explicit operator KeyValuePair<MethodInfo, bool>(MethodRegistryEntry Operand)
+            => new(Operand.MethodBase as MethodInfo, Operand.Value);
+
         public static explicit operator MethodRegistryEntry(KeyValuePair<MethodBase, bool> Operand)
+            => new(Operand.Key, Operand.Value);
+
+        public static explicit operator MethodRegistryEntry(KeyValuePair<MethodInfo, bool> Operand)
             => new(Operand.Key, Operand.Value);
 
         public override readonly bool Equals(object obj)
@@ -89,18 +95,27 @@ namespace StealthSystemPrototype.Logging
             return base.Equals(obj);
         }
 
-        public readonly bool Equals<T>(T obj)
+        public readonly bool Equals<T>(T Other)
             where T : MethodBase
         {
-            if (obj is T tObj)
-                return tObj.Equals(MethodBase as T);
+            if (Other is not T tOther)
+                return false;
 
-            return base.Equals(obj);
+            if (!MethodBase.SuperficiallyEquivalent(tOther))
+                return false;
+
+            if (!MethodBase.MatchingGenerics(tOther))
+                return false;
+
+            if (!MethodBase.MatchingParams(tOther))
+                return false;
+
+            return true;
         }
 
         public readonly bool Equals<T>(KeyValuePair<T, bool> obj)
             where T : MethodBase
-            => obj.Key.Equals(MethodBase)
+            => Equals(obj.Key)
             && obj.Value.Equals(Value);
 
 

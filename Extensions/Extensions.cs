@@ -326,6 +326,21 @@ namespace StealthSystemPrototype
             return Input => Filter == null || Filter(Input);
         }
 
+        public static bool ElementsMatch<Tx, Ty>(this Tx[] X, Ty[] Y)
+        {
+            if (EitherNullOrEmpty(X, Y, out bool areEqual))
+                return areEqual;
+
+            if (X.Length != Y.Length)
+                return false;
+
+            for (int i = 0; i < X.Length; i++)
+                if (!X[i].Equals(Y[i]))
+                    return false;
+
+            return true;
+        }
+
         #endregion
         #region Strings
         public static string MiniDebugName(this GameObject Object)
@@ -446,6 +461,12 @@ namespace StealthSystemPrototype
             }
             return durationValue.Things(durationUnit);
         }
+
+        public static string Signed(this float Float)
+            => (Float < 0
+                ? null
+                : "+") + 
+            Float;
 
         #endregion
         #region Events
