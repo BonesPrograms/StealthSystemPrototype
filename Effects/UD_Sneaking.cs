@@ -16,6 +16,8 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak.SneakPerformance;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Senses;
 
 namespace XRL.World.Effects
 {
@@ -26,6 +28,11 @@ namespace XRL.World.Effects
 
         public const string MS_NAME = "MoveSpeed";
         public const string QN_NAME = "Speed";
+
+        public static Dictionary<string, string> CommandEventsToConceal => new()
+        {
+            { Survival_Camp.COMMAND_NAME, "making camp" },
+        };
 
         public SneakPerformance SneakPerformance => Object?.GetPart<UD_Sneak>()?.SneakPerformance;
 
@@ -184,6 +191,7 @@ namespace XRL.World.Effects
         {
             Registrar.Register("BodyPositionChanged");
             Registrar.Register("MovementModeChanged");
+            Registrar.Register(CommandEvent.ID, EventOrder.EXTREMELY_LATE);
             Registrar.Register(GetSneakDetailsEvent.ID, EventOrder.EXTREMELY_EARLY);
             base.Register(Object, Registrar);
         }
@@ -191,6 +199,7 @@ namespace XRL.World.Effects
             => base.WantEvent(ID, Cascade)
             // || ID == GetSneakDetailsEvent.ID
             || ID == EndTurnEvent.ID
+            || ID == EnteredCellEvent.ID
             || ID == GetDebugInternalsEvent.ID
             ;
         public virtual bool HandleEvent(GetSneakDetailsEvent E)
@@ -264,8 +273,33 @@ namespace XRL.World.Effects
             }
             return base.HandleEvent(E);
         }
-        public override bool HandleEvent(EndTurnEvent E)
+        public override bool HandleEvent(CommandEvent E)
         {
+            if (CommandEventsToConceal.ContainsKey(E.Command))
+            {
+                ConcealActionEvent.Send(
+                    Hider: E.Actor,
+                    Performance: SneakPerformance,
+                    ConcealedAction: new ConcealedCommandEvent(E, CommandEventsToConceal[E.Command])
+                    {
+                        new Visual(Intensity: 8),
+                        new Auditory(Intensity: 3),
+                        new Olfactory(Intensity: 5),
+                    });
+            }
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(EnteredCellEvent E)
+        {
+            ConcealActionEvent.Send(
+                Hider: E.Actor,
+                Performance: SneakPerformance,
+                ConcealedAction: new ConcealedMinAction<EnteredCellEvent>(E, !E.Forced ? "sneaking around" : "being knocked around")
+                {
+                    new Visual(Intensity: 5),
+                    new Auditory(Intensity: 5),
+                    new Olfactory(Intensity: 3),
+                });
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)

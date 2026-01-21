@@ -7,11 +7,12 @@ using XRL.World;
 namespace StealthSystemPrototype.Senses
 {
     [Serializable]
-    public class Auditory : ISense
+    public class Auditory : ISense<Auditory>
     {
         public override int Order => 4;
 
-        public Auditory()
+        public Auditory(int Intensity)
+            : base(Intensity)
         {
         }
 

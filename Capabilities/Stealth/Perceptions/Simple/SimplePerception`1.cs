@@ -7,26 +7,31 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Senses;
+
+using static StealthSystemPrototype.Const;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public abstract class SimplePerception : IPerception
+    public abstract class SimplePerception<TSense> : IPerception<TSense>
+        where TSense : ISense<TSense>, new()
     {
-        public const string FACE_BODYPART = "Face";
-
         #region Constructors
 
         public SimplePerception()
             : base()
         {
         }
-        public SimplePerception(GameObject Owner, PerceptionSense Sense, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
-            : base(Owner, Sense, BaseDieRoll, BaseRadius)
+        public SimplePerception(
+            GameObject Owner,
+            ClampedDieRoll BaseDieRoll,
+            Radius BaseRadius)
+            : base(Owner, BaseDieRoll, BaseRadius)
         {
         }
-        public SimplePerception(GameObject Owner, PerceptionSense Sense)
-            : this(Owner, Sense, BASE_DIE_ROLL, BASE_RADIUS)
+        public SimplePerception(GameObject Owner)
+            : this(Owner, BASE_DIE_ROLL, BASE_RADIUS)
         {
         }
 

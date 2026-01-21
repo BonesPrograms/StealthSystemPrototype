@@ -15,11 +15,13 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class BodyPartPerception : Perception<BodyPart>
+    public class BodyPartPerception<TSense> : Perception<BodyPart, TSense>
+        where TSense : ISense<TSense>, new()
     {
         public string SourceType;
 
@@ -33,30 +35,27 @@ namespace StealthSystemPrototype.Perceptions
         public BodyPartPerception(
             GameObject Owner,
             BodyPart Source,
-            PerceptionSense Sense,
             ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : base(Owner, Source, Sense, BaseDieRoll, BaseRadius)
+            : base(Owner, Source, BaseDieRoll, BaseRadius)
         {
             SourceType = Source.Type;
         }
         public BodyPartPerception(
             BodyPart Source,
-            PerceptionSense Sense,
             ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : this(Source?.ParentBody?.ParentObject, Source, Sense, BaseDieRoll, BaseRadius)
+            : this(Source?.ParentBody?.ParentObject, Source, BaseDieRoll, BaseRadius)
         {
         }
         public BodyPartPerception(
             GameObject Owner,
-            BodyPart Source,
-            PerceptionSense Sense)
-            : this(Owner, Source, Sense, BASE_DIE_ROLL, BASE_RADIUS)
+            BodyPart Source)
+            : this(Owner, Source, BASE_DIE_ROLL, BASE_RADIUS)
         {
         }
-        public BodyPartPerception(BodyPart Source, PerceptionSense Sense)
-            : this(Source, Sense, BASE_DIE_ROLL, BASE_RADIUS)
+        public BodyPartPerception(BodyPart Source)
+            : this(Source, BASE_DIE_ROLL, BASE_RADIUS)
         {
         }
 

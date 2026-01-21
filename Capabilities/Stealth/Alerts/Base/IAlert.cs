@@ -14,6 +14,7 @@ using XRL.World.Parts;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Alerts
 {
@@ -127,9 +128,11 @@ namespace StealthSystemPrototype.Alerts
 
         public IPerception Perception;
 
-        public PerceptionSense Sense;
+        public ISense Sense;
 
         public Cell Origin;
+
+        public AwarenessLevel Level;
 
         private AlertSource Source;
 
@@ -144,25 +147,27 @@ namespace StealthSystemPrototype.Alerts
         protected IAlert()
         {
             Perception = null;
-            Sense = PerceptionSense.None;
+            Sense = null;
             Origin = null;
+            Level = AwarenessLevel.None;
             Source = null;
         }
-        protected IAlert(IPerception Perception, AlertSource Source)
+        protected IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, AlertSource Source)
             : this()
         {
             this.Perception = Perception;
-            Sense = Perception.Sense;
+            this.Sense = Sense;
             Origin = Perception.Owner.CurrentCell;
+            this.Level = Level;
             this.Source = Source?.SetParentAlert(this);
         }
-        public IAlert(IPerception Perception, Cell SourceCell)
-            : this(Perception, (AlertSource)null)
+        public IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, Cell SourceCell)
+            : this(Perception, Sense, Level,(AlertSource)null)
         {
             Source = new AlertSource(this, SourceCell);
         }
-        public IAlert(IPerception Perception, GameObject SourceObject)
-            : this(Perception, (AlertSource)null)
+        public IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, GameObject SourceObject)
+            : this(Perception, Sense, Level,(AlertSource)null)
         {
             Source = new AlertSource(this, SourceObject);
         }

@@ -17,9 +17,9 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class IPartPerception<T, S> : Perception<T, S>
+    public class IPartPerception<T, TSense> : Perception<T, TSense>
         where T : IPart, new()
-        where S : ISense, new()
+        where TSense : ISense<TSense>, new()
     {
         public override T Source => _Source ??= GetBestSource(); 
 
@@ -32,33 +32,29 @@ namespace StealthSystemPrototype.Perceptions
         public IPartPerception(
             GameObject Owner,
             T Source,
-            PerceptionSense Sense,
             ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : base(Owner, Source, Sense, BaseDieRoll, BaseRadius)
+            : base(Owner, Source, BaseDieRoll, BaseRadius)
         {
         }
         public IPartPerception(
             T Source,
-            PerceptionSense Sense,
             ClampedDieRoll BaseDieRoll,
             Radius BaseRadius)
-            : base(Source?.ParentObject, Source, Sense, BaseDieRoll, BaseRadius)
+            : base(Source?.ParentObject, Source, BaseDieRoll, BaseRadius)
         {
         }
         public IPartPerception(
             GameObject Owner,
             T Source,
-            PerceptionSense Sense,
             Radius.RadiusFlags RadiusFlags = Radius.RadiusFlags.Line)
-            : this(Owner, Source, Sense, BASE_DIE_ROLL, new(BASE_RADIUS, RadiusFlags))
+            : this(Owner, Source, BASE_DIE_ROLL, new(BASE_RADIUS, RadiusFlags))
         {
         }
         public IPartPerception(
             T Source,
-            PerceptionSense Sense,
             Radius.RadiusFlags RadiusFlags = Radius.RadiusFlags.Line)
-            : this(Source?.ParentObject, Source, Sense, RadiusFlags)
+            : this(Source?.ParentObject, Source, RadiusFlags)
         {
         }
 

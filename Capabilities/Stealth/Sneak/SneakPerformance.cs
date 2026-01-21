@@ -13,8 +13,8 @@ using XRL.World;
 using SerializeField = UnityEngine.SerializeField;
 
 using StealthSystemPrototype.Perceptions;
-
 using StealthSystemPrototype.Senses;
+using static StealthSystemPrototype.Utils;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 {
@@ -28,7 +28,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
         [ModSensitiveStaticCache]
         [GameBasedStaticCache(CreateInstance = false)]
         private static SortedDictionary<string, ISense> _PerceptionSenses;
-        public static SortedDictionary<string, ISense> PerceptionSenses => _PerceptionSenses ??= Utils.GetSenses();
+        public static SortedDictionary<string, ISense> PerceptionSenses => _PerceptionSenses ??= GetSenses();
 
         public static Dictionary<string, Entry> DefaultSneakPerformances => PerceptionSenses
             ?.Aggregate(
@@ -134,7 +134,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
             public bool SenseEquals(Entry Other)
             {
-                if (Utils.EitherNull(this, Other, out bool areEqual))
+                if (EitherNull(this, Other, out bool areEqual))
                     return areEqual;
 
                 if (this == Other)
@@ -151,7 +151,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
             public bool Equals(Entry Other, bool IgnoreClamp)
             {
-                if (Utils.EitherNull(this, Other, out bool areEqual))
+                if (EitherNull(this, Other, out bool areEqual))
                     return areEqual;
 
                 if (this == Other)
@@ -172,7 +172,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
             public int CompareTo(Entry Other)
             {
-                if (Utils.EitherNull(this, Other, out int nullComp))
+                if (EitherNull(this, Other, out int nullComp))
                     return nullComp;
 
                 if (Equals(Other))
@@ -224,7 +224,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             }
 
             public readonly bool Equals(StatCollectorEntry other)
-                => Utils.EitherNull(this, other, out bool areEqual)
+                => EitherNull(this, other, out bool areEqual)
                 ? areEqual
                 : Class == other.Class;
 
@@ -292,16 +292,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             {
                 Entry output = null;
                 if (!PerceptionSenses.ContainsKey(SenseName))
-                    output = PerformanceEntries[ISense.Other][SenseName] = new Entry(SenseName, 5);
-                else 
                 {
-                    ISense sense = PerceptionSenses[SenseName];
-                    if (sense.Twixt(ISense.None, ISense.Other))
-                        output = this[sense].First();
+                    string thisIndexerName = CallChain(nameof(SneakPerformance), nameof(Entry)) + "[string " + SenseName + "]";
+                    if (ModManager.ResolveType(ISense.NAMESPACE, SenseName) is Type senseType)
+                    {
+                        if (Activator.CreateInstance(senseType) is ISense newSense)
+                            output = PerformanceEntries[SenseName] = new Entry(newSense);
+                        else
+                            MetricsManager.LogModWarning(
+                                mod: ModManager.GetMod(senseType.Assembly),
+                                Message: thisIndexerName + " could not create instance of " + nameof(Type) + " " + senseType.ToString());
+                    }
                     else
-                    if (sense != ISense.None)
-                        output = PerformanceEntries[ISense.Other][SenseName];
+                        MetricsManager.LogModWarning(ThisMod, thisIndexerName + " could resolve " + nameof(Type) + " " + CallChain(ISense.NAMESPACE, SenseName));
                 }
+                else
+                    output = PerformanceEntries[SenseName];
+
                 return output;
             }
         }
@@ -420,14 +427,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
 
         public IEnumerable<Entry> GetEntries(Predicate<Entry> Filter)
         {
-            foreach ((ISense sense, Dictionary<string, Entry> senseDict) in PerformanceEntries ?? new())
-                if (sense == ISense.None)
-                    continue;
-                else
-                    foreach ((string _, Entry entry) in senseDict)
-                        if (Filter == null
-                            || Filter(entry))
-                            yield return entry;
+            foreach ((string _, Entry entry) in PerformanceEntries ?? new())
+                if (Filter == null
+                    || Filter(entry))
+                    yield return entry;
         }
 
         public IEnumerable<Entry> GetEntries()

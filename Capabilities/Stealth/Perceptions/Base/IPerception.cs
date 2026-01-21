@@ -71,14 +71,7 @@ namespace StealthSystemPrototype.Perceptions
 
                 if (Entity != null)
                 {
-                    AwarenessLevel awarenessX = x.GetAwareness(Entity, out int rollX);
-                    AwarenessLevel awarenessY = y.GetAwareness(Entity, out int rollY);
-
-                    int awarenessComp = awarenessX.CompareTo(awarenessY);
-                    if (awarenessComp != 0)
-                        return awarenessComp;
-
-                    int rollComp = rollX.CompareTo(rollY);
+                    int rollComp = x.Roll(Entity).CompareTo(y.Roll(Entity));
                     if (rollComp != 0)
                         return rollComp;
                 }
@@ -118,6 +111,10 @@ namespace StealthSystemPrototype.Perceptions
 
         public GameObject Owner;
 
+        private Type _Sense;
+
+        public Type Sense => _Sense ??= GetSenseType();
+
         public PerceptionRack Rack => Owner?.GetPerceptions();
 
         [NonSerialized]
@@ -153,6 +150,8 @@ namespace StealthSystemPrototype.Perceptions
         public IPerception()
         {
             Owner = null;
+
+            _Sense = null;
 
             BaseDieRoll = BASE_DIE_ROLL;
             BaseRadius = BASE_RADIUS;
@@ -326,9 +325,11 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
+        protected abstract Type GetSenseType();
+
         protected ClampedDieRoll GetDieRoll<T, S>(T Perception = null, S Sense = null)
             where T : IPerception<S>, new()
-            where S : ISense, new()
+            where S : ISense<S>, new()
             => GetPerceptionDieRollEvent.GetFor(
                     Perceiver: Owner,
                     Perception: Perception ?? (T)this,
@@ -338,7 +339,7 @@ namespace StealthSystemPrototype.Perceptions
 
         protected Radius GetRadius<T, S>(T Perception = null, S Sense = null)
             where T : IPerception<S>, new()
-            where S : ISense, new()
+            where S : ISense<S>, new()
             => GetPerceptionRadiusEvent.GetFor(
                     Perceiver: Owner,
                     Perception: Perception ?? (T)this,
@@ -353,10 +354,8 @@ namespace StealthSystemPrototype.Perceptions
         {
             string rollString = null;
             if (Entity != null)
-            {
-                AwarenessLevel awareness = GetAwareness(Entity, out int rollValue, UseLastRoll);
-                rollString = "(" + awareness.ToString() + ":" + rollValue + ")";
-            }
+                rollString = "(" + Roll(Entity) + ")";
+
             return ShortName + "[" + BaseDieRoll + ":@R:" + BaseRadius + "]" + rollString;
         }
 
@@ -469,7 +468,7 @@ namespace StealthSystemPrototype.Perceptions
             return any;
         }
 
-        public virtual int Roll(GameObject Entity, bool UseLastRoll = false)
+        public virtual int Roll(GameObject Entity, out int Distance, out FindPath PerceptionPath)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -479,28 +478,29 @@ namespace StealthSystemPrototype.Perceptions
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
 
-            if (!CheckInRadius(Entity, out int distance, out FindPath perceptionPath))
+            Distance = Const.MAX_DIST;
+            PerceptionPath = null;
+
+            if (Entity == null)
                 return 0;
 
-            if (UseLastRoll
-                && Entity.ID == LastEntityID
-                && LastRoll is int lastRoll)
-                return lastRoll;
+            if (!CheckInRadius(Entity, out Distance, out PerceptionPath))
+                return 0;
 
             int roll = DieRoll.Roll();
 
             LastRoll = roll;
             LastEntityID = Entity.ID;
 
-            double diffusion = Radius.GetDiffusion(distance);
+            double diffusion = Radius.GetDiffusion(Distance);
 
-            roll = (int)Math.Floor(roll * Radius.GetDiffusion(distance));
+            roll = (int)Math.Floor(roll * Radius.GetDiffusion(Distance));
 
             Debug.Log(nameof(roll), roll, Indent: indent[1]);
-            Debug.Log(nameof(distance), distance, Indent: indent[1]);
+            Debug.Log(nameof(Distance), Distance, Indent: indent[1]);
 
             string diffussesString = Diffuses.ToString() + ", " + diffusion.WithDigits(3);
-            string diffusionCountString = distance.Clamp(new(Radius.GetValue())) + "/" + (Radius.Diffusions()?.Count() ?? 0);
+            string diffusionCountString = Distance.Clamp(new(Radius.GetValue())) + "/" + (Radius.Diffusions()?.Count() ?? 0);
             Debug.Log(nameof(Diffuses), diffussesString + " (" + diffusionCountString + ")", Indent: indent[1]);
             Debug.Log(Radius.GetDiffusionDebug(Inline: false), Indent: indent[2]);
 
@@ -508,68 +508,64 @@ namespace StealthSystemPrototype.Perceptions
 
             return roll;
         }
-        public virtual int RollAdvantage(GameObject Entity, bool AgainstLastRoll = false)
+        public int Roll(GameObject Entity)
+            => Roll(Entity, out _, out _);
+
+        public virtual int RollAdvantage(GameObject Entity, out int Distance, out FindPath PerceptionPath)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(nameof(AgainstLastRoll), AgainstLastRoll),
                     Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
 
-            GetMinMax(out _, out int max, Roll(Entity, AgainstLastRoll), Roll(Entity, false));
+            int first = Roll(Entity, out int firstDistance, out FindPath firstPerceptionPath);
+            int second = Roll(Entity, out int secondDistance, out FindPath secondPerceptionPath);
+
+            GetMinMax(out _, out int max, first, second);
+
+            if (first == max)
+            {
+                Distance = firstDistance;
+                PerceptionPath = firstPerceptionPath;
+            }
+            else
+            {
+                Distance = secondDistance;
+                PerceptionPath = secondPerceptionPath;
+            }
             return max;
         }
-        public virtual int RollDisadvantage(GameObject Entity, bool AgainstLastRoll = false)
+        public virtual int RollDisadvantage(GameObject Entity, out int Distance, out FindPath PerceptionPath)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(nameof(AgainstLastRoll), AgainstLastRoll),
                     Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
 
-            GetMinMax(out int min, out _, Roll(Entity, AgainstLastRoll), Roll(Entity, false));
+
+            int first = Roll(Entity, out int firstDistance, out FindPath firstPerceptionPath);
+            int second = Roll(Entity, out int secondDistance, out FindPath secondPerceptionPath);
+
+            GetMinMax(out int min, out int _, first, second);
+
+            if (first == min)
+            {
+                Distance = firstDistance;
+                PerceptionPath = firstPerceptionPath;
+            }
+            else
+            {
+                Distance = secondDistance;
+                PerceptionPath = secondPerceptionPath;
+            }
             return min;
         }
-
-        public static AwarenessLevel CalculateAwareness(int Roll)
-            => (AwarenessLevel)((int)Math.Ceiling(((Roll + 1) / 20.0) - 1)).Clamp(0, 4);
-
-        public virtual AwarenessLevel GetAwareness(GameObject Entity, out int Roll, bool UseLastRoll = false)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(UseLastRoll), UseLastRoll),
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
-                });
-
-            if (Entity == null)
-                throw new ArgumentNullException(nameof(Entity), nameof(GetAwareness) + " requires a " + nameof(GameObject) + " to perceive.");
-
-            if (UseLastRoll
-                && LastRoll != null
-                && LastEntityID == Entity.ID)
-                Roll = LastRoll.Value;
-            else
-                Roll = this.Roll(Entity);
-
-            AwarenessLevel awarenessLevel = CalculateAwareness(Roll);
-
-            Debug.CheckYeh(awarenessLevel.ToStringWithNum(), Indent: indent[1]);
-
-            return awarenessLevel;
-        }
-
-        public virtual AwarenessLevel GetAwareness(GameObject Entity, bool UseLastRoll = false)
-            => GetAwareness(Entity, out _);
 
         #region Event Handling
 

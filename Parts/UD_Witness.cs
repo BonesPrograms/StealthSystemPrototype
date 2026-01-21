@@ -107,11 +107,13 @@ namespace XRL.World.Parts
                         Debug.Arg(nameof(Perceptions), Perceptions?.Count ?? 0),
                     });
 
-                if (Perceptions.GetAwareness(E.Hider, out IPerception perception) > AwarenessLevel.None)
+                /*
+                if (Perceptions.Sense(E.Hider, out IPerception perception) > AwarenessLevel.None)
                 {
                     Debug.Log(perception.ToString(Short: true), Indent: indent[1]);
                     E.AddWitness(perception);
                 }
+                */
             }
                 
             return base.HandleEvent(E);

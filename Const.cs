@@ -25,5 +25,7 @@ namespace StealthSystemPrototype
         public const int MAX_DIST = 9999999;
 
         public const string GAME_MOD_EXCEPTION = "game_mod_exception";
+
+        public const string FACE_BODYPART = "Face";
     }
 }

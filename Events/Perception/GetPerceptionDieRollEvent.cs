@@ -57,7 +57,7 @@ namespace StealthSystemPrototype.Events
             S Sense,
             ClampedDieRoll BaseDieRoll)
             where T : IPerception, new()
-            where S : ISense, new()
+            where S : ISense<S>, new()
         {
             if (Perception == null
                 || FromPool(Perceiver) is not GetPerceptionDieRollEvent E)
@@ -98,7 +98,7 @@ namespace StealthSystemPrototype.Events
             S Sense,
             ClampedDieRoll BaseDieRoll)
             where T : IPerception, new()
-            where S : ISense, new()
+            where S : ISense<S>, new()
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,

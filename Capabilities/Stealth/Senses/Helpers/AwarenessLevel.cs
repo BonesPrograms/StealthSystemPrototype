@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace StealthSystemPrototype.Perceptions
+namespace StealthSystemPrototype.Senses
 {
     [Serializable]
     public enum AwarenessLevel : int

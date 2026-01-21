@@ -7,24 +7,24 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class Visual : SimplePerception
+    public class SimpleVisualPerception : SimplePerception<Visual>
     {
         #region Constructors
 
-        public Visual()
+        public SimpleVisualPerception()
             : base()
         {
-            Sense = PerceptionSense.Visual;
         }
-        public Visual(GameObject Owner, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
-            : base(Owner, PerceptionSense.Visual, BaseDieRoll, BaseRadius)
+        public SimpleVisualPerception(GameObject Owner, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+            : base(Owner, BaseDieRoll, BaseRadius)
         {
         }
-        public Visual(GameObject Owner)
+        public SimpleVisualPerception(GameObject Owner)
             : this(Owner, BASE_DIE_ROLL, new(BASE_RADIUS, VisualFlag))
         {
         }

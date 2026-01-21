@@ -16,9 +16,9 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public abstract class Perception<T, S> : IPerception<S>
+    public abstract class Perception<T, TSense> : IPerception<TSense>
         where T : class, new()
-        where S : ISense, new()
+        where TSense : ISense<TSense>, new()
     {
         [NonSerialized]
         protected T _Source;

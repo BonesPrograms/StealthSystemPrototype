@@ -12,29 +12,29 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class EsperPsionic : IPartPerception<Esper>
+    public class EsperPsionicPerception : IPartPerception<Esper, Psionic>
     {
         #region Constructors
 
-        public EsperPsionic()
+        public EsperPsionicPerception()
             : base()
         {
-            Sense = PerceptionSense.Psionic;
         }
-        public EsperPsionic(GameObject Owner, Esper Source, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
-            : base(Owner, Source, PerceptionSense.Psionic, BaseDieRoll, BaseRadius)
+        public EsperPsionicPerception(GameObject Owner, Esper Source, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+            : base(Owner, Source, BaseDieRoll, BaseRadius)
         {
         }
-        public EsperPsionic(Esper Source, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+        public EsperPsionicPerception(Esper Source, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
             : this(Source?.ParentObject, Source, BaseDieRoll, BaseRadius)
         {
         }
-        public EsperPsionic(Esper Source)
-            : base(Source, PerceptionSense.Psionic, PsionicFlag)
+        public EsperPsionicPerception(Esper Source)
+            : base(Source, PsionicFlag)
         {
         }
 
@@ -67,6 +67,5 @@ namespace StealthSystemPrototype.Perceptions
         public override int GetBonusBaseRadius()
             => base.GetBonusBaseDieRoll()
             + Math.Min(Owner?.StatMod("Ego") ?? 0, 10);
-
     }
 }

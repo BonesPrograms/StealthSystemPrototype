@@ -204,12 +204,15 @@ namespace StealthSystemPrototype
             => !args.IsNullOrEmpty()
             && args.Where(t => t.EqualsNoCase(Value)).Count() == args.Length;
 
-        public static bool InheritsFrom(this Type T, Type Type, bool IncludeSelf = true)
-            => (IncludeSelf && T == Type)
-            || Type.IsSubclassOf(T)
-            || T.IsAssignableFrom(Type)
-            || (T.YieldInheritedTypes().ToList() is List<Type> inheritedTypes
-                && inheritedTypes.Contains(Type));
+        public static bool InheritsFrom(this Type Type, Type OtherType, bool IncludeSelf = true)
+            => (IncludeSelf && Type == OtherType)
+            || OtherType.IsSubclassOf(Type)
+            || Type.IsAssignableFrom(OtherType)
+            || (Type.YieldInheritedTypes().ToList() is List<Type> inheritedTypes
+                && inheritedTypes.Contains(OtherType));
+
+        public static bool InheritsFrom<T>(this Type Type, bool IncludeSelf = true)
+            => Type.InheritsFrom(typeof(T), IncludeSelf);
 
         public static bool OverlapsWith<T>(this IEnumerable<T> Enumerable1, IEnumerable<T> Enumerable2)
         {
@@ -408,8 +411,8 @@ namespace StealthSystemPrototype
             return name + typeGenerics.GenericsString(Short);
         }
 
-        public static string TypeStringWithGenerics(this object Object, bool Short = false)
-            => Object?.GetType()?.ToStringWithGenerics(Short);
+        public static string TypeStringWithGenerics<T>(this T Object, bool Short = false)
+            => (Object?.GetType() ?? typeof(T))?.ToStringWithGenerics(Short);
 
         public static string Acronymize(this string String)
         {

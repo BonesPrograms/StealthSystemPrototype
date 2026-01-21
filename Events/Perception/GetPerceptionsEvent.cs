@@ -11,6 +11,7 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Events
 {
@@ -66,11 +67,11 @@ namespace StealthSystemPrototype.Events
                 Perceptions.Clear();
         }
 
-        public GetPerceptionsEvent AddPerception<T>(
-            T Perception,
+        public GetPerceptionsEvent AddPerception<TSense>(
+            IPerception<TSense> Perception,
             bool DoRegistration = true,
             bool Creation = false)
-            where T : IPerception, new()
+            where TSense : ISense<TSense>, new()
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
@@ -90,10 +91,10 @@ namespace StealthSystemPrototype.Events
             return this;
         }
 
-        public GetPerceptionsEvent RequirePerception<T>(
-            T Perception = null,
+        public GetPerceptionsEvent RequirePerception<TSense>(
+            IPerception<TSense> Perception = null,
             bool Creation = false)
-            where T : IPerception, new()
+            where TSense : ISense<TSense>, new()
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
@@ -104,7 +105,7 @@ namespace StealthSystemPrototype.Events
 
             Perceptions ??= new PerceptionRack(Perceiver);
 
-            if (!Perceptions.TryGet(out T perception))
+            if (!Perceptions.TryGet<IPerception<TSense>, TSense>(out IPerception<TSense> perception))
             {
                 perception = Perception;
                 AddPerception(perception, DoRegistration: true, Creation);
@@ -115,7 +116,7 @@ namespace StealthSystemPrototype.Events
             return this;
         }
 
-        public GetPerceptionsEvent AddIPartPerception<T>(
+        public GetPerceptionsEvent AddIPartPerception<T, S>(
             T IPart,
             PerceptionSense Sense,
             ClampedDieRoll BaseScore,
@@ -123,8 +124,9 @@ namespace StealthSystemPrototype.Events
             bool DoRegistration = true,
             bool Creation = false)
             where T : IPart, new()
+            where S : ISense<S>, new()
             => AddPerception(
-                Perception: new IPartPerception<T>(
+                Perception: new IPartPerception<T, S>(
                     Source: IPart,
                     Sense: Sense, 
                     BaseDieRoll: BaseScore, 

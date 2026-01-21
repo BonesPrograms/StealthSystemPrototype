@@ -57,7 +57,7 @@ namespace StealthSystemPrototype.Events
             S Sense,
             Radius BaseRadius)
             where T : IPerception<S>, new()
-            where S : ISense, new()
+            where S : ISense<S>, new()
         {
             if (Perception == null
                 || FromPool(Perceiver) is not GetPerceptionRadiusEvent E)
@@ -98,7 +98,7 @@ namespace StealthSystemPrototype.Events
             S Sense,
             Radius BaseRadius)
             where T : IPerception<S>, new ()
-            where S : ISense, new ()
+            where S : ISense<S>, new ()
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,

@@ -7,25 +7,25 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class Olfactory : SimplePerception
+    public class SimpleAuditoryPerception : SimplePerception<Auditory>
     {
         #region Constructors
 
-        public Olfactory()
+        public SimpleAuditoryPerception()
             : base()
         {
-            Sense = PerceptionSense.Olfactory;
         }
-        public Olfactory(GameObject Owner, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
-            : base(Owner, PerceptionSense.Olfactory, BaseDieRoll, BaseRadius)
+        public SimpleAuditoryPerception(GameObject Owner, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+            : base(Owner, BaseDieRoll, BaseRadius)
         {
         }
-        public Olfactory(GameObject Owner)
-            : this(Owner, BASE_DIE_ROLL, new(BASE_RADIUS, OlfactoryFlag))
+        public SimpleAuditoryPerception(GameObject Owner)
+            : this(Owner, BASE_DIE_ROLL, new(BASE_RADIUS, AuditoryFlag))
         {
         }
 

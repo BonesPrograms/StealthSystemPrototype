@@ -149,6 +149,23 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
+        protected static T ZoneProcess(T E, out bool Success)
+        {
+            Success = true;
+            if (GameObject.Validate(ref E.Hider))
+            {
+                if (Success)
+                    Success = E.Hider.GetCurrentZone().FireEvent(E.StringyEvent);
+
+                if (Success)
+                    E.UpdateFromStringyEvent();
+
+                if (Success)
+                    Success = E.Hider.GetCurrentZone().HandleEvent(E);
+            }
+            return E;
+        }
+
         protected static T Process(
             GameObject Hider,
             ref SneakPerformance Performance,

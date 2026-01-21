@@ -77,7 +77,7 @@ namespace StealthSystemPrototype
                     if (iSenseType.Name is string typeName
                         && iSenseType.AssemblyQualifiedName[..^(typeName.Length + 1)] is string namespaceName
                         && (!NamespaceLocked
-                            || namespaceName == "StealthSystemPrototype.Senses"))
+                            || namespaceName == ISense.NAMESPACE))
                         yield return iSenseType;
         }
 

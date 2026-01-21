@@ -7,11 +7,12 @@ using XRL.World;
 namespace StealthSystemPrototype.Senses
 {
     [Serializable]
-    public class Psionic : ISense
+    public class Psionic : ISense<Psionic>
     {
         public override int Order => 7;
 
-        public Psionic()
+        public Psionic(int Intensity)
+            : base(Intensity)
         {
         }
 

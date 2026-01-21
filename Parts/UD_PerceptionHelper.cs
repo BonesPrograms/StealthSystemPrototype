@@ -10,9 +10,11 @@ using XRL.World.Parts.Mutation;
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
+using static StealthSystemPrototype.Const;
 using static StealthSystemPrototype.Utils;
 
 namespace XRL.World.Parts
@@ -281,12 +283,12 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
 
-            E.RequirePerception(new Visual(ParentObject));
-            E.RequirePerception(new Auditory(ParentObject));
-            E.RequirePerception(new Olfactory(ParentObject));
+            E.RequirePerception(new SimpleVisualPerception(ParentObject));
+            E.RequirePerception(new SimpleAuditoryPerception(ParentObject));
+            E.RequirePerception(new SimpleOlfactoryPerception(ParentObject));
 
             if (ParentObject.TryGetPart(out Esper esper))
-                E.RequirePerception(new EsperPsionic(esper));
+                E.RequirePerception(new EsperPsionicPerception(esper));
 
             if (ParentObject.TryGetPart(out HeightenedHearing heightenedHearing))
                 E.RequireAuditoryIPartPerception(heightenedHearing);
@@ -321,29 +323,28 @@ namespace XRL.World.Parts
             if (WantSync)
                 SyncPerceptions();
 
-            if (E.Sense == PerceptionSense.Visual
+            if (E.Sense.Name == nameof(Visual)
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
                 E.SetDieRollMin(40);
 
-            if (E.Sense == PerceptionSense.Olfactory
+            if (E.Sense.Name == nameof(Olfactory)
                 && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
                 E.SetDieRollMin(40);
 
-            if (E.Sense == PerceptionSense.Olfactory
+            if (E.Sense.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.AdjustDieRoll(2 * heightenedSmell.Level);
 
-            if (E.Sense.EqualsAny(
-                new PerceptionSense[]
+            if (E.Type.Name.EqualsAny(
+                new string[]
                 {
-                    PerceptionSense.Visual,
-                    PerceptionSense.Auditory,
-                    PerceptionSense.Olfactory,
+                    nameof(SimpleVisualPerception),
+                    nameof(SimpleAuditoryPerception),
+                    nameof(SimpleOlfactoryPerception),
                 })
-                && E.Type.InheritsFrom(typeof(SimplePerception))
                 && ParentObject.Body is Body body
-                && body.LoopPart(SimplePerception.FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
+                && body.LoopPart(FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
             {
                 if (facesList.Count > 1)
                     E.AdjustDieRoll(15);
@@ -367,29 +368,28 @@ namespace XRL.World.Parts
             if (WantSync)
                 SyncPerceptions();
 
-            if (E.Sense == PerceptionSense.Visual
+            if (E.Sense.Name == nameof(Visual)
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
                 E.SetMinRadius(E.BaseRadius.GetValue() + 2);
 
-            if (E.Sense == PerceptionSense.Olfactory
+            if (E.Sense.Name == nameof(Olfactory)
                 && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
                 E.SetMinRadius(E.BaseRadius.GetValue() + 2);
 
-            if (E.Sense == PerceptionSense.Olfactory
+            if (E.Sense.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.SetMinRadius(E.BaseRadius.GetValue() + Math.Min(heightenedSmell.Level, 5));
 
-            if (E.Sense.EqualsAny(
-                new PerceptionSense[]
+            if (E.Type.Name.EqualsAny(
+                new string[]
                 {
-                    PerceptionSense.Visual,
-                    PerceptionSense.Auditory,
-                    PerceptionSense.Olfactory,
+                    nameof(SimpleVisualPerception),
+                    nameof(SimpleAuditoryPerception),
+                    nameof(SimpleOlfactoryPerception),
                 })
-                && E.Type.InheritsFrom(typeof(SimplePerception))
                 && ParentObject.Body is Body body
-                && body.LoopPart(SimplePerception.FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
+                && body.LoopPart(FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
             {
                 if (facesList.Count > 1)
                     E.SetMinRadius(E.Radius.GetValue() + 2);

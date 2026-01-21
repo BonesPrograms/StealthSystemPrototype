@@ -10,12 +10,14 @@ using XRL.World.AI;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public abstract class Alert<T> : IAlert
-        where T : IPerception
+    public abstract class Alert<T, TSense> : IAlert
+        where T : IPerception<TSense>, new()
+        where TSense : ISense<TSense>, new()
     {
         #region Constructors
 
@@ -23,16 +25,16 @@ namespace StealthSystemPrototype.Alerts
             : base()
         {
         }
-        protected Alert(T Perception, AlertSource Source)
-            : base(Perception, Source)
+        protected Alert(T Perception, TSense Sense, AlertSource Source)
+            : base(Perception, Sense, Source)
         {
         }
-        public Alert(T Perception, Cell SourceCell)
-            : base(Perception, SourceCell)
+        public Alert(T Perception, TSense Sense, Cell SourceCell)
+            : base(Perception, Sense, SourceCell)
         {
         }
-        public Alert(T Perception, GameObject SourceObject)
-            : base(Perception, SourceObject)
+        public Alert(T Perception, TSense Sense, GameObject SourceObject)
+            : base(Perception, Sense, SourceObject)
         {
         }
 
