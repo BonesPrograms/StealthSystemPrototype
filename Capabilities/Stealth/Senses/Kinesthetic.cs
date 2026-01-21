@@ -11,12 +11,23 @@ namespace StealthSystemPrototype.Senses
     {
         public override int Order => 1;
 
+        public Kinesthetic()
+            : base(5)
+        {
+        }
         public Kinesthetic(int Intensity)
             : base(Intensity)
+        {
+        }
+        public Kinesthetic(ISense Source)
+            : base(Source)
         {
         }
 
         public override double GetIntensity()
             => base.GetIntensity();
+
+        protected override ISense Copy()
+            => new Kinesthetic(base.Copy());
     }
 }

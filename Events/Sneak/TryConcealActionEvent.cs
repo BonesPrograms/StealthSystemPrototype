@@ -15,16 +15,27 @@ using StealthSystemPrototype.Capabilities.Stealth.Sneak;
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public class ConcealActionEvent : ISneakEvent<ConcealActionEvent>
+    public class TryConcealActionEvent : ISneakEvent<TryConcealActionEvent>
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
         public IConcealedAction ConcealedAction;
 
-        public ConcealActionEvent()
+        public TryConcealActionEvent()
             : base()
         {
         }
+
+        public override void Reset()
+        {
+            base.Reset();
+            ConcealedAction = null;
+        }
+
+        public override Event GetStringyEvent()
+            => base.GetStringyEvent()
+                .SetParameterOrNullExisting(nameof(ConcealedAction), ConcealedAction)
+                ;
 
         public static void Send(GameObject Hider, SneakPerformance Performance, IConcealedAction ConcealedAction)
         {
@@ -36,7 +47,7 @@ namespace StealthSystemPrototype.Events
                 });
 
             if (!GameObject.Validate(ref Hider)
-                || FromPool(Hider, Performance: ref Performance) is not ConcealActionEvent E)
+                || FromPool(Hider, Performance: ref Performance) is not TryConcealActionEvent E)
                 return;
 
             E.ConcealedAction = ConcealedAction;
@@ -51,7 +62,6 @@ namespace StealthSystemPrototype.Events
 
             if (success)
                 success = E.Hider.GetCurrentZone().HandleEvent(E);
-
         }
     }
 }

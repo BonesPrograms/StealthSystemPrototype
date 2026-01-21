@@ -10,6 +10,7 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using XRL.World.AI.Pathfinding;
+using StealthSystemPrototype.Senses;
 
 namespace XRL.World.Parts
 {

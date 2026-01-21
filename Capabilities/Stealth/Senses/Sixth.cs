@@ -11,12 +11,23 @@ namespace StealthSystemPrototype.Senses
     {
         public override int Order => 6;
 
+        public Sixth()
+            : base(5)
+        {
+        }
         public Sixth(int Intensity)
             : base(Intensity)
+        {
+        }
+        public Sixth(ISense Source)
+            : base(Source)
         {
         }
 
         public override double GetIntensity()
             => base.GetIntensity();
+
+        protected override ISense Copy()
+            => new Sixth(base.Copy());
     }
 }

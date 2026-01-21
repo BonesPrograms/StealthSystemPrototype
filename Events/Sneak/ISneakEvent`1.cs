@@ -110,7 +110,6 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
-
         public static Event GetStringyEvent(ISneakEvent<T> ForEvent, ref Event ExistingEvent)
             => ForEvent == null
             ? ExistingEvent = Event.New(RegisteredEventID)

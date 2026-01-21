@@ -75,6 +75,10 @@ namespace StealthSystemPrototype.Alerts
                 : this(ParentAlert, null, Cell)
             {
             }
+            public AlertSource(IAlert ParentAlert, SenseContext Context)
+                : this(ParentAlert, Context.Owner, Context.Owner?.CurrentCell)
+            {
+            }
 
             public AlertSource SetParentAlert(IAlert Alert)
             {
@@ -162,14 +166,19 @@ namespace StealthSystemPrototype.Alerts
             this.Source = Source?.SetParentAlert(this);
         }
         public IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, Cell SourceCell)
-            : this(Perception, Sense, Level,(AlertSource)null)
+            : this(Perception, Sense, Level, (AlertSource)null)
         {
             Source = new AlertSource(this, SourceCell);
         }
         public IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, GameObject SourceObject)
-            : this(Perception, Sense, Level,(AlertSource)null)
+            : this(Perception, Sense, Level, (AlertSource)null)
         {
             Source = new AlertSource(this, SourceObject);
+        }
+        public IAlert(SenseContext Context, ISense Sense, AwarenessLevel Level)
+            : this(Context.Perception, Sense, Level, (AlertSource)null)
+        {
+            Source = new AlertSource(this, Context);
         }
 
         #endregion

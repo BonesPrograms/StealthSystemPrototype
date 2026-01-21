@@ -11,12 +11,23 @@ namespace StealthSystemPrototype.Senses
     {
         public override int Order => 7;
 
+        public Psionic()
+            : base(5)
+        {
+        }
         public Psionic(int Intensity)
             : base(Intensity)
+        {
+        }
+        public Psionic(ISense Source)
+            : base(Source)
         {
         }
 
         public override double GetIntensity()
             => base.GetIntensity();
+
+        protected override ISense Copy()
+            => new Psionic(base.Copy());
     }
 }

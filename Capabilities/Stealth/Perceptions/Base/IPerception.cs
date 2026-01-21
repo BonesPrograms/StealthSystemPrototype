@@ -327,23 +327,19 @@ namespace StealthSystemPrototype.Perceptions
 
         protected abstract Type GetSenseType();
 
-        protected ClampedDieRoll GetDieRoll<T, S>(T Perception = null, S Sense = null)
-            where T : IPerception<S>, new()
-            where S : ISense<S>, new()
+        protected ClampedDieRoll GetDieRoll<TSense>(IPerception<TSense> Perception = null)
+            where TSense : ISense<TSense>, new()
             => GetPerceptionDieRollEvent.GetFor(
                     Perceiver: Owner,
-                    Perception: Perception ?? (T)this,
-                    Sense: Sense,
+                    Perception: Perception ?? (IPerception<TSense>)this,
                     BaseDieRoll: BaseDieRoll.AdjustBy(GetBonusBaseDieRoll()))
                 ?.AdjustBy(GetBonusDieRoll());
 
-        protected Radius GetRadius<T, S>(T Perception = null, S Sense = null)
-            where T : IPerception<S>, new()
-            where S : ISense<S>, new()
+        protected Radius GetRadius<TSense>(IPerception<TSense> Perception = null)
+            where TSense : ISense<TSense>, new()
             => GetPerceptionRadiusEvent.GetFor(
                     Perceiver: Owner,
-                    Perception: Perception ?? (T)this,
-                    Sense: Sense,
+                    Perception: Perception ?? (IPerception<TSense>)this,
                     BaseRadius: BaseRadius.AdjustBy(GetBonusBaseRadius()))
                 ?.AdjustBy(GetBonusRadius());
 
@@ -468,7 +464,7 @@ namespace StealthSystemPrototype.Perceptions
             return any;
         }
 
-        public virtual int Roll(GameObject Entity, out int Distance, out FindPath PerceptionPath)
+        public virtual int Roll(GameObject Entity)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -477,93 +473,69 @@ namespace StealthSystemPrototype.Perceptions
                     Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
-
-            Distance = Const.MAX_DIST;
-            PerceptionPath = null;
 
             if (Entity == null)
                 return 0;
 
-            if (!CheckInRadius(Entity, out Distance, out PerceptionPath))
+            if (!CheckInRadius(Entity, out int Distance, out FindPath PerceptionPath))
                 return 0;
 
-            int roll = DieRoll.Roll();
-
-            LastRoll = roll;
-            LastEntityID = Entity.ID;
-
-            double diffusion = Radius.GetDiffusion(Distance);
-
-            roll = (int)Math.Floor(roll * Radius.GetDiffusion(Distance));
-
-            Debug.Log(nameof(roll), roll, Indent: indent[1]);
-            Debug.Log(nameof(Distance), Distance, Indent: indent[1]);
-
-            string diffussesString = Diffuses.ToString() + ", " + diffusion.WithDigits(3);
-            string diffusionCountString = Distance.Clamp(new(Radius.GetValue())) + "/" + (Radius.Diffusions()?.Count() ?? 0);
-            Debug.Log(nameof(Diffuses), diffussesString + " (" + diffusionCountString + ")", Indent: indent[1]);
-            Debug.Log(Radius.GetDiffusionDebug(Inline: false), Indent: indent[2]);
-
-            Debug.Log(nameof(DieRoll), DieRoll, Indent: indent[1]);
-
-            return roll;
+            return DieRoll.Roll();;
         }
-        public int Roll(GameObject Entity)
-            => Roll(Entity, out _, out _);
 
-        public virtual int RollAdvantage(GameObject Entity, out int Distance, out FindPath PerceptionPath)
+        public int[] Rolls(GameObject Entity, int Rolls = 1)
+        {
+            if (Entity == null)
+                throw new ArgumentNullException(nameof(Entity), nameof(this.Rolls) + " requires a " + nameof(GameObject) + " to perceive.");
+
+            if (Rolls < 1)
+                throw new ArgumentOutOfRangeException(nameof(Rolls), "Must be greater than or equal to 1.");
+
+            int[] rolls = new int[Rolls];
+            for (int i = 0; i < Rolls; i++)
+                rolls[i] = Roll(Entity);
+
+            return rolls;
+        }
+
+        public virtual int RollAdvantage(GameObject Entity, int Rolls = 2)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
+                    Debug.Arg(nameof(Rolls), Rolls),
                     Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
 
-            int first = Roll(Entity, out int firstDistance, out FindPath firstPerceptionPath);
-            int second = Roll(Entity, out int secondDistance, out FindPath secondPerceptionPath);
+            if (Entity == null)
+                throw new ArgumentNullException(nameof(Entity), nameof(RollAdvantage) + " requires a " + nameof(GameObject) + " to perceive.");
 
-            GetMinMax(out _, out int max, first, second);
+            if (Rolls < 1)
+                throw new ArgumentOutOfRangeException(nameof(Rolls), "Must be greater than or equal to 1.");
 
-            if (first == max)
-            {
-                Distance = firstDistance;
-                PerceptionPath = firstPerceptionPath;
-            }
-            else
-            {
-                Distance = secondDistance;
-                PerceptionPath = secondPerceptionPath;
-            }
+            GetMinMax(out int _, out int max, this.Rolls(Entity, Rolls));
             return max;
         }
-        public virtual int RollDisadvantage(GameObject Entity, out int Distance, out FindPath PerceptionPath)
+        public virtual int RollDisadvantage(GameObject Entity, int Rolls = 2)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
+                    Debug.Arg(nameof(Rolls), Rolls),
                     Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
 
+            if (Entity == null)
+                throw new ArgumentNullException(nameof(Entity), nameof(RollDisadvantage) + " requires a " + nameof(GameObject) + " to perceive.");
 
-            int first = Roll(Entity, out int firstDistance, out FindPath firstPerceptionPath);
-            int second = Roll(Entity, out int secondDistance, out FindPath secondPerceptionPath);
+            if (Rolls < 1)
+                throw new ArgumentOutOfRangeException(nameof(Rolls), "Must be greater than or equal to 1.");
 
-            GetMinMax(out int min, out int _, first, second);
-
-            if (first == min)
-            {
-                Distance = firstDistance;
-                PerceptionPath = firstPerceptionPath;
-            }
-            else
-            {
-                Distance = secondDistance;
-                PerceptionPath = secondPerceptionPath;
-            }
+            GetMinMax(out int min, out int _, this.Rolls(Entity, Rolls));
             return min;
         }
 

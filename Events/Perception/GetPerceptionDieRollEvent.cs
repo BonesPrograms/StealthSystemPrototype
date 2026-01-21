@@ -51,13 +51,11 @@ namespace StealthSystemPrototype.Events
             DieRoll = null;
         }
 
-        public static GetPerceptionDieRollEvent FromPool<T, S>(
+        public static GetPerceptionDieRollEvent FromPool<TSense>(
             GameObject Perceiver,
-            T Perception,
-            S Sense,
+            IPerception<TSense> Perception,
             ClampedDieRoll BaseDieRoll)
-            where T : IPerception, new()
-            where S : ISense<S>, new()
+            where TSense : ISense<TSense>, new()
         {
             if (Perception == null
                 || FromPool(Perceiver) is not GetPerceptionDieRollEvent E)
@@ -65,7 +63,7 @@ namespace StealthSystemPrototype.Events
 
             E.Name = Perception.Name;
             E.Type = Perception.GetType();
-            E.Sense = Sense ?? new();
+            E.Sense = ISense.SampleSense<TSense>();
             E.BaseDieRoll = BaseDieRoll;
             E.DieRoll = BaseDieRoll;
             E.StringyEvent = E.GetStringyEvent();
@@ -92,13 +90,11 @@ namespace StealthSystemPrototype.Events
                 DieRoll = dieRoll;
         }
 
-        public static ClampedDieRoll GetFor<T, S>(
+        public static ClampedDieRoll GetFor<TSense>(
             GameObject Perceiver,
-            T Perception,
-            S Sense,
+            IPerception<TSense> Perception,
             ClampedDieRoll BaseDieRoll)
-            where T : IPerception, new()
-            where S : ISense<S>, new()
+            where TSense : ISense<TSense>, new()
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -112,7 +108,6 @@ namespace StealthSystemPrototype.Events
                 || FromPool(
                     Perceiver: Perceiver,
                     Perception: Perception,
-                    Sense: Sense,
                     BaseDieRoll: BaseDieRoll) is not GetPerceptionDieRollEvent E)
                 return null;
 

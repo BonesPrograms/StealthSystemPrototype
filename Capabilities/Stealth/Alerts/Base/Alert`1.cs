@@ -25,16 +25,20 @@ namespace StealthSystemPrototype.Alerts
             : base()
         {
         }
-        protected Alert(T Perception, TSense Sense, AlertSource Source)
-            : base(Perception, Sense, Source)
+        protected Alert(T Perception, TSense Sense, AwarenessLevel Level, AlertSource Source)
+            : base(Perception, Sense, Level, Source)
         {
         }
-        public Alert(T Perception, TSense Sense, Cell SourceCell)
-            : base(Perception, Sense, SourceCell)
+        public Alert(T Perception, TSense Sense, AwarenessLevel Level, Cell SourceCell)
+            : base(Perception, Sense, Level, SourceCell)
         {
         }
-        public Alert(T Perception, TSense Sense, GameObject SourceObject)
-            : base(Perception, Sense, SourceObject)
+        public Alert(T Perception, TSense Sense, AwarenessLevel Level, GameObject SourceObject)
+            : base(Perception, Sense, Level, SourceObject)
+        {
+        }
+        public Alert(SenseContext<TSense> Context, ISense Sense, AwarenessLevel Level)
+            : base(Context, Sense, Level)
         {
         }
 

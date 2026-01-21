@@ -277,7 +277,7 @@ namespace XRL.World.Effects
         {
             if (CommandEventsToConceal.ContainsKey(E.Command))
             {
-                ConcealActionEvent.Send(
+                TryConcealActionEvent.Send(
                     Hider: E.Actor,
                     Performance: SneakPerformance,
                     ConcealedAction: new ConcealedCommandEvent(E, CommandEventsToConceal[E.Command])
@@ -291,7 +291,7 @@ namespace XRL.World.Effects
         }
         public override bool HandleEvent(EnteredCellEvent E)
         {
-            ConcealActionEvent.Send(
+            TryConcealActionEvent.Send(
                 Hider: E.Actor,
                 Performance: SneakPerformance,
                 ConcealedAction: new ConcealedMinAction<EnteredCellEvent>(E, !E.Forced ? "sneaking around" : "being knocked around")

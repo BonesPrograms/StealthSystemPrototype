@@ -11,12 +11,23 @@ namespace StealthSystemPrototype.Senses
     {
         public override int Order => 4;
 
+        public Auditory()
+            : base(5)
+        {
+        }
         public Auditory(int Intensity)
             : base(Intensity)
+        {
+        }
+        public Auditory(ISense Source)
+            : base(Source)
         {
         }
 
         public override double GetIntensity()
             => base.GetIntensity();
+
+        protected override ISense Copy()
+            => new Auditory(base.Copy());
     }
 }

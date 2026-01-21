@@ -51,13 +51,11 @@ namespace StealthSystemPrototype.Events
             Radius = null;
         }
 
-        public static GetPerceptionRadiusEvent FromPool<T, S>(
+        public static GetPerceptionRadiusEvent FromPool<TSense>(
             GameObject Perceiver,
-            T Perception,
-            S Sense,
+            IPerception<TSense> Perception,
             Radius BaseRadius)
-            where T : IPerception<S>, new()
-            where S : ISense<S>, new()
+            where TSense : ISense<TSense>, new()
         {
             if (Perception == null
                 || FromPool(Perceiver) is not GetPerceptionRadiusEvent E)
@@ -65,7 +63,7 @@ namespace StealthSystemPrototype.Events
 
             E.Name = Perception.Name;
             E.Type = Perception.GetType();
-            E.Sense = Sense ?? new();
+            E.Sense = ISense.SampleSense<TSense>();
             E.BaseRadius = BaseRadius;
             E.Radius = BaseRadius;
             E.StringyEvent = E.GetStringyEvent();
@@ -92,13 +90,11 @@ namespace StealthSystemPrototype.Events
                 Radius = radius;
         }
 
-        public static Radius GetFor<T, S>(
+        public static Radius GetFor<TSense>(
             GameObject Perceiver,
-            T Perception,
-            S Sense,
+            IPerception<TSense> Perception,
             Radius BaseRadius)
-            where T : IPerception<S>, new ()
-            where S : ISense<S>, new ()
+            where TSense : ISense<TSense>, new()
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -112,7 +108,6 @@ namespace StealthSystemPrototype.Events
                 || FromPool(
                     Perceiver: Perceiver,
                     Perception: Perception,
-                    Sense: Sense,
                     BaseRadius: BaseRadius) is not GetPerceptionRadiusEvent E)
                 return null;
 

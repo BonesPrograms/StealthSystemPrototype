@@ -479,10 +479,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IPerception GetHighestRatedPerceptionFor(GameObject Entity)
             => GetHighestRatedPerceptionFor(Entity, true);
 
-        public virtual AwarenessLevel Sense(
-            ISense Sense,
-            GameObject Entity,
-            out IPerception Perception)
+        public virtual bool Sense<TSense>(
+            TSense Sense,
+            GameObject Entity)
+            where TSense : ISense<TSense>, new()
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -492,48 +492,30 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
                 });
 
-            Perception = null;
-
             if (Entity == null)
                 throw new ArgumentNullException(nameof(Entity), nameof(this.Sense) + " requires a " + nameof(GameObject) + " to perceive.");
 
-            if (AsEnumerable() is not IEnumerable<IPerception> perceptions)
-                return AwarenessLevel.None;
+            foreach (SenseContext context in GetSenseContexts(Sense, Entity))
+                if (Sense.TrySense(context))
+                    return true;
 
-            int highest = -1;
-            AwarenessLevel highestAwarenessLevel = AwarenessLevel.None;
-
-            foreach (IPerception perception in perceptions)
-            {
-                AwarenessLevel awarenessLevel = Sense.Sense(perception, out int roll, Entity);
-                if (roll > highest)
-                {
-                    highest = roll;
-                    highestAwarenessLevel = awarenessLevel;
-                    Perception = perception;
-                }
-            }
-            return highestAwarenessLevel;
+            return false;
         }
-        public virtual AwarenessLevel Sense<TSense>(
-            ISense<TSense> Sense,
-            GameObject Entity)
-            where TSense : ISense<TSense>, new()
-            => this.Sense(Sense, Entity, out _);
 
-        public Dictionary<ISense, KeyValuePair<AwarenessLevel, IPerception>> Sense(IConcealedAction ConcealedAction, GameObject Entity)
+        public bool Sense<TSense>(IConcealedAction ConcealedAction, GameObject Entity)
+            where TSense : ISense<TSense>, new()
         {
             if (ConcealedAction.IsNullOrEmpty()
                 || Entity == null)
                 return new();
 
-            Dictionary<ISense, KeyValuePair<AwarenessLevel, IPerception>> output = new();
             foreach (ISense sense in ConcealedAction)
-                output[sense] = new(Sense(sense, Entity, out IPerception perception), perception);
+                if (sense is TSense tSense
+                    && Sense(tSense, Entity))
+                    return true;
 
-            return output;
+            return false;
         }
-
 
         #region Event Dispatch
 
@@ -731,6 +713,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             {
                 return new IPerception<TSense>[0];
             }
+        }
+
+        public IEnumerable<SenseContext<TSense>> GetSenseContexts<TSense>(TSense Sense, GameObject Entity)
+            where TSense : ISense<TSense>, new()
+        {
+            if (Entity == null
+                && Sense == null)
+                yield break;
+
+            foreach (IPerception perception in this)
+                if (perception is IPerception<TSense> tSensePerception)
+                yield return new(tSensePerception, Entity);
+        }
+
+        public IEnumerable<SenseContext> GetSenseContexts(GameObject Entity)
+        {
+            if (Entity == null)
+                yield break;
+
+            foreach (IPerception perception in this)
+                yield return new(perception, Entity);
         }
 
         #endregion

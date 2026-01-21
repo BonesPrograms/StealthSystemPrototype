@@ -11,12 +11,23 @@ namespace StealthSystemPrototype.Senses
     {
         public override int Order => 2;
 
+        public Thermal()
+            : base(5)
+        {
+        }
         public Thermal(int Intensity)
             : base(Intensity)
+        {
+        }
+        public Thermal(ISense Source)
+            : base(Source)
         {
         }
 
         public override double GetIntensity()
             => base.GetIntensity();
+
+        protected override ISense Copy()
+            => new Thermal(base.Copy());
     }
 }

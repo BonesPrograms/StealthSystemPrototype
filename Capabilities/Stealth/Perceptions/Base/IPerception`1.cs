@@ -56,8 +56,8 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Instance Fields & Properties
 
-        public override ClampedDieRoll DieRoll => _DieRoll ??= GetDieRoll(this, new TSense());
-        public override Radius Radius => _Radius ??= GetRadius(this, new TSense());
+        public override ClampedDieRoll DieRoll => _DieRoll ??= GetDieRoll<TSense>(this);
+        public override Radius Radius => _Radius ??= GetRadius<TSense>(this);
 
         #endregion
         #region Constructors
@@ -144,14 +144,14 @@ namespace StealthSystemPrototype.Perceptions
         protected sealed override Type GetSenseType()
             => typeof(TSense);
 
-        public override int Roll(GameObject Entity, bool UseLastRoll = false)
-            => base.Roll(Entity, UseLastRoll);
+        public override int Roll(GameObject Entity)
+            => base.Roll(Entity);
 
-        public override int RollAdvantage(GameObject Entity, bool AgainstLastRoll = false)
-            => base.RollAdvantage(Entity, AgainstLastRoll);
+        public override int RollAdvantage(GameObject Entity, int Rolls = 2)
+            => base.RollAdvantage(Entity, Rolls);
 
-        public override int RollDisadvantage(GameObject Entity, bool AgainstLastRoll = false)
-            => RollDisadvantage(Entity, AgainstLastRoll);
+        public override int RollDisadvantage(GameObject Entity, int Rolls = 2)
+            => RollDisadvantage(Entity, Rolls);
 
         #region Event Handling
 
