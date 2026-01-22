@@ -15,7 +15,7 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public class Investigate<TSense> : Alert<IPerception<TSense>, TSense>
+    public class Investigate<TSense> : IAlert<IPerception<TSense>, TSense>
         where TSense : ISense<TSense>, new()
     {
         #region Constructors
@@ -38,6 +38,10 @@ namespace StealthSystemPrototype.Alerts
         }
         public Investigate(SenseContext<TSense> Context, ISense Sense, AwarenessLevel Level)
             : base(Context, Sense, Level)
+        {
+        }
+        public Investigate(Investigate<TSense> Source)
+            : base(Source)
         {
         }
 

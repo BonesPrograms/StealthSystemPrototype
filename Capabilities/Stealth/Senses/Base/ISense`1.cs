@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Perceptions;
 
@@ -29,7 +31,7 @@ namespace StealthSystemPrototype.Senses
         {
         }
 
-        public override double GetIntensity()
+        public override int GetIntensity()
             => base.GetIntensity();
 
         public override bool CanSense(IPerception Perception, GameObject Entity)
@@ -42,7 +44,7 @@ namespace StealthSystemPrototype.Senses
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(nameof(Context.Perception), Context?.Perception?.ToString(Short: true) ?? "null"),
-                    Debug.Arg(nameof(Context.Entity), Context?.Entity?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Context.Hider), Context?.Hider?.DebugName ?? "null"),
                 });
 
             if (!Context.InRadius)
@@ -65,6 +67,8 @@ namespace StealthSystemPrototype.Senses
             Debug.Log(radius.GetDiffusionDebug(Inline: false), Indent: indent[2]);
 
             Debug.Log(nameof(dieRoll), dieRoll, Indent: indent[1]);
+
+            return AwarenessFromRoll(roll);
         }
 
         public override AwarenessLevel Sense<T>(SenseContext<T> Context)
@@ -73,21 +77,45 @@ namespace StealthSystemPrototype.Senses
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(nameof(Context.Perception), Context?.Perception?.ToString(Short: true) ?? "null"),
-                    Debug.Arg(nameof(Context.Entity), Context?.Entity?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Context.TypedPerception), Context?.TypedPerception?.ToString(Short: true) ?? "null"),
+                    Debug.Arg(nameof(Context.Hider), Context?.Hider?.DebugName ?? "null"),
                 });
 
             if (Context == null)
                 return AwarenessLevel.None;
 
-            if (!CanSense(Context.Perception, Context.Entity))
+            if (!CanSense(Context.TypedPerception, Context.Hider))
                 return AwarenessLevel.None;
 
             return CalculateAwareness(Context);
         }
 
-        public override bool TrySense(SenseContext Context)
-            => base.TrySense(SenseContext Context);
+        public virtual bool TrySense(SenseContext<TSense> Context)
+        {
+            AwarenessLevel level = Sense(Context);
+            switch (level)
+            {
+                case AwarenessLevel.Alert:
+                    Context.TypedPerception.RaiseAlert<TSense, Investigate<TSense>>(Context, this, level);
+                    return true;
+
+                case AwarenessLevel.Aware:
+                    Context.TypedPerception.RaiseAlert<TSense, Investigate<TSense>>(Context, this, level);
+                    return true;
+
+                case AwarenessLevel.Suspect:
+                    Context.TypedPerception.RaiseAlert<TSense, Investigate<TSense>>(Context, this, level);
+                    return true;
+
+                case AwarenessLevel.Awake:
+                    Context.TypedPerception.RaiseAlert<TSense, Investigate<TSense>>(Context, this, level);
+                    return true;
+
+                case AwarenessLevel.None:
+                default:
+                    return false;
+            }
+        }
 
         protected override ISense Copy()
             => new ISense<TSense>(this);

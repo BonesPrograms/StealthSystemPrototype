@@ -15,6 +15,7 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Alerts
 {
@@ -45,13 +46,14 @@ namespace StealthSystemPrototype.Alerts
                     Location = _Cell?.Location ?? default;
                 }
             }
-                
 
             private string ZoneID;
             private Location2D Location;
 
             private Brain ParentBrain => ParentAlert?.ParentBrain;
             private GameObject ParentObject => ParentBrain?.ParentObject;
+
+            #region Constructors
 
             private AlertSource()
             {
@@ -76,7 +78,7 @@ namespace StealthSystemPrototype.Alerts
             {
             }
             public AlertSource(IAlert ParentAlert, SenseContext Context)
-                : this(ParentAlert, Context.Owner, Context.Owner?.CurrentCell)
+                : this(ParentAlert, Context.Perceiver, Context.Perceiver?.CurrentCell)
             {
             }
 
@@ -85,6 +87,8 @@ namespace StealthSystemPrototype.Alerts
                 ParentAlert = Alert;
                 return this;
             }
+
+            #endregion
             #region Serialization
 
             public void Write(SerializationWriter Writer)
@@ -138,7 +142,7 @@ namespace StealthSystemPrototype.Alerts
 
         public AwarenessLevel Level;
 
-        private AlertSource Source;
+        protected AlertSource Source;
 
         public GameObject SourceObject => Source?.GetObject();
         public Cell SourceCell => Source?.GetCurrentCellOrCell();
@@ -180,8 +184,14 @@ namespace StealthSystemPrototype.Alerts
         {
             Source = new AlertSource(this, Context);
         }
+        public IAlert(IAlert Source)
+            : this(Source.Perception, Source.Sense, Source.Level, Source.Source)
+        {
+        }
 
         #endregion
+
+        public abstract IAlert Copy();
 
         public static bool ValidateAlert(IAlert Alert)
             => Alert != null
@@ -199,6 +209,18 @@ namespace StealthSystemPrototype.Alerts
                 return false;
             }
             return true;
+        }
+
+        public override void Create()
+        {
+            base.Create();
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(ParentObject?.MiniDebugName()),
+                    Debug.Arg(Perception?.ToString(Short: true, SourceObject)),
+                });
         }
     }
 }

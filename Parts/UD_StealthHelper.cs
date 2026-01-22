@@ -36,7 +36,7 @@ namespace XRL.World.Parts
             Perceiver
                 ?.GetPart<UD_Witness>()
                 ?.Perceptions
-                ?.ToString(Short: true, Entity: Hider, UseLastRoll: true, BestRollOnly: true);
+                ?.ToString(Short: true, Entity: Hider);
 
         private string ProcWitness(
             string Accumulator,
@@ -60,6 +60,7 @@ namespace XRL.World.Parts
             ? witnessess?.Aggregate("", (a, n) => ProcWitness(a, n, Delimiter, ProcItem))
             : "Total {{K|Invisibility}}!";
 
+        /*
         public List<GameObject> GetWitnesses()
         {
             GetWitnessesEvent.GetFor(ParentObject, ref Witnesses)
@@ -74,6 +75,7 @@ namespace XRL.World.Parts
                 });
             return Witnesses;
         }
+        */
 
         #region Event Handling
 
@@ -93,7 +95,7 @@ namespace XRL.World.Parts
                 WitnessesAwarenessLevels.Clear();
                 using Indent indent = new(1);
                 Debug.Log("<UD_Steath debug toggle witnesses>", Indent: indent[0]);
-                GetWitnesses();
+                // GetWitnesses();
                 Debug.Log(
                     Field: ParentObject.MiniDebugName() + " Witnesses",
                     Value: "\n" + WitnessListString("\n", s => " ".ThisManyTimes(4) + s),
@@ -133,7 +135,7 @@ namespace XRL.World.Parts
             if (The.Player is GameObject player
                 && player.TryGetPart(out UD_StealthHelper stealthPart))
             {
-                stealthPart.GetWitnesses();
+                // stealthPart.GetWitnesses();
                 string msg = player.MiniDebugName() + "'s Witnesses:\n" +
                     stealthPart.WitnessListString("\n", s => "{{K|" + "-".ThisManyTimes(4) + "}}" + s);
                 UnityEngine.Debug.Log("<UD_Steath debug witnesses>");

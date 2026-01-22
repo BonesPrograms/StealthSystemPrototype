@@ -23,6 +23,7 @@ namespace XRL.World.Parts
     public class UD_PerceptionHelper 
         : IScribedPart
         , IPerceptionEventHandler
+        , IAlertEventHandler
     {
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
@@ -227,6 +228,7 @@ namespace XRL.World.Parts
                     GetPerceptionsEvent.ID,
                     GetPerceptionDieRollEvent.ID,
                     GetPerceptionRadiusEvent.ID,
+                    AfterAlertEvent.ID,
                     GetDebugInternalsEvent.ID,
                 }))
                 return true;
@@ -399,12 +401,18 @@ namespace XRL.World.Parts
             }
             return base.HandleEvent(E);
         }
+        public virtual bool HandleEvent(AfterAlertEvent E)
+        {
+            if (ParentObject.BelongsToFaction(E.Perceiver.GetPrimaryFaction()))
+                ParentObject?.Brain.PushGoal(E.Alert.Copy());
+            return base.HandleEvent(E);
+        }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
             E.AddEntry(
                 Part: this,
                 Name: nameof(Perceptions),
-                Value: Perceptions?.ToStringLines(Short: true, Entity: The.Player, UseLastRoll: true) ?? "none??");
+                Value: Perceptions?.ToStringLines(Short: true, Entity: The.Player) ?? "none??");
             return base.HandleEvent(E);
         }
 

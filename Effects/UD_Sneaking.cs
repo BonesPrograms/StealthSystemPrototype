@@ -29,9 +29,13 @@ namespace XRL.World.Effects
         public const string MS_NAME = "MoveSpeed";
         public const string QN_NAME = "Speed";
 
-        public static Dictionary<string, string> CommandEventsToConceal => new()
+        public static Dictionary<string, ConcealedCommandAction> CommandEventsToConceal => new()
         {
-            { Survival_Camp.COMMAND_NAME, "making camp" },
+            { Survival_Camp.COMMAND_NAME, new ConcealedCommandAction(false, "making camp") {
+                new Visual(8),
+                new Auditory(3),
+                new Olfactory(5),
+            } },
         };
 
         public SneakPerformance SneakPerformance => Object?.GetPart<UD_Sneak>()?.SneakPerformance;
@@ -280,12 +284,9 @@ namespace XRL.World.Effects
                 TryConcealActionEvent.Send(
                     Hider: E.Actor,
                     Performance: SneakPerformance,
-                    ConcealedAction: new ConcealedCommandEvent(E, CommandEventsToConceal[E.Command])
-                    {
-                        new Visual(Intensity: 8),
-                        new Auditory(Intensity: 3),
-                        new Olfactory(Intensity: 5),
-                    });
+                    ConcealedAction: CommandEventsToConceal[E.Command]
+                        ?.SetEvent(E)
+                        ?.AdjustSenseIntensities(SneakPerformance));
             }
             return base.HandleEvent(E);
         }
@@ -294,11 +295,14 @@ namespace XRL.World.Effects
             TryConcealActionEvent.Send(
                 Hider: E.Actor,
                 Performance: SneakPerformance,
-                ConcealedAction: new ConcealedMinAction<EnteredCellEvent>(E, !E.Forced ? "sneaking around" : "being knocked around")
+                ConcealedAction: new ConcealedMinAction<EnteredCellEvent>(
+                    E: E,
+                    Aggressive: false,
+                    Description: !E.Forced ? "sneaking around" : "being knocked around")
                 {
-                    new Visual(Intensity: 5),
-                    new Auditory(Intensity: 5),
-                    new Olfactory(Intensity: 3),
+                    SneakPerformance.GetSense<Visual>(Intensity: 10),
+                    SneakPerformance.GetSense<Auditory>(Intensity: 10),
+                    SneakPerformance.GetSense<Olfactory>(Intensity: 8),
                 });
             return base.HandleEvent(E);
         }

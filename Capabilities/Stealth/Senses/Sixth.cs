@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Senses
         {
         }
 
-        public override double GetIntensity()
+        public override int GetIntensity()
             => base.GetIntensity();
 
         protected override ISense Copy()

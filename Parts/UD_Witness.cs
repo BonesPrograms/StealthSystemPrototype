@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL.World.AI.Pathfinding;
+
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
-
-using XRL.World.AI.Pathfinding;
 using StealthSystemPrototype.Senses;
 
 namespace XRL.World.Parts
@@ -29,14 +29,18 @@ namespace XRL.World.Parts
 
         public IPerception BestPerception => PerceptionHelper?.BestPerception;
 
-        public bool PlayerPerceptable;
+        public bool PlayerPerceptable => ParentObject
+                ?.Brain
+                ?.AnyAlert(a => a.SourceObject?.IsPlayer() ?? false)
+            ?? false;
+
+        public AwarenessLevel PlayerAwareness => ParentObject?.Brain?.FirstAlert(a => a.SourceObject?.IsPlayer() ?? false)?.Level ?? AwarenessLevel.None;
 
         #endregion
         #endregion
 
         public UD_Witness()
         {
-            PlayerPerceptable = false;
         }
 
         #region Serialization
@@ -81,16 +85,6 @@ namespace XRL.World.Parts
                 && !ParentObject.IsPlayer())
             {
                 PerceptionHelper?.ClearBestPerception();
-
-                PlayerPerceptable = The.Player is GameObject player
-                    && player.TryGetPart(out UD_StealthHelper stealth)
-                    && !stealth.Witnesses.IsNullOrEmpty()
-                    && stealth.Witnesses.Contains(ParentObject)
-                    && BestPerception.CheckInRadius(player, out int _, out FindPath _);
-            }
-            else
-            {
-                PlayerPerceptable = false;
             }
             return base.HandleEvent(E);
         }
@@ -129,17 +123,15 @@ namespace XRL.World.Parts
                 && The.Player is GameObject player
                 && !ParentObject.IsPlayer()
                 && ParentObject != player
-                && PlayerPerceptable
-                && BestPerception != null
-                && BestPerception.GetAwareness(player) is AwarenessLevel playerAwareness)
+                && PlayerPerceptable)
             {
-                if (playerAwareness > AwarenessLevel.Suspect)
+                if (PlayerAwareness > AwarenessLevel.Suspect)
                     E.ApplyColors("R", "r", int.MaxValue, int.MaxValue);
                 else
-                if (playerAwareness > AwarenessLevel.Awake)
+                if (PlayerAwareness > AwarenessLevel.Awake)
                     E.ApplyColors("B", "b", int.MaxValue, int.MaxValue);
                 else
-                if (playerAwareness > AwarenessLevel.None)
+                if (PlayerAwareness > AwarenessLevel.None)
                     E.ApplyColors("Y", "y", int.MaxValue, int.MaxValue);
             }
             return base.Render(E);

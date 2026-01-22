@@ -17,14 +17,16 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 using System.Reflection;
 using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
     public abstract class IPerception
-        : IComponent<GameObject>,
-        IWitnessEventHandler,
-        IPerceptionEventHandler
+        : IComponent<GameObject>
+        , IWitnessEventHandler
+        , IPerceptionEventHandler
+        , IAlertEventHandler
     {
         #region Helpers
 
@@ -252,6 +254,8 @@ namespace StealthSystemPrototype.Perceptions
 
         public abstract int GetBonusRadius();
 
+        protected abstract Type GetSenseType();
+
         #endregion
         #region Virtual Event Registration
 
@@ -323,9 +327,30 @@ namespace StealthSystemPrototype.Perceptions
         public virtual bool HandleEvent(GetPerceptionRadiusEvent E)
             => true;
 
+        public virtual bool HandleEvent(BeforeAlertEvent E)
+            => true;
+
+        public virtual bool HandleEvent(AfterAlertEvent E)
+            => true;
+
         #endregion
 
-        protected abstract Type GetSenseType();
+        public static bool IsForSense(IPerception Perception, Type SenseType, bool IncludeDerived = false)
+            => EitherNull(Perception?.Sense, SenseType?.GetType(), out bool areEqual)
+            ? areEqual
+            : SenseType.InheritsFrom<ISense>()
+                && (Perception.Sense == SenseType
+                    || (IncludeDerived
+                       && Perception.Sense.InheritsFrom(SenseType)));
+
+        public static bool IsForSense(IPerception Perception, ISense Sense, bool IncludeDerived = false)
+            => IsForSense(Perception, Sense.GetType(), IncludeDerived);
+
+        public bool IsForSense(Type SenseType, bool IncludeDerived = false)
+            => IsForSense(this, SenseType, IncludeDerived);
+
+        public bool IsForSense(ISense Sense, bool IncludeDerived = false)
+            => IsForSense(this, Sense, IncludeDerived);
 
         protected ClampedDieRoll GetDieRoll<TSense>(IPerception<TSense> Perception = null)
             where TSense : ISense<TSense>, new()
@@ -376,7 +401,7 @@ namespace StealthSystemPrototype.Perceptions
             ? Event.NewCellList(cells)
             : Event.NewCellList();
 
-        public bool CheckInRadius(GameObject Entity, out int Distance, out FindPath PerceptionPath)
+        public bool CheckInRadius(GameObject Entity, out int Distance, out FindPath PerceptionPath, int Intensity = 0)
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
@@ -384,6 +409,7 @@ namespace StealthSystemPrototype.Perceptions
                 {
                     Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
                     Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Intensity), Intensity),
                 });
 
             PerceptionPath = null;
@@ -405,7 +431,7 @@ namespace StealthSystemPrototype.Perceptions
             }
 
             bool any = false;
-            Distance = entityCell.CosmeticDistanceto(myCell.Location);
+            Distance = Math.Max(0, entityCell.CosmeticDistanceto(myCell.Location) - Intensity);
             int radiusValue = Radius.EffectiveValue;
 
             if (Radius.IsLine())
@@ -477,9 +503,6 @@ namespace StealthSystemPrototype.Perceptions
             if (Entity == null)
                 return 0;
 
-            if (!CheckInRadius(Entity, out int Distance, out FindPath PerceptionPath))
-                return 0;
-
             return DieRoll.Roll();;
         }
 
@@ -537,6 +560,24 @@ namespace StealthSystemPrototype.Perceptions
 
             GetMinMax(out int min, out int _, this.Rolls(Entity, Rolls));
             return min;
+        }
+
+        public bool RaiseAlert<TSense, TAlert>(SenseContext<TSense> Context, ISense<TSense> Sense, AwarenessLevel Level)
+            where TSense : ISense<TSense>, new()
+            where TAlert : IAlert<IPerception<TSense>, TSense>
+        {
+            if ((Context?.Perceiver?.Brain?.FindAlert(Context?.TypedPerception)?.Level ?? AwarenessLevel.None) > Level)
+                return false;
+
+            if (IAlert<IPerception<TSense>, TSense>.NewFromContext<TAlert>(Context, Sense, Level) is TAlert alert
+                && BeforeAlertEvent.CheckHider<TSense, TAlert>(Context.Hider, ref alert)
+                && BeforeAlertEvent.CheckPerceiver<TSense, TAlert>(Context.Perceiver, ref alert))
+            {
+                Context.Perceiver?.Brain.PushGoal(alert);
+                AfterAlertEvent.Send<TSense, TAlert>(Context.Hider, Context.Perceiver, alert);
+                return true;
+            }
+            return false;
         }
 
         #region Event Handling

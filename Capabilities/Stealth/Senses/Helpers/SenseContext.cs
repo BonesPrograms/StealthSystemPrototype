@@ -3,30 +3,36 @@ using System.Collections.Generic;
 using System.Text;
 
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using StealthSystemPrototype.Perceptions;
 
 using XRL.World;
 using XRL.World.AI.Pathfinding;
+using XRL.World.Effects;
+using XRL.World.Parts;
 
 namespace StealthSystemPrototype.Senses
 {
     public class SenseContext
     {
-        public GameObject Owner => Perception?.Owner;
+        public GameObject Perceiver => Perception?.Owner;
 
         public IPerception Perception { get; protected set; }
-        public GameObject Entity { get; protected set; }
+
+        public GameObject Hider { get; protected set; }
+
+        public int Intensity { get; protected set; }
 
         public int Roll { get; protected set; }
 
-        public int _Distance;
+        private int _Distance;
         public int Distance
         {
             get => _Distance; 
             protected set => _Distance = value;
         }
 
-        public FindPath _PerceptionPath;
+        private FindPath _PerceptionPath;
         public FindPath PerceptionPath
         {
             get => _PerceptionPath;
@@ -40,24 +46,27 @@ namespace StealthSystemPrototype.Senses
 
         public bool InRadius { get; protected set; }
 
+        public SneakPerformance SneakPerformance => Hider?.GetPart<UD_Sneak>()?.SneakPerformance;
+
         protected SenseContext()
         {
             Perception = null;
-            Entity = null;
+            Hider = null;
+            Intensity = 0;
             Roll = 0;
-            _Distance = 0;
+            Distance = 0;
             PerceptionPath = null;
             InRadius = false;
             Diffusions = null;
             Diffusion = default;
         }
-        public SenseContext(IPerception Perception, GameObject Entity)
+        public SenseContext(IPerception Perception, GameObject Hider)
             : base()
         {
             this.Perception = Perception;
-            this.Entity = Entity;
-            InRadius = this.Perception.CheckInRadius(Entity, out _Distance, out _PerceptionPath);
-            Roll = this.Perception.Roll(Entity);
+            this.Hider = Hider;
+            InRadius = this.Perception.CheckInRadius(Hider, out _Distance, out _PerceptionPath, Intensity);
+            Roll = this.Perception.Roll(Hider);
             Diffusions = Radius.Diffusions();
             Diffusion = Radius.GetDiffusion(Distance);
         }

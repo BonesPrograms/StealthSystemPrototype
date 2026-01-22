@@ -425,6 +425,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
             return this;
         }
 
+        public ISense<TSense> GetSense<TSense>(int Intensity)
+            where TSense : ISense<TSense>, new()
+        {
+            TSense sense = new();
+            sense.SetIntensity(Intensity);
+            sense.AdjustIntensity(-GetEntry<TSense>().Rating);
+            return sense;
+        }
+
         public IEnumerable<Entry> GetEntries(Predicate<Entry> Filter)
         {
             foreach ((string _, Entry entry) in PerformanceEntries ?? new())
@@ -432,6 +441,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
                     || Filter(entry))
                     yield return entry;
         }
+
+        public Entry GetEntry<TSense>()
+            where TSense : ISense<TSense>, new()
+            => ISense.SampleSense<TSense>(typeof(TSense)) is TSense tSense
+            ? this[tSense]
+            : null;
 
         public IEnumerable<Entry> GetEntries()
             => GetEntries((Predicate<Entry>)null);

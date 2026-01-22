@@ -51,22 +51,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-
-        protected Dictionary<ISense, Dictionary<string, IPerception>> LastBestRoll;
-
         #region Constructors
 
         public PerceptionRack()
             : base()
         {
             _Owner = null;
-            LastBestRoll = null;
         }
         public PerceptionRack(int Capacity)
             : base(Capacity)
         {
             _Owner = null;
-            LastBestRoll = null;
         }
         public PerceptionRack(GameObject Owner)
             : this()
@@ -137,35 +132,36 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public virtual string LastBestRollStringFor(
-            ISense Sense,
-            GameObject Entity,
+        private string AggregatePerception(
+            string Accumulator,
+            IPerception Next,
+            string Delimiter,
             bool Short,
-            bool UseLastRoll = false)
-        {
-            if (LastBestRoll.IsNullOrEmpty())
-                return "NO_CACHE";
+            GameObject Entity)
+            => Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next.ToString(Short: Short, Entity: Entity);
 
-            if (Entity == null)
-                return "NO_ENTITY";
-
-            if (!LastBestRoll.ContainsKey(Sense))
-                return Sense.Name + " NOT_CACHED";
-
-            if (LastBestRoll[Sense] is not Dictionary<string, IPerception> bestRollCache
-                || !bestRollCache.ContainsKey(Entity.ID))
-                return Entity.ID + "NOT_CACHED_FOR " + Sense.Name;
-
-            return bestRollCache[Entity.ID].ToString(Short: Short, Entity: Entity, UseLastRoll: UseLastRoll);
-        }
+        private string AggregatePerceptionSense(
+            string Accumulator,
+            IPerception Next,
+            string Delimiter,
+            bool Short,
+            GameObject Entity,
+            ISense Sense = null)
+            => Sense == null
+                || Next.IsForSense(Sense)
+            ? AggregatePerception(
+                Accumulator: Accumulator,
+                Next: Next,
+                Delimiter: Delimiter,
+                Short: Short,
+                Entity: Entity)
+            : Accumulator;
 
         public virtual string ToString(
             string Delimiter,
             bool Short,
             GameObject Entity,
-            ISense Sense = null,
-            bool UseLastRoll = false,
-            bool BestRollOnly = false)
+            ISense Sense = null)
         {
             if (Items == null)
                 MetricsManager.LogException(
@@ -173,31 +169,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     x: new InnerArrayNullException(nameof(Items)),
                     category: GAME_MOD_EXCEPTION);
 
-            if (BestRollOnly
-                && Sense != null
-                && !LastBestRoll.IsNullOrEmpty()
-                && Entity != null
-                && LastBestRoll.ContainsKey(Sense)
-                && LastBestRoll[Sense] is Dictionary<string, IPerception> bestRollCache
-                && bestRollCache.ContainsKey(Entity.ID))
-                return LastBestRollStringFor(Sense: Sense, Entity: Entity, Short: Short, UseLastRoll: UseLastRoll);
-
-            return this?.Aggregate("", (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString(Short: Short, Entity: Entity, UseLastRoll: UseLastRoll));
+            return this?.Aggregate("", (a, n) => AggregatePerceptionSense(a, n, Delimiter, Short, Entity, Sense));
         }
 
         public virtual string ToString(
             bool Short,
-            GameObject Entity = null,
-            bool UseLastRoll = false,
-            bool BestRollOnly = false)
-            => ToString(", ", Short, Entity, null, UseLastRoll, BestRollOnly);
+            GameObject Entity = null)
+            => ToString(", ", Short, Entity, null);
 
         public virtual string ToStringLines(
             bool Short = false,
-            GameObject Entity = null,
-            bool UseLastRoll = false,
-            bool BestRollOnly = false)
-            => ToString("\n", Short, Entity, null, UseLastRoll, BestRollOnly);
+            GameObject Entity = null)
+            => ToString("\n", Short, Entity, null);
 
         public override string ToString()
             => ToString(Short: false, Entity: null);
@@ -265,8 +248,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             where TSense : ISense<TSense>, new()
             => Contains<T>();
 
-        public bool Has<T, TSense>(T Perception)
-            where T : IPerception<TSense>, new()
+        public bool Has<TSense>(IPerception<TSense> Perception)
             where TSense : ISense<TSense>, new()
             => Contains(Perception);
 
@@ -285,15 +267,19 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 }))
             ?.FirstOrDefault() != null;
 
-        public T Get<T, TSense>()
+        public IPerception<TSense> Get<T, TSense>()
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
             for (int i = 0; i < Count; i++)
                 if (Items[i].GetType() == typeof(T))
-                    return Items[i] as T;
+                    return Items[i] as IPerception<TSense>;
             return null;
         }
+
+        protected IPerception<TSense> Get<TSense>()
+            where TSense : ISense<TSense>, new()
+            => Get<IPerception<TSense>, TSense>();
 
         public IPerception Get(string Name)
             => AsEnumerable(
@@ -306,30 +292,29 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 }))
             ?.FirstOrDefault();
 
-        private static bool IsPerceptionOfSense<T>(IPerception IPerception)
-            where T : ISense<T>, new()
-            => IPerception is IPerception<T> perception
-            && perception.Sense == typeof(T);
-
-        public IPerception<T> GetFirstOfSense<T>()
-            where T : ISense<T>, new()
-            => AsEnumerable(IsPerceptionOfSense<T>)
-                ?.FirstOrDefault() as IPerception<T>;
-
-        public bool TryGet<T, TSense>(out T Perception)
-            where T : IPerception<TSense>, new()
+        private static bool IsPerceptionOfSense<TSense>(IPerception IPerception)
             where TSense : ISense<TSense>, new()
-            => (Perception = Get<T, TSense>()) != null;
+            => IPerception is IPerception<TSense> perception
+            && perception.Sense == typeof(TSense);
+
+        public IPerception<TSense> GetFirstOfSense<TSense>()
+            where TSense : ISense<TSense>, new()
+            => AsEnumerable(IsPerceptionOfSense<TSense>)
+                ?.FirstOrDefault() as IPerception<TSense>;
+
+        public bool TryGet<TSense>(out IPerception<TSense> Perception)
+            where TSense : ISense<TSense>, new()
+            => (Perception = Get<TSense>()) != null;
 
         public bool TryGet(string Name, out IPerception Perception)
             => (Perception = Get(Name)) != null;
 
-        public T Require<T, TSense>(
+        public IPerception<TSense> Require<T, TSense>(
             bool Creation = false)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
-            if (TryGet<T, TSense>(out T perception))
+            if (TryGet(out IPerception<TSense> perception))
                 return perception;
 
             return Add<T, TSense>(DoRegistration: true, Creation);
@@ -495,7 +480,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (Entity == null)
                 throw new ArgumentNullException(nameof(Entity), nameof(this.Sense) + " requires a " + nameof(GameObject) + " to perceive.");
 
-            foreach (SenseContext context in GetSenseContexts(Sense, Entity))
+            foreach (SenseContext<TSense> context in GetSenseContexts(Sense, Entity))
                 if (Sense.TrySense(context))
                     return true;
 
@@ -724,7 +709,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             foreach (IPerception perception in this)
                 if (perception is IPerception<TSense> tSensePerception)
-                yield return new(tSensePerception, Entity);
+                yield return new(Sense.GetIntensity(), tSensePerception, Entity);
         }
 
         public IEnumerable<SenseContext> GetSenseContexts(GameObject Entity)

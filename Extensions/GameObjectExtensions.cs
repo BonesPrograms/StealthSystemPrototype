@@ -20,6 +20,7 @@ using StealthSystemPrototype.Alerts;
 
 using static StealthSystemPrototype.Utils;
 using XRL.UI;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype
 {
@@ -40,8 +41,8 @@ namespace StealthSystemPrototype
         public static PerceptionRack RequirePerceptions(this GameObject Object)
             => Object.RequirePart<UD_PerceptionHelper>()?.Perceptions;
 
-        public static bool HasPerception<T>(this GameObject Object, T Item = null)
-            where T : IPerception, new()
+        public static bool HasPerception<TSense>(this GameObject Object, IPerception<TSense> Item = null)
+            where TSense : ISense<TSense>, new()
             => Object.RequirePerceptions().Has(Item);
 
         public static bool HasPerception(this GameObject Object, string Name)
@@ -50,44 +51,52 @@ namespace StealthSystemPrototype
                 ?.Has(Name)
             ?? false;
 
-        public static T GetPerception<T>(this GameObject Object)
-            where T : IPerception, new()
-            => Object.RequirePerceptions()?.Get<T>();
+        public static IPerception<TSense> GetPerception<TSense>(this GameObject Object)
+            where TSense : ISense<TSense>, new()
+            => Object.RequirePerceptions()?.Get<IPerception<TSense>, TSense>();
 
         public static IPerception GetPerception(this GameObject Object, string Name)
             => Object.RequirePerceptions().Get(Name);
 
-        public static IPerception GetFirstPerceptionOfSense(this GameObject Object, PerceptionSense Sense)
-            => Object.RequirePerceptions().GetFirstOfSense(Sense);
+        public static IPerception GetFirstPerceptionOfSense<TSense>(this GameObject Object, TSense Sense = null)
+            where TSense : ISense<TSense>, new()
+            => Object.RequirePerceptions().GetFirstOfSense<TSense>();
 
-        public static bool TryGetPerception<T>(this GameObject Object, out T Item)
-            where T : IPerception, new()
-            => Object.TryGetPerception(out Item);
+        public static bool TryGetPerception<TSense>(this GameObject Object, out IPerception<TSense> Item)
+            where TSense : ISense<TSense>, new()
+        {
+            Item = null;
+            return Object.GetPerceptions() is PerceptionRack perceptions
+                && perceptions.TryGet(out Item);
+        }
 
-        public static IPerception AddPerception<T>(
+        public static IPerception AddPerception<T, TSense>(
             this GameObject Object,
             T Perception,
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where T : IPerception, new()
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
         {
             Object.RequirePerceptions()?.Add(Perception, DoRegistration, Initial, Creation);
             return Perception;
         }
 
-        public static IPerception AddPerception<T>(
+        public static IPerception AddPerception<T, TSense>(
             this GameObject Object,
             bool DoRegistration = true,
             bool Creation = false)
-            where T : IPerception, new()
-            => Object.RequirePerceptions()?.Add<T>(DoRegistration, Creation);
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
+            => Object.RequirePerceptions()?.Add<T, TSense>(DoRegistration, Creation);
 
-        public static IPerception RequirePerception<T>(
+        public static IPerception RequirePerception<T, TSense>(
             this GameObject Object,
             bool Creation = false)
-            where T : IPerception, new()
-            => Object.RequirePerceptions()?.Require<T>(Creation);
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
+            => Object.RequirePerceptions()?.Require<T, TSense>(Creation);
 
         public static bool CheckNotOnWorldMap(this GameObject Object, string Verb, bool ShowMessage = false)
         {

@@ -8,6 +8,7 @@ using StealthSystemPrototype.Perceptions;
 using static StealthSystemPrototype.Utils;
 using XRL;
 using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Events;
 
 namespace StealthSystemPrototype.Senses
 {
@@ -44,7 +45,14 @@ namespace StealthSystemPrototype.Senses
         {
         }
 
-        public virtual double GetIntensity() => Intensity;
+        public virtual int GetIntensity()
+            => Intensity;
+
+        public virtual int SetIntensity(int Intensity)
+            => this.Intensity = Math.Max(0, Intensity);
+
+        public virtual int AdjustIntensity(int Intensity)
+            => SetIntensity(this.Intensity + Intensity);
 
         public virtual bool CanSense(IPerception Perception, GameObject Entity)
             => GetType() != Perception?.Sense
@@ -53,47 +61,11 @@ namespace StealthSystemPrototype.Senses
         public static AwarenessLevel AwarenessFromRoll(int Roll)
             => (AwarenessLevel)((int)Math.Ceiling(((Roll + 1) / 20.0) - 1)).Clamp(0, 4);
 
-        public virtual AwarenessLevel CalculateAwareness<T>(SenseContext<T> Context)
-            where T : ISense<T>, new()
-            => AwarenessFromRoll(Context.Roll);
+        public abstract AwarenessLevel CalculateAwareness<T>(SenseContext<T> Context)
+            where T : ISense<T>, new();
 
         public abstract AwarenessLevel Sense<T>(SenseContext<T> Context)
             where T : ISense<T>, new();
-
-        /*
-        public virtual AwarenessLevel Sense(SenseContext Context)
-        {
-            if (!CanSense(Context.Perception, Context.Entity))
-                return NoAwareness(out _);
-
-            return CalculateAwareness(Context);
-        }*/
-
-        public virtual bool TrySense<T>(SenseContext Context)
-        {
-            switch (Sense(Context))
-            {
-                case AwarenessLevel.Alert:
-                    Context.Owner?.Brain.PushGoal(new Investigate<T>(Context, this, AwarenessLevel.Alert));
-                    return true;
-
-                case AwarenessLevel.Aware:
-                    Context.Owner?.Brain.PushGoal(new Investigate<T>(Context, this, AwarenessLevel.Aware));
-                    return true;
-
-                case AwarenessLevel.Suspect:
-                    Context.Owner?.Brain.PushGoal(new Investigate<T>(Context, this, AwarenessLevel.Suspect));
-                    return true;
-
-                case AwarenessLevel.Awake:
-                    Context.Owner?.Brain.PushGoal(new Investigate<T>(Context, this, AwarenessLevel.Awake));
-                    return true;
-
-                case AwarenessLevel.None:
-                default:
-                    return false;
-            }
-        }
 
         protected abstract ISense Copy();
 
@@ -107,13 +79,18 @@ namespace StealthSystemPrototype.Senses
             ? Copy(sense)
             : null;
 
-        public static TSense SampleSense<TSense>()
+        public static TSense SampleSense<TSense>(Type SenseType)
             where TSense : ISense<TSense>, new()
-            => !SortedSenses.IsNullOrEmpty()
-            && SortedSenses.ContainsKey(typeof(TSense).Name)
-            && SortedSenses[typeof(TSense).Name] is TSense sense
+            => SenseType == typeof(TSense)
+            && !SortedSenses.IsNullOrEmpty()
+            && SortedSenses.ContainsKey(SenseType.ToStringWithGenerics())
+            && SortedSenses[SenseType.ToStringWithGenerics()] is TSense sense
             ? Copy(sense) as TSense
             : null;
+
+        public static TSense SampleSense<TSense>()
+            where TSense : ISense<TSense>, new()
+            => SampleSense<TSense>(typeof(TSense));
 
         public virtual void Write(SerializationWriter Writer)
         {

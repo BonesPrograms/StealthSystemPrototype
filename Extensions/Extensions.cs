@@ -19,6 +19,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Alerts;
 
 using static StealthSystemPrototype.Utils;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype
 {
@@ -597,22 +598,39 @@ namespace StealthSystemPrototype
             return null;
         }
 
-        public static IAlert FindAlert<T>(this Brain Brain, T Perception)
-            where T : IPerception, new()
+        public static IAlert FindAlert<TSense>(this Brain Brain, IPerception<TSense> Perception)
+            where TSense : ISense<TSense>, new()
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
                 return null;
 
 
             for (int i = goalHandlers.Count - 1; i >= 0; i--)
-                if (goalHandlers[i] is Alert<T> alert)
+                if (goalHandlers[i] is IAlert<IPerception<TSense>, TSense> alert
+                    && alert.Perception == Perception)
                     return alert;
 
             return null;
         }
 
-        public static IAlert FindAlert<T>(this Brain Brain, Alert<T> Alert)
-            where T : IPerception, new()
+        public static IAlert FirstAlert(this Brain Brain, Predicate<IAlert> Predicate)
+            => Brain?.Goals?.Items
+                ?.FirstOrDefault(
+                    g => g is IAlert gAlert
+                    && (Predicate == null || Predicate(gAlert))
+                ) as IAlert;
+
+        public static IAlert FirstAlert(this Brain Brain)
+            => Brain?.Goals?.Items?.FirstOrDefault(g => g is IAlert) as IAlert;
+
+        public static bool AnyAlert(this Brain Brain, Predicate<IAlert> Predicate)
+            => Brain?.Goals?.Items is List<GoalHandler> goalHandlers
+            && goalHandlers.Any(g
+                => g is IAlert gAlert
+                && (Predicate == null
+                    || Predicate(gAlert)));
+
+        public static IAlert FindAlert(this Brain Brain, IAlert Alert)
             => Brain.FindGoal(Alert.GetType()) as IAlert;
 
         #endregion

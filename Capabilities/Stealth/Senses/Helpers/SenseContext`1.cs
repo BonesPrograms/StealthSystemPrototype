@@ -9,16 +9,19 @@ using XRL.World.AI.Pathfinding;
 
 namespace StealthSystemPrototype.Senses
 {
-    public class SenseContext<T> : SenseContext
-        where T : ISense<T>, new()
+    public class SenseContext<TSense> : SenseContext
+        where TSense : ISense<TSense>, new()
     {
-        public SenseContext(IPerception<T> Perception, GameObject Entity)
-            : base()
+        public IPerception<TSense> TypedPerception
         {
-            this.Perception = Perception;
-            this.Entity = Entity;
-            InRadius = this.Perception.CheckInRadius(Entity, out _Distance, out _PerceptionPath);
-            Roll = this.Perception.Roll(Entity);
+            get => Perception as IPerception<TSense>;
+            protected set => Perception = value;
+        }
+
+        public SenseContext(int Intensity, IPerception<TSense> Perception, GameObject Hider)
+            : base(Perception, Hider)
+        {
+            this.Intensity = Intensity;
         }
     }
 }

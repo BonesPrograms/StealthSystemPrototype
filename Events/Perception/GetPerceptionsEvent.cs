@@ -105,7 +105,7 @@ namespace StealthSystemPrototype.Events
 
             Perceptions ??= new PerceptionRack(Perceiver);
 
-            if (!Perceptions.TryGet<IPerception<TSense>, TSense>(out IPerception<TSense> perception))
+            if (!Perceptions.TryGet(out IPerception<TSense> perception))
             {
                 perception = Perception;
                 AddPerception(perception, DoRegistration: true, Creation);
