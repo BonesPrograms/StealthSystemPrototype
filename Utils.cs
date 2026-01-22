@@ -95,6 +95,7 @@ namespace StealthSystemPrototype
                 {
                     if (iSenseType.Namespace is string namespaceName
                         && !iSenseType.IsAbstract
+                        && !iSenseType.ContainsGenericParameters
                         && (!NamespaceLocked
                             || namespaceName == ISense.NAMESPACE))
                     {
@@ -103,7 +104,6 @@ namespace StealthSystemPrototype
                     }
                 }
             }
-
         }
 
         public static SortedDictionary<string, ISense> GetSenses()
@@ -116,7 +116,9 @@ namespace StealthSystemPrototype
             {
                 try
                 {
-                    if (ModManager.CreateInstance<ISense>(iSenseType) is ISense sense)
+                    if (!iSenseType.IsAbstract
+                        && !iSenseType.ContainsGenericParameters
+                        && ModManager.CreateInstance<ISense>(iSenseType) is ISense sense)
                     {
                         Debug.LogCritical(YehNah(true) + " " + iSenseType?.ToStringWithGenerics(), Indent: indent);
                         senseList.Add(sense);
@@ -133,7 +135,9 @@ namespace StealthSystemPrototype
                 }
             }
 
-            senseList.OrderInPlace((s1, s2) => s2.Order.CompareTo(s1.Order));
+            if (!senseList.IsNullOrEmpty()
+                && senseList.Count > 1)
+                senseList.OrderInPlace((s1, s2) => s2.Order.CompareTo(s1.Order));
 
             foreach (ISense sense in senseList)
                 output[sense.Name] = sense;

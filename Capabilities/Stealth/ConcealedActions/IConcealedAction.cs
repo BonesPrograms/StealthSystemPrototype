@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using StealthSystemPrototype.Senses;
 
 using XRL.Collections;

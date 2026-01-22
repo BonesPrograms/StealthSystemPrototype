@@ -169,7 +169,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     x: new InnerArrayNullException(nameof(Items)),
                     category: GAME_MOD_EXCEPTION);
 
-            return this?.Aggregate("", (a, n) => AggregatePerceptionSense(a, n, Delimiter, Short, Entity, Sense));
+            IPerception[] items = new IPerception[Count];
+            Array.Copy(Items, items, Count);
+            return items?.Aggregate("", (a, n) => AggregatePerceptionSense(a, n, Delimiter, Short, Entity, Sense));
         }
 
         public virtual string ToString(

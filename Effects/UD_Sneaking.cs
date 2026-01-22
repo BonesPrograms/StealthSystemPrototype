@@ -13,9 +13,9 @@ using SerializeField = UnityEngine.SerializeField;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
-using StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
-using static StealthSystemPrototype.Capabilities.Stealth.Sneak.SneakPerformance;
+using static StealthSystemPrototype.Capabilities.Stealth.SneakPerformance;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Senses;
 
@@ -37,6 +37,8 @@ namespace XRL.World.Effects
                 new Olfactory(5),
             } },
         };
+
+        public GameObject Source;
 
         public SneakPerformance SneakPerformance => Object?.GetPart<UD_Sneak>()?.SneakPerformance;
 
@@ -60,6 +62,7 @@ namespace XRL.World.Effects
 
         public UD_Sneaking()
         {
+            Source = null;
             DisplayName = DISPLAY_NAME;
             Duration = DURATION_INDEFINITE;
             IsMoveSpeedMultiplierApplied = false;
@@ -68,6 +71,12 @@ namespace XRL.World.Effects
             AppliedQuicknessMultiplierAmount = 0;
             IsBeingPerceived = false;
             _DetailsEntries = null;
+        }
+
+        public UD_Sneaking(GameObject Source)
+            : this()
+        {
+            this.Source = Source;
         }
 
         #region Serialization

@@ -16,7 +16,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Senses;
 using static StealthSystemPrototype.Utils;
 
-namespace StealthSystemPrototype.Capabilities.Stealth.Sneak
+namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [HasModSensitiveStaticCache]
     [HasGameBasedStaticCache]

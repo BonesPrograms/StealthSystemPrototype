@@ -25,6 +25,8 @@ namespace XRL.World.Parts
 
         public PerceptionRack Perceptions => ParentObject?.GetPerceptions();
 
+        public SneakerRack ZoneSneakers;
+
         #region Debugging
 
         public IPerception BestPerception => PerceptionHelper?.BestPerception;
@@ -41,6 +43,7 @@ namespace XRL.World.Parts
 
         public UD_Witness()
         {
+            ZoneSneakers = null;
         }
 
         #region Serialization
@@ -57,6 +60,12 @@ namespace XRL.World.Parts
         }
 
         #endregion
+
+        public override void Initialize()
+        {
+            ZoneSneakers = new(ParentObject);
+            base.Initialize();
+        }
 
         public void ClearPerceptions()
             => PerceptionHelper.SyncPerceptions();

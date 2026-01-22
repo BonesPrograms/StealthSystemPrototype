@@ -15,13 +15,13 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 namespace XRL.World.Parts
 {
     [HasWishCommand]
     [Serializable]
-    public class UD_Sneak : IScribedPart, ISneakEventHandler
+    public class UD_Sneak : IScribedPart//, ISneakSource
     {
         public static string SUPPORT_TYPE => nameof(UD_Sneak);
         public static string COMMAND_SNEAK => "CommandToggleSneaking";
@@ -36,7 +36,8 @@ namespace XRL.World.Parts
             protected set => _SneakPerformance = value;
         }
 
-        public Guid ActivatedAbilityID;
+        private Guid _SneakActivatedAbilityID;
+        public Guid SneakActivatedAbilityID => _SneakActivatedAbilityID;
 
         [SerializeField]
         private bool WantRecalc;
@@ -44,13 +45,13 @@ namespace XRL.World.Parts
         public UD_Sneak()
         {
             SneakPerformance = null;
-            ActivatedAbilityID = Guid.Empty;
+            _SneakActivatedAbilityID = Guid.Empty;
             WantRecalc = false;
         }
 
         public override void Remove()
         {
-            RemoveMyActivatedAbility(ref ActivatedAbilityID);
+            RemoveMyActivatedAbility(ref _SneakActivatedAbilityID);
             base.Remove();
         }
 
@@ -73,17 +74,17 @@ namespace XRL.World.Parts
 
             bool removed = false;
             if (ParentObject.GetActivatedAbilityByCommand(COMMAND_SNEAK) is ActivatedAbilityEntry abilityEntry
-                && abilityEntry.ID != ActivatedAbilityID)
+                && abilityEntry.ID != SneakActivatedAbilityID)
             {
-                removed = RemoveMyActivatedAbility(ref ActivatedAbilityID) || removed;
+                removed = RemoveMyActivatedAbility(ref _SneakActivatedAbilityID) || removed;
                 removed = RemoveMyActivatedAbility(ref abilityEntry.ID) || removed;
 
                 ParentObject.RemoveAllEffects<UD_Sneaking>();
             }
 
-            if (ActivatedAbilityID == Guid.Empty)
+            if (SneakActivatedAbilityID == Guid.Empty)
             {
-                ActivatedAbilityID = AddMyActivatedAbility(
+                _SneakActivatedAbilityID = AddMyActivatedAbility(
                     Name: "Sneak",
                     Command: COMMAND_SNEAK,
                     Class: "Maneuvers",
@@ -107,13 +108,13 @@ namespace XRL.World.Parts
             && ParentObject.CanChangeMovementMode("sneak", ShowMessage: true)
             && ParentObject.CheckNotOnWorldMap("sneak", ShowMessage: true)
             && ParentObject.ApplyEffect(new UD_Sneaking())
-            && ToggleMyActivatedAbility(ActivatedAbilityID, SetState: true);
+            && ToggleMyActivatedAbility(SneakActivatedAbilityID, SetState: true);
             // CooldownMyActivatedAbility(ActivatedAbilityID, 100, null, "Intelligence");
 
         public bool StopSneaking()
             => IsSneaking()
             && ParentObject.RemoveAllEffects<UD_Sneaking>() > 0
-            && ToggleMyActivatedAbility(ActivatedAbilityID, SetState: false);
+            && ToggleMyActivatedAbility(SneakActivatedAbilityID, SetState: false);
 
         public bool ToggleSneaking()
             => !IsSneaking()
