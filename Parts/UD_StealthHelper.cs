@@ -97,7 +97,7 @@ namespace XRL.World.Parts
                 Debug.Log("<UD_Steath debug toggle witnesses>", Indent: indent[0]);
                 // GetWitnesses();
                 Debug.Log(
-                    Field: ParentObject.MiniDebugName() + " Witnesses",
+                    Label: ParentObject.MiniDebugName() + " Witnesses",
                     Value: "\n" + WitnessListString("\n", s => " ".ThisManyTimes(4) + s),
                     Indent: indent[0]);
                 Debug.Log("</UD_Steath debug toggle witnesses>", Indent: indent[0]);

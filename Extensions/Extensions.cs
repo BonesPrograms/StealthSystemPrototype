@@ -347,6 +347,7 @@ namespace StealthSystemPrototype
 
         #endregion
         #region Strings
+
         public static string MiniDebugName(this GameObject Object)
             => (Object?.ID ?? "#") + ":" + (Object?.GetReferenceDisplayName(WithoutTitles: true, Short: true)?.Strip() ?? "no one");
 

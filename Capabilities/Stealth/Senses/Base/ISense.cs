@@ -20,7 +20,7 @@ namespace StealthSystemPrototype.Senses
         private static SortedDictionary<string, ISense> _SortedSenses;
         public static SortedDictionary<string, ISense> SortedSenses => _SortedSenses ??= GetSenses();
 
-        public static string NAMESPACE => "StealthSystemPrototype.Senses";
+        public static string NAMESPACE => typeof(ISense).Namespace;
 
         public virtual int Order => 0;
 

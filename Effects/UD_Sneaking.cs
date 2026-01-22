@@ -100,6 +100,15 @@ namespace XRL.World.Effects
 
         public override bool Apply(GameObject Object)
         {
+            UD_StealthHelper stealthHelperPart = Object.RequirePart<UD_StealthHelper>();
+            string abortedByEventMessage = null;
+            if (!BeforeSneakEvent.Check(Object, SneakPerformance, ref stealthHelperPart.Witnesses, ref abortedByEventMessage))
+            {
+                if (!abortedByEventMessage.IsNullOrEmpty())
+                    return Object.ShowFailure(abortedByEventMessage);
+                return false;
+            }
+
             if (Object.HasEffect<UD_Sneaking>()
                 && !Object.CanChangeMovementMode(VERBING)
                 && !Object.FireEvent(Event.New(nameof(Apply) + nameof(UD_Sneaking), "Effect", this)))

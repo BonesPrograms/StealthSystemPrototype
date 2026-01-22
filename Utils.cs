@@ -12,13 +12,16 @@ using Range = System.Range;
 
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Perceptions;
-using static StealthSystemPrototype.Const;
 using StealthSystemPrototype.Senses;
+
+using static StealthSystemPrototype.Const;
+
+using Debug = StealthSystemPrototype.Logging.Debug;
 
 namespace StealthSystemPrototype
 {
-    [HasGameBasedStaticCache]
     [HasModSensitiveStaticCache]
+    [HasGameBasedStaticCache]
     public static class Utils
     {
         #region Debug
@@ -70,24 +73,65 @@ namespace StealthSystemPrototype
         #endregion
         #region Senses
 
+        [ModSensitiveStaticCache]
+        private static IEnumerable<Type> _SenseTypesCache = null;
+        public static IEnumerable<Type> SenseTypesCache = _SenseTypesCache ??= GetSenseTypes();
+
         public static IEnumerable<Type> GetSenseTypes(bool NamespaceLocked = true)
         {
+            if (_SenseTypesCache != null
+                && NamespaceLocked)
+            {
+                foreach (Type cachedSenseType in SenseTypesCache)
+                    yield return cachedSenseType;
+
+                yield break;
+            }
+
             if (ModManager.GetTypesAssignableFrom(typeof(ISense)) is List<Type> iSenseTypes)
+            {
+                using Indent indent = new();
                 foreach (Type iSenseType in iSenseTypes)
-                    if (iSenseType.Name is string typeName
-                        && iSenseType.AssemblyQualifiedName[..^(typeName.Length + 1)] is string namespaceName
+                {
+                    if (iSenseType.Namespace is string namespaceName
+                        && !iSenseType.IsAbstract
                         && (!NamespaceLocked
                             || namespaceName == ISense.NAMESPACE))
+                    {
+                        Debug.LogCritical(iSenseType?.ToStringWithGenerics(), namespaceName, Indent: indent);
                         yield return iSenseType;
+                    }
+                }
+            }
+
         }
 
         public static SortedDictionary<string, ISense> GetSenses()
         {
+            using Indent indent = new();
+            Debug.LogCritical(nameof(GetSenses), Indent: indent);
             SortedDictionary<string, ISense> output = new();
             List<ISense> senseList = new();
             foreach (Type iSenseType in GetSenseTypes())
-                if (ModManager.CreateInstance<ISense>(iSenseType.AssemblyQualifiedName) is ISense sense)
-                    senseList.Add(sense);
+            {
+                try
+                {
+                    if (ModManager.CreateInstance<ISense>(iSenseType) is ISense sense)
+                    {
+                        Debug.LogCritical(YehNah(true) + " " + iSenseType?.ToStringWithGenerics(), Indent: indent);
+                        senseList.Add(sense);
+                    }
+                    else
+                        Debug.LogCritical(YehNah(false) + " " + iSenseType?.ToStringWithGenerics(), Indent: indent);
+                }
+                catch (Exception x)
+                {
+                    MetricsManager.LogModError(
+                        mod: ModManager.GetMod(iSenseType.Assembly),
+                        Message: CallChain(nameof(Utils), nameof(GetSenses)) + ": " +
+                            iSenseType.ToStringWithGenerics() + " didn't like being constructed.\n" + x);
+                }
+            }
 
             senseList.OrderInPlace((s1, s2) => s2.Order.CompareTo(s1.Order));
 

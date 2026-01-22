@@ -24,6 +24,17 @@ namespace StealthSystemPrototype.Logging
     [HasWishCommand]
     public static class Debug
     {
+        #region Debug Registration
+        [UD_DebugRegistry]
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+            => Registry.RegisterEachTrue(
+                Type: typeof(StealthSystemPrototype.Logging.Debug),
+                Methods: new string[]
+                {
+                    nameof(LogCritical),
+                });
+        #endregion
+
         public static bool SilenceLogging = false;
 
         public static void SetSilenceLogging(bool Value)
@@ -173,22 +184,28 @@ namespace StealthSystemPrototype.Logging
             return false;
         }
 
-        public static Indent Log<T>(string Field, T Value, Indent Indent = null, [CallerMemberName] string CallingMethod = "")
+        public static Indent LogCritical<T>(string Label, T Value, Indent Indent = null)
         {
-            if (!DebugMethodRegistry.GetDoDebug(CallingMethod))
-            {
-                return Indent;
-            }
             Indent ??= LastIndent;
-            string output = Field;
+            string output = Label;
             if (Value != null &&
                 !Value.ToString().IsNullOrEmpty())
-            {
                 output += ": " + Value;
-            }
+
             UnityEngine.Debug.Log(Indent.ToString() + output);
             return Indent;
         }
+        public static Indent LogCritical(string Message, Indent Indent = null)
+            => LogCritical(Message, (string)null, Indent);
+
+        public static Indent Log<T>(string Label, T Value, Indent Indent = null, [CallerMemberName] string CallingMethod = "")
+        {
+            if (!DebugMethodRegistry.GetDoDebug(CallingMethod))
+                return Indent;
+
+            return LogCritical(Label, Value, Indent);
+        }
+
         public static Indent Log(string Message, Indent Indent = null, [CallerMemberName] string CallingMethod = "")
             => Log(Message, (string)null, Indent, CallingMethod);
 
@@ -425,7 +442,7 @@ namespace StealthSystemPrototype.Logging
             if (Stop)
                 StopWatch.Stop();
             return Log(
-                Field: Message ?? StopWatch.Elapsed.ValueUnits(),
+                Label: Message ?? StopWatch.Elapsed.ValueUnits(),
                 Value: !Message.IsNullOrEmpty() ? StopWatch.Elapsed.ValueUnits() : null,
                 Indent: Indent,
                 CallingMethod: CallingMethod);

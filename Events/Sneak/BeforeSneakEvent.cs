@@ -19,12 +19,32 @@ namespace StealthSystemPrototype.Events
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
+        public string Message;
+
         public BeforeSneakEvent()
             : base()
         {
         }
 
-        public static bool Send(GameObject Hider, SneakPerformance Performance, ref List<GameObject> Witnesses)
+        public override void Reset()
+        {
+            base.Reset();
+            Message = null;
+        }
+
+        public override Event GetStringyEvent()
+            => base.GetStringyEvent()
+                ?.SetParameterOrNullExisting(nameof(Message), Message)
+                ;
+        public override void UpdateFromStringyEvent()
+        {
+            base.UpdateFromStringyEvent();
+
+            if (StringyEvent?.GetParameter(nameof(Message)) is string message)
+                Message = message;
+        }
+
+        public static bool Check(GameObject Hider, SneakPerformance Performance, ref List<GameObject> Witnesses, ref string Message)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -34,24 +54,35 @@ namespace StealthSystemPrototype.Events
                 });
 
             if (!GameObject.Validate(ref Hider)
-                || Process(
+                || FromPool(
                     Hider: Hider,
-                    Performance: null, 
+                    Performance: Performance,
                     Witnesses: ref Witnesses,
-                    Success: out bool success) is not BeforeSneakEvent E
-                || !success
-                || E.Witnesses.IsNullOrEmpty())
+                    CollectWitnesses: true) is not BeforeSneakEvent E)
                 return false;
-;
-            if (success)
-                success = E.Witnesses.FireEvent(E.StringyEvent, true);
 
-            if (success)
-                E.UpdateFromStringyEvent();
+            E.Message = Message;
+            E.GetStringyEvent();
 
-            if (success)
-                success = E.Witnesses.HandleEvent(E, true);
+            Process(E, Success: out bool success);
+            if (!success)
+            {
+                Message = E.Message;
+                return false;
+            }
+            else
+            if (!E.Witnesses.IsNullOrEmpty())
+            {
+                if (success)
+                    success = E.Witnesses.FireEvent(E.StringyEvent, true);
 
+                if (success)
+                    E.UpdateFromStringyEvent();
+
+                if (success)
+                    success = E.Witnesses.HandleEvent(E, true);
+            }
+            Message = E.Message;
             return success;
         }
     }
