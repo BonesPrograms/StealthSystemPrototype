@@ -12,6 +12,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public abstract class IConcealedAction : Rack<ISense>
     {
+        public GameObject Actor;
+
         public int MinID;
         public string ID;
         public string Name;
@@ -24,6 +26,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         protected IConcealedAction()
         {
+            Actor = null;
+
             MinID = 0;
             ID = null;
             Name = null;

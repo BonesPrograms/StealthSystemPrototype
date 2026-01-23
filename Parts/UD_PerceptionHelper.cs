@@ -24,6 +24,7 @@ namespace XRL.World.Parts
         : IScribedPart
         , IPerceptionEventHandler
         , IAlertEventHandler
+        , ISneakEventHandler
     {
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
@@ -228,6 +229,7 @@ namespace XRL.World.Parts
                     GetPerceptionsEvent.ID,
                     GetPerceptionDieRollEvent.ID,
                     GetPerceptionRadiusEvent.ID,
+                    TryConcealActionEvent.ID,
                     AfterAlertEvent.ID,
                     GetDebugInternalsEvent.ID,
                 }))
@@ -398,6 +400,16 @@ namespace XRL.World.Parts
                 else
                 if (facesList.Count < 1)
                     E.SetMaxRadius(0);
+            }
+            return base.HandleEvent(E);
+        }
+        public virtual bool HandleEvent(TryConcealActionEvent E)
+        {
+            if (E.Hider != ParentObject
+                && !E.Hider.InSamePartyAs(ParentObject)
+                && !Perceptions.IsNullOrEmpty())
+            {
+                Perceptions.Sense(E.ConcealedAction, E.Hider);
             }
             return base.HandleEvent(E);
         }

@@ -23,5 +23,13 @@ namespace StealthSystemPrototype.Senses
         {
             this.Intensity = Intensity;
         }
+        public SenseContext(SenseContext Source)
+            : base(Source)
+        {
+        }
+        public SenseContext(SenseContext<TSense> Source)
+            : this(Source as SenseContext)
+        {
+        }
     }
 }

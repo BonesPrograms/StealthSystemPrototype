@@ -61,7 +61,7 @@ namespace StealthSystemPrototype.Senses
             Diffusion = default;
         }
         public SenseContext(IPerception Perception, GameObject Hider)
-            : base()
+            : this()
         {
             this.Perception = Perception;
             this.Hider = Hider;
@@ -69,6 +69,11 @@ namespace StealthSystemPrototype.Senses
             Roll = this.Perception.Roll(Hider);
             Diffusions = Radius.Diffusions();
             Diffusion = Radius.GetDiffusion(Distance);
+        }
+        public SenseContext(SenseContext Source)
+            : this(Source.Perception, Source.Hider)
+        {
+            Intensity = Source.Intensity;
         }
     }
 }

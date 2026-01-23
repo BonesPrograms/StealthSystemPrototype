@@ -26,6 +26,7 @@ namespace StealthSystemPrototype.Perceptions
         : IComponent<GameObject>
         , IWitnessEventHandler
         , IPerceptionEventHandler
+        , ISneakEventHandler
         , IAlertEventHandler
     {
         #region Helpers
@@ -111,6 +112,7 @@ namespace StealthSystemPrototype.Perceptions
         private string _ShortName;
         public string ShortName => _ShortName ??= GetName(true);
 
+        [NonSerialized]
         public GameObject Owner;
 
         private Type _Sense;
@@ -189,6 +191,7 @@ namespace StealthSystemPrototype.Perceptions
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
+            Writer.WriteGameObject(Owner);
             ClampedDieRoll.WriteOptimized(Writer, BaseDieRoll);
             Radius.WriteOptimized(Writer, BaseRadius);
             ClampedDieRoll.WriteOptimized(Writer, DieRoll);
@@ -197,6 +200,7 @@ namespace StealthSystemPrototype.Perceptions
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
+            Owner = Reader.ReadGameObject();
             BaseDieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
             BaseRadius = Radius.ReadOptimizedRadius(Reader);
             _DieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
@@ -325,6 +329,18 @@ namespace StealthSystemPrototype.Perceptions
             => true;
 
         public virtual bool HandleEvent(GetPerceptionRadiusEvent E)
+            => true;
+
+        public virtual bool HandleEvent(BeforeSneakEvent E)
+            => true;
+
+        public virtual bool HandleEvent(GetSneakPerformanceEvent E)
+            => true;
+
+        public virtual bool HandleEvent(GetSneakDetailsEvent E)
+            => true;
+
+        public virtual bool HandleEvent(TryConcealActionEvent E)
             => true;
 
         public virtual bool HandleEvent(BeforeAlertEvent E)
@@ -562,19 +578,28 @@ namespace StealthSystemPrototype.Perceptions
             return min;
         }
 
-        public bool RaiseAlert<TSense, TAlert>(SenseContext<TSense> Context, ISense<TSense> Sense, AwarenessLevel Level)
+        public bool RaiseAlert<TSense, TAlert>(SenseContext<TSense> Context, ISense<TSense> Sense, AwarenessLevel Level, bool? OverridesCombat = null)
             where TSense : ISense<TSense>, new()
-            where TAlert : IAlert<IPerception<TSense>, TSense>
+            where TAlert : IAlert<IPerception<TSense>, TSense>, new()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Owner), Owner.MiniDebugName()),
+                    Debug.Arg(nameof(Sense), Sense?.Name ?? "NO_SENSE"),
+                    Debug.Arg(nameof(Level), Level.ToStringWithNum()),
+                    Debug.Arg(YehNah(OverridesCombat), nameof(OverridesCombat)),
+                });
+
             if ((Context?.Perceiver?.Brain?.FindAlert(Context?.TypedPerception)?.Level ?? AwarenessLevel.None) > Level)
                 return false;
 
-            if (IAlert<IPerception<TSense>, TSense>.NewFromContext<TAlert>(Context, Sense, Level) is TAlert alert
-                && BeforeAlertEvent.CheckHider<TSense, TAlert>(Context.Hider, ref alert)
-                && BeforeAlertEvent.CheckPerceiver<TSense, TAlert>(Context.Perceiver, ref alert))
+            if (IAlert<IPerception<TSense>, TSense>.NewFromContext(Context, Sense, Level, OverridesCombat) is IAlert<IPerception<TSense>, TSense> alert
+                && BeforeAlertEvent.CheckHider(Context.Hider, ref alert)
+                && BeforeAlertEvent.CheckPerceiver(Context.Perceiver, ref alert))
             {
                 Context.Perceiver?.Brain.PushGoal(alert);
-                AfterAlertEvent.Send<TSense, TAlert>(Context.Hider, Context.Perceiver, alert);
                 return true;
             }
             return false;

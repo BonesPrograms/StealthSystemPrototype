@@ -21,24 +21,16 @@ namespace StealthSystemPrototype.Alerts
     {
         #region Constructors
 
-        protected IAlert()
+        public IAlert()
             : base()
         {
         }
-        protected IAlert(T Perception, TSense Sense, AwarenessLevel Level, AlertSource Source)
-            : base(Perception, Sense, Level, Source)
+        protected IAlert(T Perception, TSense Sense, AwarenessLevel Level, bool OverridesCombat, AlertSource Source)
+            : base(Perception, Sense, Level, OverridesCombat, Source)
         {
         }
-        public IAlert(T Perception, TSense Sense, AwarenessLevel Level, Cell SourceCell)
-            : base(Perception, Sense, Level, SourceCell)
-        {
-        }
-        public IAlert(T Perception, TSense Sense, AwarenessLevel Level, GameObject SourceObject)
-            : base(Perception, Sense, Level, SourceObject)
-        {
-        }
-        public IAlert(SenseContext<TSense> Context, ISense Sense, AwarenessLevel Level)
-            : base(Context, Sense, Level)
+        public IAlert(SenseContext<TSense> Context, ISense Sense, AwarenessLevel Level, bool OverridesCombat)
+            : base(Context, Sense, Level, OverridesCombat)
         {
         }
         public IAlert(IAlert<T, TSense> Source)
@@ -48,12 +40,21 @@ namespace StealthSystemPrototype.Alerts
 
         #endregion
 
+        public override void Create()
+        {
+            base.Create();
+            AfterAlertEvent.Send(SourceObject, ParentObject, this);
+        }
+
         public override IAlert Copy()
             => new IAlert<T, TSense>(this);
 
-        public static TAlert NewFromContext<TAlert>(SenseContext<TSense> Context, ISense Sense, AwarenessLevel Level)
-            where TAlert : IAlert<T, TSense>
-            => new IAlert<T, TSense>(Context, Sense, Level) as TAlert;
+        public static IAlert<T, TSense> NewFromContext(SenseContext<TSense> Context, ISense Sense, AwarenessLevel Level, bool? OverridesCombat = null)
+            => new IAlert<T, TSense>()
+                .FromSenseContext<T, TSense>(Context)
+                .SetSense<T, TSense>(Sense)
+                .SetAwarenessLevel<T, TSense>(Level)
+                .SetOverridesCombat<T, TSense>(OverridesCombat);
 
         public static TAlert Copy<TAlert>(TAlert SourceAlert)
             where TAlert : IAlert<T, TSense>

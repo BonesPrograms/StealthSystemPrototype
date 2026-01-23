@@ -31,9 +31,9 @@ namespace StealthSystemPrototype.Events
         public override void UpdateFromStringyEvent()
             =>base.UpdateFromStringyEvent();
 
-        public static bool CheckHider<TSense, TAlert>(GameObject Hider, ref TAlert Alert)
+        public static bool CheckHider<T, TSense>(GameObject Hider, ref IAlert<T, TSense> Alert)
+            where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
-            where TAlert : IAlert<IPerception<TSense>, TSense>
         {
             if (Process(
                 E: HiderFromPool(
@@ -43,13 +43,13 @@ namespace StealthSystemPrototype.Events
                 || !success)
                 return false;
 
-            Alert = E.Alert as TAlert;
+            Alert = E.Alert as IAlert<T, TSense>;
             return true;
         }
 
-        public static bool CheckPerceiver<TSense, TAlert>(GameObject Perceiver, ref TAlert Alert)
+        public static bool CheckPerceiver<T, TSense>(GameObject Perceiver, ref IAlert<T, TSense> Alert)
+            where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
-            where TAlert : IAlert<IPerception<TSense>, TSense>
         {
             if (Process(
                 E: PerceiverFromPool(
@@ -59,7 +59,7 @@ namespace StealthSystemPrototype.Events
                 || !success)
                 return false;
 
-            Alert = E.Alert as TAlert;
+            Alert = E.Alert as IAlert<T, TSense>;
             return true;
         }
     }

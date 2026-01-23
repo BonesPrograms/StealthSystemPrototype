@@ -158,9 +158,9 @@ namespace StealthSystemPrototype.Perceptions
 
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
-            // || ID == EnteredCellEvent.ID
+            // || ID == TryConcealActionEvent.ID
             ;
-        public override bool HandleEvent(EnteredCellEvent E)
+        public override bool HandleEvent(TryConcealActionEvent E)
         {
             // placeholder of the base
             return base.HandleEvent(E);

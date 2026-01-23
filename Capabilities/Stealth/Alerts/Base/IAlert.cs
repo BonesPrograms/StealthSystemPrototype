@@ -20,7 +20,7 @@ using StealthSystemPrototype.Logging;
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public abstract class IAlert : GoalHandler//, IComparable<BaseAlert>
+    public abstract class IAlert : GoalHandler, IComposite//, IComparable<BaseAlert>
     {
         [Serializable]
         protected class AlertSource : IComposite
@@ -55,7 +55,7 @@ namespace StealthSystemPrototype.Alerts
 
             #region Constructors
 
-            private AlertSource()
+            public AlertSource()
             {
                 ParentAlert = null;
                 _Object = null;
@@ -80,6 +80,15 @@ namespace StealthSystemPrototype.Alerts
             public AlertSource(IAlert ParentAlert, SenseContext Context)
                 : this(ParentAlert, Context.Perceiver, Context.Perceiver?.CurrentCell)
             {
+            }
+            public AlertSource(AlertSource Source)
+                : this(Source.ParentAlert, Source.Object, Source.Cell)
+            {
+            }
+            public AlertSource(IAlert ParentAlert)
+                : this(ParentAlert.Source)
+            {
+                SetParentAlert(ParentAlert);
             }
 
             public AlertSource SetParentAlert(IAlert Alert)
@@ -134,6 +143,30 @@ namespace StealthSystemPrototype.Alerts
                 => (Object = GetObject()) != null;
         }
 
+        [Serializable]
+        public struct AlertGrammar : IComposite
+        {
+            public string Verb;
+            public string Verbed;
+            public string Verbing;
+
+            public AlertGrammar(string Verb, string Verbed, string Verbing)
+            {
+                this.Verb = Verb;
+                this.Verbed = Verbed;
+                this.Verbing = Verbing;
+            }
+        }
+
+        public string Name => GetType().ToStringWithGenerics();
+
+        private AlertGrammar _Grammar;
+        public AlertGrammar Grammar
+        {
+            get => _Grammar;
+            protected set => _Grammar = value;
+        }
+
         public IPerception Perception;
 
         public ISense Sense;
@@ -142,6 +175,9 @@ namespace StealthSystemPrototype.Alerts
 
         public AwarenessLevel Level;
 
+        public bool OverridesCombat;
+
+        [NonSerialized]
         protected AlertSource Source;
 
         public GameObject SourceObject => Source?.GetObject();
@@ -158,40 +194,104 @@ namespace StealthSystemPrototype.Alerts
             Sense = null;
             Origin = null;
             Level = AwarenessLevel.None;
+            OverridesCombat = false;
             Source = null;
         }
-        protected IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, AlertSource Source)
+        protected IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, bool OverridesCombat, AlertSource Source)
             : this()
         {
             this.Perception = Perception;
             this.Sense = Sense;
             Origin = Perception.Owner.CurrentCell;
             this.Level = Level;
+            this.OverridesCombat = OverridesCombat;
             this.Source = Source?.SetParentAlert(this);
         }
-        public IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, Cell SourceCell)
-            : this(Perception, Sense, Level, (AlertSource)null)
-        {
-            Source = new AlertSource(this, SourceCell);
-        }
-        public IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, GameObject SourceObject)
-            : this(Perception, Sense, Level, (AlertSource)null)
-        {
-            Source = new AlertSource(this, SourceObject);
-        }
-        public IAlert(SenseContext Context, ISense Sense, AwarenessLevel Level)
-            : this(Context.Perception, Sense, Level, (AlertSource)null)
+        public IAlert(SenseContext Context, ISense Sense, AwarenessLevel Level, bool OverridesCombat)
+            : this(Context.Perception, Sense, Level, OverridesCombat, (AlertSource)null)
         {
             Source = new AlertSource(this, Context);
         }
         public IAlert(IAlert Source)
-            : this(Source.Perception, Source.Sense, Source.Level, Source.Source)
+            : this(Source.Perception, Source.Sense, Source.Level, Source.OverridesCombat, Source.Source)
         {
+        }
+
+        #endregion
+        #region Serialization
+
+        public virtual void Write(SerializationWriter Writer)
+        {
+            Writer.WriteComposite(Source);
+            Writer.WriteComposite(Grammar);
+        }
+        public virtual void Read(SerializationReader Reader)
+        {
+            Source = Reader.ReadComposite<AlertSource>();
+            Grammar = Reader.ReadComposite<AlertGrammar>();
         }
 
         #endregion
 
         public abstract IAlert Copy();
+
+        protected virtual IAlert<T, TSense> FromSenseContext<T, TSense>(SenseContext Context)
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
+            => Context != null
+            ? SetPerception<T, TSense>(Context.Perception)
+                .SetSource<T, TSense>(new AlertSource(this, Context))
+            : throw new ArgumentNullException(nameof(Context), "Cannot configure " + Name + " with null " + nameof(SenseContext) + ".");
+
+        protected virtual IAlert<T, TSense> SetPerception<T, TSense>(IPerception Perception)
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
+        {
+            this.Perception = Perception
+                ?? throw New_ArgNullException(Perception, nameof(Perception));
+
+            Origin = Perception.Owner.CurrentCell;
+            return this as IAlert<T, TSense>;
+        }
+        protected virtual IAlert<T, TSense> SetSense<T, TSense>(ISense Sense)
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
+        {
+            this.Sense = Sense
+                ?? throw New_ArgNullException(Sense, nameof(Sense));
+
+            return this as IAlert<T, TSense>;
+        }
+        protected virtual IAlert<T, TSense> SetAwarenessLevel<T, TSense>(AwarenessLevel Level)
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
+        {
+            if (Level == AwarenessLevel.None)
+                throw new ArgumentOutOfRangeException(nameof(Level), Name + " requires an " + nameof(AwarenessLevel) + " greater than " + AwarenessLevel.None.ToStringWithNum() + " to function.");
+
+            this.Level = Level;
+            return this as IAlert<T, TSense>;
+        }
+        protected virtual IAlert<T, TSense> SetSource<T, TSense>(AlertSource Source)
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
+        {
+            this.Source = Source
+                ?? throw New_ArgNullException(Source, nameof(Source));
+
+            return this as IAlert<T, TSense>;
+        }
+        protected virtual IAlert<T, TSense> SetOverridesCombat<T, TSense>(bool? OverridesCombat)
+            where T : IPerception<TSense>, new()
+            where TSense : ISense<TSense>, new()
+        {
+            if (OverridesCombat.HasValue)
+                this.OverridesCombat = OverridesCombat.GetValueOrDefault();
+
+            return this as IAlert<T, TSense>;
+        }
+        protected ArgumentNullException New_ArgNullException<T>(T Param, string ParamName)
+            => new(ParamName, Name + " requires an " + Param.GetType().ToStringWithGenerics() + " to function.");
 
         public static bool ValidateAlert(IAlert Alert)
             => Alert != null
@@ -221,6 +321,20 @@ namespace StealthSystemPrototype.Alerts
                     Debug.Arg(ParentObject?.MiniDebugName()),
                     Debug.Arg(Perception?.ToString(Short: true, SourceObject)),
                 });
+        }
+
+        public override bool CanFight()
+            => !OverridesCombat;
+
+        public override bool Finished()
+            => !IsValid;
+
+        public override void TakeAction()
+        {
+            if (!IsValid)
+                FailToParent();
+
+            base.TakeAction();
         }
     }
 }

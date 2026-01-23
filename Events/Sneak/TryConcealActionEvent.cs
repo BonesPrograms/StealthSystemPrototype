@@ -52,6 +52,8 @@ namespace StealthSystemPrototype.Events
 
             E.ConcealedAction = ConcealedAction;
 
+            E.GetStringyEvent();
+
             Process(E, Success: out bool success);
 
             if (success)

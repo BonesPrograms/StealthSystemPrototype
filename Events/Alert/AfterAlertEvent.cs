@@ -31,9 +31,9 @@ namespace StealthSystemPrototype.Events
         public override void UpdateFromStringyEvent()
             =>base.UpdateFromStringyEvent();
 
-        public static void Send<TSense, TAlert>(GameObject Perceiver, GameObject Hider, TAlert Alert)
+        public static void Send<T, TSense>(GameObject Perceiver, GameObject Hider, IAlert<T, TSense> Alert)
+            where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
-            where TAlert : IAlert<IPerception<TSense>, TSense>
         {
             if (FromPool(
                     Perceiver: Perceiver,

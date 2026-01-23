@@ -154,21 +154,21 @@ namespace StealthSystemPrototype
         private static string LastIndent(int Offset = 0)
         {
             using Indent indent = new(Offset);
-            return " ".ThisManyTimes(indent);
+            return indent.ToString();
         }
         private static string IndentOrComma(bool Comma, int Offset = 0)
             => Comma 
-            ? ", "
+            ? ","
             : LastIndent(Offset);
 
         public virtual string ToString(bool Short, bool Inline, string FormatString = "{0:0.00}")
             => GetName(Short) +
-            "()" + (Inline ? null : "\n" + LastIndent()) + "{ " + (Inline ? null : "\n" + LastIndent(1)) +
+            "()" + (Inline ? null : "\n" + LastIndent()) + "{" + (Inline ? " " : "\n" + LastIndent(1)) +
             GetStepValues()
                 ?.Aggregate(
                     seed: "",
-                    func: (a, n) => a + (!a.IsNullOrEmpty() ? IndentOrComma(Inline, 1) : null) + String.Format(FormatString, n)) +
-            (Inline ? null : "\n" + LastIndent()) + " }";
+                    func: (a, n) => a + (!a.IsNullOrEmpty() ? IndentOrComma(Inline, 1) + (Inline ? " " : "\n") : null) + String.Format(FormatString, n)) +
+            (Inline ? " " : "\n" + LastIndent()) + "}";
 
         public virtual string ToString(bool Short, string FormatString = "{0:0.00}")
             => ToString(Short, true, FormatString);

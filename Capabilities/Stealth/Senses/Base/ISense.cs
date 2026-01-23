@@ -67,7 +67,13 @@ namespace StealthSystemPrototype.Senses
         public abstract AwarenessLevel Sense<T>(SenseContext<T> Context)
             where T : ISense<T>, new();
 
+        public abstract bool TrySense<T>(SenseContext<T> Context)
+            where T : ISense<T>, new();
+
         protected abstract ISense Copy();
+
+        public virtual bool TrySense(SenseContext Context)
+            => false;
 
         public static ISense Copy(ISense Sense)
             => Sense.Copy();

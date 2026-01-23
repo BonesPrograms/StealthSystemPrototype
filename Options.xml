@@ -6,6 +6,21 @@
   
   -->
   <option
+        ID="Option_Bones_PrototypeStealthSystem_DebugEnableTestKit"
+        DisplayText="Prototype {{K|Stealth}} System {{K|(development)}}: Start with the &quot;Test Kit&quot; for this mod."
+        Category="Debug"
+        Type="Checkbox"
+        Default="No">
+    <helptext>
+      When enabled, the player will start each run with the mod's &quot;Test Kit&quot;, which is just a mutation with the ability to raise the dead at will (with the ability to force them to join you), summon random corpses, and assess corpses for what they might have been in life.
+
+      This kit is stupidly overpowered and shouldn't really be used to actually play with.
+
+      The default is {{w|Disabled}}.
+    </helptext>
+  </option>
+  
+  <option
         ID="Option_Bones_PrototypeStealthSystem_DebugEnableLogging"
         DisplayText="Prototype {{K|Stealth}} System {{K|(development)}}: Turn on debug logging for this mod."
         Category="Debug"

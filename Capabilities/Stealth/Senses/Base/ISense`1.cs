@@ -30,6 +30,10 @@ namespace StealthSystemPrototype.Senses
             : base(Source)
         {
         }
+        public ISense(ISense<TSense> Source)
+            : base(Source)
+        {
+        }
 
         public override int GetIntensity()
             => base.GetIntensity();
@@ -90,25 +94,34 @@ namespace StealthSystemPrototype.Senses
             return CalculateAwareness(Context);
         }
 
-        public virtual bool TrySense(SenseContext<TSense> Context)
+        public override bool TrySense<T>(SenseContext<T> Context)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Context), Context != null ? "not null" : "null"),
+                    Debug.Arg(nameof(Context.Perceiver), Context?.Perceiver?.MiniDebugName() ?? "NO_ONE"),
+                    Debug.Arg(nameof(T), typeof(T).ToStringWithGenerics()),
+                });
+
             AwarenessLevel level = Sense(Context);
             switch (level)
             {
                 case AwarenessLevel.Alert:
-                    Context.TypedPerception.RaiseAlert<TSense, Investigate<TSense>>(Context, this, level);
+                    Context.TypedPerception.RaiseAlert<T, Investigate<T>>(Context, this as T, level);
                     return true;
 
                 case AwarenessLevel.Aware:
-                    Context.TypedPerception.RaiseAlert<TSense, Investigate<TSense>>(Context, this, level);
+                    Context.TypedPerception.RaiseAlert<T, Investigate<T>>(Context, this as T, level);
                     return true;
 
                 case AwarenessLevel.Suspect:
-                    Context.TypedPerception.RaiseAlert<TSense, Investigate<TSense>>(Context, this, level);
+                    Context.TypedPerception.RaiseAlert<T, Investigate<T>>(Context, this as T, level);
                     return true;
 
                 case AwarenessLevel.Awake:
-                    Context.TypedPerception.RaiseAlert<TSense, Investigate<TSense>>(Context, this, level);
+                    Context.TypedPerception.RaiseAlert<T, Investigate<T>>(Context, this as T, level);
                     return true;
 
                 case AwarenessLevel.None:
@@ -116,6 +129,9 @@ namespace StealthSystemPrototype.Senses
                     return false;
             }
         }
+
+        public override bool TrySense(SenseContext Context)
+            => TrySense(new SenseContext<TSense>(Context));
 
         protected override ISense Copy()
             => new ISense<TSense>(this);

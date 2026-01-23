@@ -6,6 +6,7 @@ using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
+    [Serializable]
     public class DelayedLinearDoubleDiffuser : LinearDoubleDiffuser
     {
         [Serializable]

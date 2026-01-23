@@ -8,6 +8,7 @@ using static StealthSystemPrototype.Utils;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
+    [Serializable]
     public abstract class BaseDoubleDiffuser : SerializableSequence<double>
     {
         public double Amount;

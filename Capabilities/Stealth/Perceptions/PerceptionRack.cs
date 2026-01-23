@@ -504,6 +504,41 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return false;
         }
 
+        public virtual bool Sense(
+            ISense Sense,
+            GameObject Entity)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
+                });
+
+            if (Entity == null)
+                throw new ArgumentNullException(nameof(Entity), nameof(this.Sense) + " requires a " + nameof(GameObject) + " to perceive.");
+
+            foreach (SenseContext context in GetSenseContexts(Entity))
+                if (Sense.TrySense(context))
+                    return true;
+
+            return false;
+        }
+
+        public bool Sense(IConcealedAction ConcealedAction, GameObject Entity)
+        {
+            if (ConcealedAction.IsNullOrEmpty()
+                || Entity == null)
+                return new();
+
+            foreach (ISense sense in ConcealedAction)
+                if (Sense(sense, Entity))
+                    return true;
+
+            return false;
+        }
+
         #region Event Dispatch
 
         #region Registration
@@ -535,7 +570,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #endregion
         #region MinEvents
 
-        protected static bool GameObjectHasRgisteredEventFrom(GameObject Owner, int ID, IPerception Perception)
+        protected static bool GameObjectHasRegisteredEventFrom(GameObject Owner, int ID, IPerception Perception)
             => Owner != null
                 && Owner.HasRegisteredEventFrom(ID, Perception);
 
@@ -554,8 +589,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 });
 
             return Perception.WantEvent(ID, Cascade)
-                || GameObjectHasRgisteredEventFrom(Perception.Owner, ID, Perception)
-                || GameObjectHasRgisteredEventFrom(Owner, ID, Perception);
+                || GameObjectHasRegisteredEventFrom(Perception.Owner, ID, Perception)
+                || GameObjectHasRegisteredEventFrom(Owner, ID, Perception);
         }
         public bool HasWantEvent(int ID, int Cascade)
         {
