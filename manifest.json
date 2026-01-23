@@ -1,0 +1,9 @@
+{
+    "id": "Bones_PrototypeStealthSystem",
+    "title": "Prototype {{K|Stealth}} System {{K|(development)}}",
+    "description": "{{K|All sneaky like!}}\n\nA prototype mod for adding rich(-ish) stealth and stealth-based mechanics to the Caves of Qud.",
+    "version": "0.0.1",
+    "author": "{{M|Mr}}{{B|Beast}} & {{K-g-G-Y-G-g-K alternation|UnderDoug}}",
+    "tags": "Harmony,Beta,Unstable,Prototype,Extension,Library,Systems,Stealth",
+    "PreviewImage": "Preview.png"
+}

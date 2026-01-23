@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<objects>
+  <object Name="Creature" Load="Merge">
+    <part Name="UD_PerceptionHelper" />
+    <part Name="UD_StealthHelper" />
+    <part Name="UD_Witness" />
+  </object>
+</objects>

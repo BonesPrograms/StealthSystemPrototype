@@ -46,9 +46,7 @@ namespace Nexus.Core
 		/// Returns true/false values from object string properties. Default true.
 		/// </summary>
 		public static bool ReturnProperty(GameObject theVampire, string flag)
-		{
-			return theVampire.GetStringProperty(flag) == Properties.Flags.TRUE;
-		}
+			=> theVampire.GetStringProperty(flag).EqualsNoCase(true.ToString());
 
 
 		/// <summary>
