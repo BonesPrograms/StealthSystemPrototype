@@ -167,7 +167,7 @@ namespace StealthSystemPrototype.Alerts
             protected set => _Grammar = value;
         }
 
-        public IPerception Perception;
+        public BasePerception Perception;
 
         public ISense Sense;
 
@@ -197,7 +197,7 @@ namespace StealthSystemPrototype.Alerts
             OverridesCombat = false;
             Source = null;
         }
-        protected IAlert(IPerception Perception, ISense Sense, AwarenessLevel Level, bool OverridesCombat, AlertSource Source)
+        protected IAlert(BasePerception Perception, ISense Sense, AwarenessLevel Level, bool OverridesCombat, AlertSource Source)
             : this()
         {
             this.Perception = Perception;
@@ -243,7 +243,7 @@ namespace StealthSystemPrototype.Alerts
                 .SetSource<T, TSense>(new AlertSource(this, Context))
             : throw new ArgumentNullException(nameof(Context), "Cannot configure " + Name + " with null " + nameof(SenseContext) + ".");
 
-        protected virtual IAlert<T, TSense> SetPerception<T, TSense>(IPerception Perception)
+        protected virtual IAlert<T, TSense> SetPerception<T, TSense>(BasePerception Perception)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {

@@ -35,7 +35,7 @@ namespace StealthSystemPrototype.Perceptions
             GameObject Owner,
             T Source,
             ClampedDieRoll BaseDieRoll,
-            Radius BaseRadius)
+            Purview BaseRadius)
             : base(Owner, BaseDieRoll, BaseRadius)
         {
             _Source = Source;

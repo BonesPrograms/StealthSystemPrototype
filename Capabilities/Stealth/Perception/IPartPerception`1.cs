@@ -33,27 +33,27 @@ namespace StealthSystemPrototype.Perceptions
             GameObject Owner,
             T Source,
             ClampedDieRoll BaseDieRoll,
-            Radius BaseRadius)
+            Purview BaseRadius)
             : base(Owner, Source, BaseDieRoll, BaseRadius)
         {
         }
         public IPartPerception(
             T Source,
             ClampedDieRoll BaseDieRoll,
-            Radius BaseRadius)
+            Purview BaseRadius)
             : base(Source?.ParentObject, Source, BaseDieRoll, BaseRadius)
         {
         }
         public IPartPerception(
             GameObject Owner,
             T Source,
-            Radius.RadiusFlags RadiusFlags = Radius.RadiusFlags.Line)
+            Purview.RadiusFlags RadiusFlags = Purview.RadiusFlags.Line)
             : this(Owner, Source, BASE_DIE_ROLL, new(BASE_RADIUS, RadiusFlags))
         {
         }
         public IPartPerception(
             T Source,
-            Radius.RadiusFlags RadiusFlags = Radius.RadiusFlags.Line)
+            Purview.RadiusFlags RadiusFlags = Purview.RadiusFlags.Line)
             : this(Source?.ParentObject, Source, RadiusFlags)
         {
         }

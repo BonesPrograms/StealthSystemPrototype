@@ -19,11 +19,13 @@ using System.Reflection;
 using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Alerts;
 
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
+
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
     public class IPerception<TSense>
-        : IPerception,
+        : BasePerception,
         IComparable<IPerception<TSense>>
         where TSense : ISense<TSense>, new()
     {
@@ -58,7 +60,7 @@ namespace StealthSystemPrototype.Perceptions
         #region Instance Fields & Properties
 
         public override ClampedDieRoll DieRoll => _DieRoll ??= GetDieRoll<TSense>(this);
-        public override Radius Radius => _Radius ??= GetRadius<TSense>(this);
+        public override BasePurview Radius => _Radius ??= GetRadius<TSense>(this);
 
         #endregion
         #region Constructors
@@ -74,7 +76,7 @@ namespace StealthSystemPrototype.Perceptions
         public IPerception(
             GameObject Owner,
             ClampedDieRoll BaseDieRoll,
-            Radius BaseRadius)
+            BasePurview BaseRadius)
             : base(Owner, BaseDieRoll, BaseRadius)
         {
         }
@@ -118,7 +120,7 @@ namespace StealthSystemPrototype.Perceptions
         {
         }
 
-        public override IPerception DeepCopy(GameObject Parent)
+        public override BasePerception DeepCopy(GameObject Parent)
         {
             IPerception<TSense> perception = base.DeepCopy(Parent) as IPerception<TSense>;
 

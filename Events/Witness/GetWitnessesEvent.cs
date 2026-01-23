@@ -76,7 +76,7 @@ namespace StealthSystemPrototype.Events
         public GetWitnessesEvent AddWitness(IComponent<GameObject> WitnessComponent)
             => AddWitness(WitnessComponent?.GetComponentBasis());
 
-        public GetWitnessesEvent AddWitness(IPerception Perception)
+        public GetWitnessesEvent AddWitness(BasePerception Perception)
             => AddWitness(Perception?.Owner);
     }
 }

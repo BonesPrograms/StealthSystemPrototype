@@ -22,8 +22,9 @@ using StealthSystemPrototype.Alerts;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public abstract class IPerception
+    public abstract class BasePerception
         : IComponent<GameObject>
+        , IPerception
         , IWitnessEventHandler
         , IPerceptionEventHandler
         , ISneakEventHandler
@@ -37,7 +38,7 @@ namespace StealthSystemPrototype.Perceptions
 
             public override void WriteBind(SerializationWriter Writer, IEventHandler Handler, int ID)
             {
-                Writer.WriteGameObject(((IPerception)Handler).Owner, Reference: true);
+                Writer.WriteGameObject(((BasePerception)Handler).Owner, Reference: true);
                 Writer.WriteTokenized(Handler.GetType());
             }
 
@@ -45,7 +46,7 @@ namespace StealthSystemPrototype.Perceptions
             {
                 GameObject owner = Reader.ReadGameObject();
                 Type type = Reader.ReadTokenizedType();
-                foreach (IPerception perception in owner?.GetPerceptions() ?? new())
+                foreach (BasePerception perception in owner?.GetPerceptions() ?? new())
                     if ((object)perception.GetType() == type)
                         return perception;
 
@@ -53,7 +54,7 @@ namespace StealthSystemPrototype.Perceptions
             }
         }
 
-        public class RatingComparer : IComparer<IPerception>
+        public class RatingComparer : IComparer<BasePerception>
         {
             protected GameObject Entity;
 
@@ -67,7 +68,7 @@ namespace StealthSystemPrototype.Perceptions
                 this.Entity = Entity;
             }
 
-            public virtual int Compare(IPerception x, IPerception y)
+            public virtual int Compare(BasePerception x, BasePerception y)
             {
                 if (EitherNull(x, y, out int comparison))
                     return comparison;
@@ -91,15 +92,15 @@ namespace StealthSystemPrototype.Perceptions
 
         public const int MIN_RADIUS = 0;
         public const int MAX_RADIUS = 84; // corner to corner of a single zone.
-        public static Radius BASE_RADIUS => new(10, RADIUS_CLAMP, Radius.DefaultDiffuser);
+        public static Purview BASE_RADIUS => new(10, RADIUS_CLAMP, Purview.DefaultDiffuser);
 
         public static InclusiveRange DIE_ROLL_CLAMP => new(MIN_DIE_ROLL, MAX_DIE_ROLL);
         public static InclusiveRange RADIUS_CLAMP => new(MIN_RADIUS, MAX_RADIUS);
 
-        public static Radius.RadiusFlags VisualFlag => Radius.RadiusFlags.Line | Radius.RadiusFlags.Occludes | Radius.RadiusFlags.Diffuses;
-        public static Radius.RadiusFlags AuditoryFlag => Radius.RadiusFlags.Area | Radius.RadiusFlags.Pathing | Radius.RadiusFlags.Diffuses;
-        public static Radius.RadiusFlags OlfactoryFlag => Radius.RadiusFlags.Area | Radius.RadiusFlags.Pathing | Radius.RadiusFlags.Diffuses;
-        public static Radius.RadiusFlags PsionicFlag => Radius.RadiusFlags.Line | Radius.RadiusFlags.Area | Radius.RadiusFlags.Diffuses;
+        public static Purview.RadiusFlags VisualFlag => Purview.RadiusFlags.Line | Purview.RadiusFlags.Occludes | Purview.RadiusFlags.Diffuses;
+        public static Purview.RadiusFlags AuditoryFlag => Purview.RadiusFlags.Area | Purview.RadiusFlags.Pathing | Purview.RadiusFlags.Diffuses;
+        public static Purview.RadiusFlags OlfactoryFlag => Purview.RadiusFlags.Area | Purview.RadiusFlags.Pathing | Purview.RadiusFlags.Diffuses;
+        public static Purview.RadiusFlags PsionicFlag => Purview.RadiusFlags.Line | Purview.RadiusFlags.Area | Purview.RadiusFlags.Diffuses;
 
         #endregion
         #region Instance Fields & Properties
@@ -112,28 +113,31 @@ namespace StealthSystemPrototype.Perceptions
         private string _ShortName;
         public string ShortName => _ShortName ??= GetName(true);
 
-        [NonSerialized]
-        public GameObject Owner;
-
-        private Type _Sense;
-
-        public Type Sense => _Sense ??= GetSenseType();
+        private GameObject _Owner;
+        public GameObject Owner
+        {
+            get => _Owner;
+            set => _Owner = value;
+        }
 
         public PerceptionRack Rack => Owner?.GetPerceptions();
 
         [NonSerialized]
-        public ClampedDieRoll BaseDieRoll;
+        protected int _Level;
+        public int Level
+        {
+            get => _Level;
+            set => _Level = value;
+        }
 
-        [NonSerialized]
-        public Radius BaseRadius;
+        protected Purview _Radius;
+        public Purview Radius
+        {
+            get => _Radius;
+            set => _Radius = value;
+        }
 
-        protected ClampedDieRoll _DieRoll;
-        public abstract ClampedDieRoll DieRoll { get; }
-
-        protected Radius _Radius;
-        public abstract Radius Radius { get; }
-
-        public Radius.RadiusFlags RadiusFlags => Radius.Flags;
+        public Purview.RadiusFlags RadiusFlags => Radius.Flags;
         public bool Occludes => Radius.Occludes();
         public bool Diffuses => Radius.Diffuses();
 
@@ -144,14 +148,14 @@ namespace StealthSystemPrototype.Perceptions
         protected bool WantsToClearRating;
 
         [NonSerialized]
-        protected List<Cell> _RadiusAreaCells;
+        protected IEnumerable<Cell> _RadiusAreaCells;
 
-        public List<Cell> RadiusAreaCells => _RadiusAreaCells ??= GetRadiusAreaCells();
+        public IEnumerable<Cell> RadiusAreaCells => _RadiusAreaCells ??= GetRadiusAreaCells();
 
         #endregion
         #region Constructors
 
-        public IPerception()
+        public BasePerception()
         {
             Owner = null;
 
@@ -170,15 +174,15 @@ namespace StealthSystemPrototype.Perceptions
 
             _RadiusAreaCells = null;
         }
-        public IPerception(GameObject Owner)
+        public BasePerception(GameObject Owner)
             : this()
         {
             this.Owner = Owner;
         }
-        public IPerception(
+        public BasePerception(
             GameObject Owner,
             ClampedDieRoll BaseDieRoll,
-            Radius BaseRadius)
+            Purview BaseRadius)
             : this(Owner)
         {
             this.BaseDieRoll = BaseDieRoll;
@@ -195,16 +199,16 @@ namespace StealthSystemPrototype.Perceptions
             ClampedDieRoll.WriteOptimized(Writer, BaseDieRoll);
             Radius.WriteOptimized(Writer, BaseRadius);
             ClampedDieRoll.WriteOptimized(Writer, DieRoll);
-            Radius.WriteOptimized(Writer, Radius);
+            Purview.WriteOptimized(Writer, Radius);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
             Owner = Reader.ReadGameObject();
             BaseDieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
-            BaseRadius = Radius.ReadOptimizedRadius(Reader);
+            BaseRadius = Purview.ReadOptimizedRadius(Reader);
             _DieRoll = ClampedDieRoll.ReadOptimizedClampedRange(Reader);
-            _Radius = Radius.ReadOptimizedRadius(Reader);
+            _Radius = Purview.ReadOptimizedRadius(Reader);
         }
 
         public virtual void FinalizeRead(SerializationReader Reader)
@@ -226,9 +230,9 @@ namespace StealthSystemPrototype.Perceptions
 
         public abstract void Remove();
 
-        public virtual IPerception DeepCopy(GameObject Parent)
+        public virtual BasePerception DeepCopy(GameObject Parent)
         {
-            IPerception perception = (IPerception)Activator.CreateInstance(GetType());
+            BasePerception perception = (BasePerception)Activator.CreateInstance(GetType());
 
             FieldInfo[] fields = GetType().GetFields();
 
@@ -303,13 +307,13 @@ namespace StealthSystemPrototype.Perceptions
         /// <summary>Register to events from the <see cref="GameObject" /> while it is active in the action queue.</summary>
         /// <remarks>It is safer to register for external events here, since they're guaranteed to be cleaned up once the object goes out of scope.</remarks>
         /// <param name="Object">The current <see cref="GameObject" />.</param>
-        /// <param name="Registrar">An <see cref="IEventRegistrar" /> with this <see cref="IPerception" /> and <see cref="GameObject" />  provisioned as defaults.</param>
+        /// <param name="Registrar">An <see cref="IEventRegistrar" /> with this <see cref="BasePerception" /> and <see cref="GameObject" />  provisioned as defaults.</param>
         public virtual void RegisterActive(GameObject Object, IEventRegistrar Registrar)
         {
         }
         /// <summary>Register to events from the <see cref="GameObject" />.</summary>
         /// <param name="Object">The current <see cref="GameObject" />.</param>
-        /// <param name="Registrar">An <see cref="IEventRegistrar" /> with this <see cref="IPerception" /> and <see cref="GameObject" /> provisioned as defaults.</param>
+        /// <param name="Registrar">An <see cref="IEventRegistrar" /> with this <see cref="BasePerception" /> and <see cref="GameObject" /> provisioned as defaults.</param>
         public virtual void Register(GameObject Object, IEventRegistrar Registrar)
         {
         }
@@ -351,7 +355,7 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public static bool IsForSense(IPerception Perception, Type SenseType, bool IncludeDerived = false)
+        public static bool IsForSense(BasePerception Perception, Type SenseType, bool IncludeDerived = false)
             => EitherNull(Perception?.Sense, SenseType?.GetType(), out bool areEqual)
             ? areEqual
             : SenseType.InheritsFrom<ISense>()
@@ -359,7 +363,7 @@ namespace StealthSystemPrototype.Perceptions
                     || (IncludeDerived
                        && Perception.Sense.InheritsFrom(SenseType)));
 
-        public static bool IsForSense(IPerception Perception, ISense Sense, bool IncludeDerived = false)
+        public static bool IsForSense(BasePerception Perception, ISense Sense, bool IncludeDerived = false)
             => IsForSense(Perception, Sense.GetType(), IncludeDerived);
 
         public bool IsForSense(Type SenseType, bool IncludeDerived = false)
@@ -376,7 +380,7 @@ namespace StealthSystemPrototype.Perceptions
                     BaseDieRoll: BaseDieRoll.AdjustBy(GetBonusBaseDieRoll()))
                 ?.AdjustBy(GetBonusDieRoll());
 
-        protected Radius GetRadius<TSense>(IPerception<TSense> Perception = null)
+        protected Purview GetRadius<TSense>(IPerception<TSense> Perception = null)
             where TSense : ISense<TSense>, new()
             => GetPerceptionRadiusEvent.GetFor(
                     Perceiver: Owner,
@@ -620,7 +624,7 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Comparison
 
-        public int CompareTo(IPerception Other)
+        public int CompareTo(BasePerception Other)
         {
             if (EitherNull(this, Other, out int comparison))
                 return comparison;
@@ -637,16 +641,16 @@ namespace StealthSystemPrototype.Perceptions
 
         #region Comparison
 
-        public static bool operator <(IPerception Op1, IPerception Op2)
+        public static bool operator <(BasePerception Op1, BasePerception Op2)
             => Op1.CompareTo(Op2) < 0;
 
-        public static bool operator >(IPerception Op1, IPerception Op2)
+        public static bool operator >(BasePerception Op1, BasePerception Op2)
             => Op1.CompareTo(Op2) > 0;
 
-        public static bool operator <=(IPerception Op1, IPerception Op2)
+        public static bool operator <=(BasePerception Op1, BasePerception Op2)
             => Op1.CompareTo(Op2) <= 0;
 
-        public static bool operator >=(IPerception Op1, IPerception Op2)
+        public static bool operator >=(BasePerception Op1, BasePerception Op2)
             => Op1.CompareTo(Op2) >= 0;
 
         #endregion

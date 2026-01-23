@@ -54,7 +54,7 @@ namespace StealthSystemPrototype.Senses
         public virtual int AdjustIntensity(int Intensity)
             => SetIntensity(this.Intensity + Intensity);
 
-        public virtual bool CanSense(IPerception Perception, GameObject Entity)
+        public virtual bool CanSense(BasePerception Perception, GameObject Entity)
             => GetType() != Perception?.Sense
             && Entity != null;
 

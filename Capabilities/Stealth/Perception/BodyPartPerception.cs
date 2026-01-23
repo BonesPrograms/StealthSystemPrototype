@@ -36,7 +36,7 @@ namespace StealthSystemPrototype.Perceptions
             GameObject Owner,
             BodyPart Source,
             ClampedDieRoll BaseDieRoll,
-            Radius BaseRadius)
+            Purview BaseRadius)
             : base(Owner, Source, BaseDieRoll, BaseRadius)
         {
             SourceType = Source.Type;
@@ -44,7 +44,7 @@ namespace StealthSystemPrototype.Perceptions
         public BodyPartPerception(
             BodyPart Source,
             ClampedDieRoll BaseDieRoll,
-            Radius BaseRadius)
+            Purview BaseRadius)
             : this(Source?.ParentBody?.ParentObject, Source, BaseDieRoll, BaseRadius)
         {
         }

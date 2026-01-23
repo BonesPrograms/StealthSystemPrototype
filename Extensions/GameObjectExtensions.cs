@@ -55,10 +55,10 @@ namespace StealthSystemPrototype
             where TSense : ISense<TSense>, new()
             => Object.RequirePerceptions()?.Get<IPerception<TSense>, TSense>();
 
-        public static IPerception GetPerception(this GameObject Object, string Name)
+        public static BasePerception GetPerception(this GameObject Object, string Name)
             => Object.RequirePerceptions().Get(Name);
 
-        public static IPerception GetFirstPerceptionOfSense<TSense>(this GameObject Object, TSense Sense = null)
+        public static BasePerception GetFirstPerceptionOfSense<TSense>(this GameObject Object, TSense Sense = null)
             where TSense : ISense<TSense>, new()
             => Object.RequirePerceptions().GetFirstOfSense<TSense>();
 
@@ -70,7 +70,7 @@ namespace StealthSystemPrototype
                 && perceptions.TryGet(out Item);
         }
 
-        public static IPerception AddPerception<T, TSense>(
+        public static BasePerception AddPerception<T, TSense>(
             this GameObject Object,
             T Perception,
             bool DoRegistration = true,
@@ -83,7 +83,7 @@ namespace StealthSystemPrototype
             return Perception;
         }
 
-        public static IPerception AddPerception<T, TSense>(
+        public static BasePerception AddPerception<T, TSense>(
             this GameObject Object,
             bool DoRegistration = true,
             bool Creation = false)
@@ -91,7 +91,7 @@ namespace StealthSystemPrototype
             where TSense : ISense<TSense>, new()
             => Object.RequirePerceptions()?.Add<T, TSense>(DoRegistration, Creation);
 
-        public static IPerception RequirePerception<T, TSense>(
+        public static BasePerception RequirePerception<T, TSense>(
             this GameObject Object,
             bool Creation = false)
             where T : IPerception<TSense>, new()

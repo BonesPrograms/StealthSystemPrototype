@@ -29,7 +29,7 @@ namespace XRL.World.Parts
 
         #region Debugging
 
-        public IPerception BestPerception => PerceptionHelper?.BestPerception;
+        public BasePerception BestPerception => PerceptionHelper?.BestPerception;
 
         public bool PlayerPerceptable => ParentObject
                 ?.Brain

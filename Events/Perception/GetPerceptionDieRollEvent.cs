@@ -11,7 +11,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using static StealthSystemPrototype.Perceptions.IPerception;
+using static StealthSystemPrototype.Perceptions.BasePerception;
 using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Events

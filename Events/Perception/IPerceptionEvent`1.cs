@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Perceiver;
 
-        public IPerception Perception;
+        public BasePerception Perception;
 
         public PerceptionRack Perceptions;
 
@@ -57,7 +57,7 @@ namespace StealthSystemPrototype.Events
 
         public static T FromPool(
             GameObject Perciever,
-            IPerception Perception,
+            BasePerception Perception,
             PerceptionRack Perceptions)
         {
             if (Perciever == null
@@ -71,7 +71,7 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
-        public static T FromPool(GameObject Perciever, IPerception Perception)
+        public static T FromPool(GameObject Perciever, BasePerception Perception)
             => FromPool(Perciever, Perception, null);
 
         public static T FromPool(GameObject Perciever, PerceptionRack Perceptions)
@@ -102,7 +102,7 @@ namespace StealthSystemPrototype.Events
 
         protected static T Process(
             GameObject Perciever,
-            IPerception Perception,
+            BasePerception Perception,
             PerceptionRack Perceptions,
             out bool Success)
         {

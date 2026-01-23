@@ -701,7 +701,7 @@ namespace StealthSystemPrototype
                         yield return output;
         }
 
-        public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, Radius Radius)
+        public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, Purview Radius)
             => Cell?.GetCellsInACosmeticCircleSilent(Radius.EffectiveValue);
 
         #endregion

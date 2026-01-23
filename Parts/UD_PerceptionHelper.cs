@@ -89,8 +89,8 @@ namespace XRL.World.Parts
 
         #region Debugging
 
-        private IPerception _BestPerception;
-        public IPerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
+        private BasePerception _BestPerception;
+        public BasePerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
 
         #endregion
         #endregion
@@ -114,7 +114,7 @@ namespace XRL.World.Parts
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             _Perceptions = Reader.ReadObject() as PerceptionRack;
-            _BestPerception = Reader.ReadObject() as IPerception;
+            _BestPerception = Reader.ReadObject() as BasePerception;
             base.Read(Basis, Reader);
         }
 

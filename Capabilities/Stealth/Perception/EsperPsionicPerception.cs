@@ -25,11 +25,11 @@ namespace StealthSystemPrototype.Perceptions
             : base()
         {
         }
-        public EsperPsionicPerception(GameObject Owner, Esper Source, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+        public EsperPsionicPerception(GameObject Owner, Esper Source, ClampedDieRoll BaseDieRoll, Purview BaseRadius)
             : base(Owner, Source, BaseDieRoll, BaseRadius)
         {
         }
-        public EsperPsionicPerception(Esper Source, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+        public EsperPsionicPerception(Esper Source, ClampedDieRoll BaseDieRoll, Purview BaseRadius)
             : this(Source?.ParentObject, Source, BaseDieRoll, BaseRadius)
         {
         }

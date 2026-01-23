@@ -20,7 +20,7 @@ namespace StealthSystemPrototype.Perceptions
             : base()
         {
         }
-        public SimpleAuditoryPerception(GameObject Owner, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+        public SimpleAuditoryPerception(GameObject Owner, ClampedDieRoll BaseDieRoll, Purview BaseRadius)
             : base(Owner, BaseDieRoll, BaseRadius)
         {
         }

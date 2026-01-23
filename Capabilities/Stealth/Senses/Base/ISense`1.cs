@@ -38,7 +38,7 @@ namespace StealthSystemPrototype.Senses
         public override int GetIntensity()
             => base.GetIntensity();
 
-        public override bool CanSense(IPerception Perception, GameObject Entity)
+        public override bool CanSense(BasePerception Perception, GameObject Entity)
             => base.CanSense(Perception, Entity);
 
         public override AwarenessLevel CalculateAwareness<T>(SenseContext<T> Context)
@@ -56,7 +56,7 @@ namespace StealthSystemPrototype.Senses
 
             int roll = Context.Roll;
             DieRoll dieRoll = Context.Perception.DieRoll.GetDieRoll();
-            Radius radius = Context.Radius;
+            Purview radius = Context.Radius;
 
             double diffusion = Context.Diffusion;
 

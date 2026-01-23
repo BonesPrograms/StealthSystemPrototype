@@ -119,7 +119,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionsEvent AddIPartPerception<T, TSense>(
             T IPart,
             ClampedDieRoll BaseScore,
-            Radius BaseRadius,
+            Purview BaseRadius,
             bool DoRegistration = true,
             bool Creation = false)
             where T : IPart, new()
@@ -135,7 +135,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionsEvent RequireIPartPerception<T, TSense>(
             T IPart,
             ClampedDieRoll BaseScore,
-            Radius BaseRadius,
+            Purview BaseRadius,
             bool Creation = false)
             where T : IPart, new()
             where TSense : ISense<TSense>, new()
@@ -154,8 +154,8 @@ namespace StealthSystemPrototype.Events
             where TSense : ISense<TSense>, new()
             => AddIPartPerception<T, TSense>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: IPerception.BASE_RADIUS,
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: BasePerception.BASE_RADIUS,
                 DoRegistration: DoRegistration,
                 Creation: Creation);
 
@@ -166,8 +166,8 @@ namespace StealthSystemPrototype.Events
             where TSense : ISense<TSense>, new()
             => RequireIPartPerception<T, TSense>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: IPerception.BASE_RADIUS,
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: BasePerception.BASE_RADIUS,
                 Creation: Creation);
 
         public GetPerceptionsEvent AddVisualIPartPerception<T>(
@@ -177,8 +177,8 @@ namespace StealthSystemPrototype.Events
             where T : IPart, new()
             => AddIPartPerception<T, Visual>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.VisualFlag),
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.VisualFlag),
                 DoRegistration: DoRegistration,
                 Creation: Creation);
 
@@ -188,8 +188,8 @@ namespace StealthSystemPrototype.Events
             where T : IPart, new()
             => RequireIPartPerception<T, Visual>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.VisualFlag),
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.VisualFlag),
                 Creation: Creation);
 
         public GetPerceptionsEvent AddAuditoryIPartPerception<T>(
@@ -199,8 +199,8 @@ namespace StealthSystemPrototype.Events
             where T : IPart, new()
             => AddIPartPerception<T, Auditory>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.AuditoryFlag),
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.AuditoryFlag),
                 DoRegistration: DoRegistration,
                 Creation: Creation);
 
@@ -210,8 +210,8 @@ namespace StealthSystemPrototype.Events
             where T : IPart, new()
             => RequireIPartPerception<T, Auditory>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.AuditoryFlag),
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.AuditoryFlag),
                 Creation: Creation);
 
         public GetPerceptionsEvent AddOlfactoryIPartPerception<T>(
@@ -221,8 +221,8 @@ namespace StealthSystemPrototype.Events
             where T : IPart, new()
             => AddIPartPerception<T, Olfactory>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.OlfactoryFlag),
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.OlfactoryFlag),
                 DoRegistration: DoRegistration,
                 Creation: Creation);
 
@@ -232,8 +232,8 @@ namespace StealthSystemPrototype.Events
             where T : IPart, new()
             => RequireIPartPerception<T, Olfactory>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.OlfactoryFlag),
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.OlfactoryFlag),
                 Creation: Creation);
 
         public GetPerceptionsEvent AddPsionicIPartPerception<T>(
@@ -243,8 +243,8 @@ namespace StealthSystemPrototype.Events
             where T : IPart, new()
             => AddIPartPerception<T, Psionic>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.PsionicFlag),
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.PsionicFlag),
                 DoRegistration: DoRegistration,
                 Creation: Creation);
 
@@ -254,14 +254,14 @@ namespace StealthSystemPrototype.Events
             where T : IPart, new()
             => RequireIPartPerception<T, Psionic>(
                 IPart: IPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: new(IPerception.BASE_RADIUS, IPerception.PsionicFlag),
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: new(BasePerception.BASE_RADIUS, BasePerception.PsionicFlag),
                 Creation: Creation);
 
         public GetPerceptionsEvent AddBodyPartPerception<TSense>(
             BodyPart BodyPart,
             ClampedDieRoll BaseScore,
-            Radius BaseRadius,
+            Purview BaseRadius,
             bool DoRegistration = true,
             bool Creation = false)
             where TSense : ISense<TSense>, new()
@@ -276,7 +276,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionsEvent RequireBodyPartPerception<TSense>(
             BodyPart BodyPart,
             ClampedDieRoll BaseScore,
-            Radius BaseRadius,
+            Purview BaseRadius,
             bool Creation = false)
             where TSense : ISense<TSense>, new()
             => RequirePerception(
@@ -293,8 +293,8 @@ namespace StealthSystemPrototype.Events
             where TSense : ISense<TSense>, new()
             => AddBodyPartPerception<TSense>(
                 BodyPart: BodyPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: IPerception.BASE_RADIUS,
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: BasePerception.BASE_RADIUS,
                 DoRegistration: DoRegistration,
                 Creation: Creation);
 
@@ -304,8 +304,8 @@ namespace StealthSystemPrototype.Events
             where TSense : ISense<TSense>, new()
             => RequireBodyPartPerception<TSense>(
                 BodyPart: BodyPart,
-                BaseScore: IPerception.BASE_DIE_ROLL, 
-                BaseRadius: IPerception.BASE_RADIUS,
+                BaseScore: BasePerception.BASE_DIE_ROLL, 
+                BaseRadius: BasePerception.BASE_RADIUS,
                 Creation: Creation);
     }
 }

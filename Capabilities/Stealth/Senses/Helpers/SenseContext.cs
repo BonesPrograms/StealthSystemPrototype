@@ -17,7 +17,7 @@ namespace StealthSystemPrototype.Senses
     {
         public GameObject Perceiver => Perception?.Owner;
 
-        public IPerception Perception { get; protected set; }
+        public BasePerception Perception { get; protected set; }
 
         public GameObject Hider { get; protected set; }
 
@@ -39,7 +39,7 @@ namespace StealthSystemPrototype.Senses
             protected set => _PerceptionPath = value;
         }
 
-        public Radius Radius => Perception?.Radius;
+        public Purview Radius => Perception?.Radius;
 
         public double[] Diffusions { get; protected set; }
         public double Diffusion { get; protected set; }
@@ -60,7 +60,7 @@ namespace StealthSystemPrototype.Senses
             Diffusions = null;
             Diffusion = default;
         }
-        public SenseContext(IPerception Perception, GameObject Hider)
+        public SenseContext(BasePerception Perception, GameObject Hider)
             : this()
         {
             this.Perception = Perception;

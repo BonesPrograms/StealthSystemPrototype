@@ -11,7 +11,7 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 
-using static StealthSystemPrototype.Perceptions.IPerception;
+using static StealthSystemPrototype.Perceptions.BasePerception;
 using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Events
@@ -27,9 +27,9 @@ namespace StealthSystemPrototype.Events
 
         public ISense Sense;
 
-        public Radius BaseRadius;
+        public Purview BaseRadius;
 
-        public Radius Radius;
+        public Purview Radius;
 
         public GetPerceptionRadiusEvent()
             : base()
@@ -54,7 +54,7 @@ namespace StealthSystemPrototype.Events
         public static GetPerceptionRadiusEvent FromPool<TSense>(
             GameObject Perceiver,
             IPerception<TSense> Perception,
-            Radius BaseRadius)
+            Purview BaseRadius)
             where TSense : ISense<TSense>, new()
         {
             if (Perception == null
@@ -83,17 +83,17 @@ namespace StealthSystemPrototype.Events
         {
             base.UpdateFromStringyEvent();
 
-            if (StringyEvent?.GetParameter(nameof(BaseRadius)) is Radius baseRadius)
+            if (StringyEvent?.GetParameter(nameof(BaseRadius)) is Purview baseRadius)
                 BaseRadius = baseRadius;
 
-            if (StringyEvent?.GetParameter(nameof(Radius)) is Radius radius)
+            if (StringyEvent?.GetParameter(nameof(Radius)) is Purview radius)
                 Radius = radius;
         }
 
-        public static Radius GetFor<TSense>(
+        public static Purview GetFor<TSense>(
             GameObject Perceiver,
             IPerception<TSense> Perception,
-            Radius BaseRadius)
+            Purview BaseRadius)
             where TSense : ISense<TSense>, new()
         {
             using Indent indent = new(1);
@@ -127,7 +127,7 @@ namespace StealthSystemPrototype.Events
         }
 
         private static void SetClamp(
-            ref Radius Radius,
+            ref Purview Radius,
             InclusiveRange BaseClamp,
             int? Min = null,
             int? Max = null)
@@ -159,7 +159,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionRadiusEvent SetMaxRadius(int Max)
             => SetClamp(null, Max);
 
-        public Radius GetRadius()
+        public Purview GetRadius()
             => Radius = new Radius(Radius, RADIUS_CLAMP).SetValue(Radius.GetValue());
     }
 }

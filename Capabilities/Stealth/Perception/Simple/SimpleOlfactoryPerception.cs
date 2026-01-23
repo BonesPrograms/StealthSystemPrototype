@@ -20,7 +20,7 @@ namespace StealthSystemPrototype.Perceptions
             : base()
         {
         }
-        public SimpleOlfactoryPerception(GameObject Owner, ClampedDieRoll BaseDieRoll, Radius BaseRadius)
+        public SimpleOlfactoryPerception(GameObject Owner, ClampedDieRoll BaseDieRoll, Purview BaseRadius)
             : base(Owner, BaseDieRoll, BaseRadius)
         {
         }
