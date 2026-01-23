@@ -24,8 +24,8 @@ using StealthSystemPrototype.Capabilities.Stealth.Perception;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class IPerception<TSense>
-        : BasePerception,
+    public class IPerception3<TSense>
+        : IPerception,
         IComparable<IPerception<TSense>>
         where TSense : ISense<TSense>, new()
     {
@@ -65,15 +65,15 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Constructors
 
-        public IPerception()
+        public IPerception3()
             : base()
         {
         }
-        public IPerception(GameObject Owner)
+        public IPerception3(GameObject Owner)
             : base(Owner)
         {
         }
-        public IPerception(
+        public IPerception3(
             GameObject Owner,
             ClampedDieRoll BaseDieRoll,
             BasePurview BaseRadius)
@@ -120,7 +120,7 @@ namespace StealthSystemPrototype.Perceptions
         {
         }
 
-        public override BasePerception DeepCopy(GameObject Parent)
+        public override IPerception DeepCopy(GameObject Parent)
         {
             IPerception<TSense> perception = base.DeepCopy(Parent) as IPerception<TSense>;
 

@@ -89,8 +89,8 @@ namespace XRL.World.Parts
 
         #region Debugging
 
-        private BasePerception _BestPerception;
-        public BasePerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
+        private IPerception _BestPerception;
+        public IPerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
 
         #endregion
         #endregion
@@ -114,7 +114,7 @@ namespace XRL.World.Parts
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             _Perceptions = Reader.ReadObject() as PerceptionRack;
-            _BestPerception = Reader.ReadObject() as BasePerception;
+            _BestPerception = Reader.ReadObject() as IPerception;
             base.Read(Basis, Reader);
         }
 
@@ -227,8 +227,8 @@ namespace XRL.World.Parts
                 args: new int[]
                 {
                     GetPerceptionsEvent.ID,
-                    GetPerceptionDieRollEvent.ID,
-                    GetPerceptionRadiusEvent.ID,
+                    AdjustTotalPerceptionLevelEvent.ID,
+                    AdjustTotalPurviewEvent.ID,
                     TryConcealActionEvent.ID,
                     AfterAlertEvent.ID,
                     GetDebugInternalsEvent.ID,
@@ -313,7 +313,7 @@ namespace XRL.World.Parts
 
             return base.HandleEvent(E);
         }
-        public bool HandleEvent(GetPerceptionDieRollEvent E)
+        public bool HandleEvent(AdjustTotalPerceptionLevelEvent E)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -327,16 +327,16 @@ namespace XRL.World.Parts
             if (WantSync)
                 SyncPerceptions();
 
-            if (E.Sense.Name == nameof(Visual)
+            if (E.Alert.Name == nameof(Visual)
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
                 E.SetDieRollMin(40);
 
-            if (E.Sense.Name == nameof(Olfactory)
+            if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
                 E.SetDieRollMin(40);
 
-            if (E.Sense.Name == nameof(Olfactory)
+            if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.AdjustDieRoll(2 * heightenedSmell.Level);
 
@@ -358,7 +358,7 @@ namespace XRL.World.Parts
             }
             return base.HandleEvent(E);
         }
-        public bool HandleEvent(GetPerceptionRadiusEvent E)
+        public bool HandleEvent(AdjustTotalPurviewEvent E)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -372,18 +372,18 @@ namespace XRL.World.Parts
             if (WantSync)
                 SyncPerceptions();
 
-            if (E.Sense.Name == nameof(Visual)
+            if (E.Alert.Name == nameof(Visual)
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
-                E.SetMinRadius(E.BaseRadius.GetValue() + 2);
+                E.SetMinRadius(E.Purview.GetValue() + 2);
 
-            if (E.Sense.Name == nameof(Olfactory)
+            if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
-                E.SetMinRadius(E.BaseRadius.GetValue() + 2);
+                E.SetMinRadius(E.Purview.GetValue() + 2);
 
-            if (E.Sense.Name == nameof(Olfactory)
+            if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
-                E.SetMinRadius(E.BaseRadius.GetValue() + Math.Min(heightenedSmell.Level, 5));
+                E.SetMinRadius(E.Purview.GetValue() + Math.Min(heightenedSmell.Level, 5));
 
             if (E.Type.Name.EqualsAny(
                 new string[]
@@ -396,10 +396,10 @@ namespace XRL.World.Parts
                 && body.LoopPart(FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
             {
                 if (facesList.Count > 1)
-                    E.SetMinRadius(E.Radius.GetValue() + 2);
+                    E.SetMinRadius(E.BaseValue.GetValue() + 2);
                 else
                 if (facesList.Count < 1)
-                    E.SetMaxRadius(0);
+                    E.SetMaxValue(0);
             }
             return base.HandleEvent(E);
         }

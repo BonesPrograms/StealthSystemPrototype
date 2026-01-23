@@ -27,7 +27,7 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Hider;
 
-        public IAlert Alert;
+        public BaseDetection Alert;
 
         public Event StringyEvent;
 
@@ -60,7 +60,7 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(
             GameObject Perceiver,
             GameObject Hider,
-            IAlert Alert,
+            BaseDetection Alert,
             bool StringyEvent = true)
         {
             if ((Perceiver == null
@@ -78,7 +78,7 @@ namespace StealthSystemPrototype.Events
 
         public static T HiderFromPool(
             GameObject Hider,
-            IAlert Alert)
+            BaseDetection Alert)
         {
             if (Hider == null
                 || FromPool(null, Hider, Alert, StringyEvent: false) is not T E)
@@ -90,7 +90,7 @@ namespace StealthSystemPrototype.Events
 
         public static T PerceiverFromPool(
             GameObject Perceiver,
-            IAlert Alert)
+            BaseDetection Alert)
         {
             if (Perceiver == null
                 || FromPool(Perceiver, null, Alert, StringyEvent: false) is not T E)
@@ -114,7 +114,7 @@ namespace StealthSystemPrototype.Events
         public virtual void UpdateFromStringyEvent()
         {
             if (StringyEvent?.GetParameter(nameof(Alert)) != null)
-                Alert = StringyEvent?.GetParameter<IAlert>(nameof(Alert));
+                Alert = StringyEvent?.GetParameter<BaseDetection>(nameof(Alert));
         }
 
         protected static T Process(T E, out bool Success)
@@ -177,13 +177,13 @@ namespace StealthSystemPrototype.Events
 
         protected static T PerceiverProcess(
             GameObject Perceiver,
-            IAlert Alert,
+            BaseDetection Alert,
             out bool Success)
             => Process(PerceiverFromPool(Perceiver, Alert), out Success);
 
         protected static T HiderProcess(
             GameObject Hider,
-            IAlert Alert,
+            BaseDetection Alert,
             out bool Success)
             => Process(HiderFromPool(Hider, Alert), out Success);
     }

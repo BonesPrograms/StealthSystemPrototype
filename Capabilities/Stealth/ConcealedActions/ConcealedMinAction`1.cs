@@ -9,7 +9,7 @@ using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
-    public class ConcealedMinAction<T> : IConcealedAction
+    public class ConcealedMinAction<T> : BaseConcealedAction
         where T : MinEvent, new()
     {
         public T Event => SourceEvent as T;

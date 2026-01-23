@@ -54,25 +54,25 @@ namespace StealthSystemPrototype.Senses
         public virtual int AdjustIntensity(int Intensity)
             => SetIntensity(this.Intensity + Intensity);
 
-        public virtual bool CanSense(BasePerception Perception, GameObject Entity)
+        public virtual bool CanSense(IPerception Perception, GameObject Entity)
             => GetType() != Perception?.Sense
             && Entity != null;
 
         public static AwarenessLevel AwarenessFromRoll(int Roll)
             => (AwarenessLevel)((int)Math.Ceiling(((Roll + 1) / 20.0) - 1)).Clamp(0, 4);
 
-        public abstract AwarenessLevel CalculateAwareness<T>(SenseContext<T> Context)
+        public abstract AwarenessLevel CalculateAwareness<T>(AlertContext<T> Context)
             where T : ISense<T>, new();
 
-        public abstract AwarenessLevel Sense<T>(SenseContext<T> Context)
+        public abstract AwarenessLevel Sense<T>(AlertContext<T> Context)
             where T : ISense<T>, new();
 
-        public abstract bool TrySense<T>(SenseContext<T> Context)
+        public abstract bool TrySense<T>(AlertContext<T> Context)
             where T : ISense<T>, new();
 
         protected abstract ISense Copy();
 
-        public virtual bool TrySense(SenseContext Context)
+        public virtual bool TrySense(AlertContext Context)
             => false;
 
         public static ISense Copy(ISense Sense)

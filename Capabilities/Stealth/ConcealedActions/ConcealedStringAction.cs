@@ -9,7 +9,7 @@ using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
-    public class ConcealedStringAction : IConcealedAction
+    public class ConcealedStringAction : BaseConcealedAction
     {
         public Event Event => SourceEvent as Event;
 

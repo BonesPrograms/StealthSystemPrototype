@@ -13,11 +13,11 @@ using XRL.World.Parts;
 
 namespace StealthSystemPrototype.Senses
 {
-    public class SenseContext
+    public class AlertContext
     {
         public GameObject Perceiver => Perception?.Owner;
 
-        public BasePerception Perception { get; protected set; }
+        public IPerception Perception { get; protected set; }
 
         public GameObject Hider { get; protected set; }
 
@@ -39,7 +39,7 @@ namespace StealthSystemPrototype.Senses
             protected set => _PerceptionPath = value;
         }
 
-        public Purview Radius => Perception?.Radius;
+        public Purview Radius => Perception?.Purview;
 
         public double[] Diffusions { get; protected set; }
         public double Diffusion { get; protected set; }
@@ -48,7 +48,7 @@ namespace StealthSystemPrototype.Senses
 
         public SneakPerformance SneakPerformance => Hider?.GetPart<UD_Sneak>()?.SneakPerformance;
 
-        protected SenseContext()
+        protected AlertContext()
         {
             Perception = null;
             Hider = null;
@@ -60,7 +60,7 @@ namespace StealthSystemPrototype.Senses
             Diffusions = null;
             Diffusion = default;
         }
-        public SenseContext(BasePerception Perception, GameObject Hider)
+        public AlertContext(IPerception Perception, GameObject Hider)
             : this()
         {
             this.Perception = Perception;
@@ -70,7 +70,7 @@ namespace StealthSystemPrototype.Senses
             Diffusions = Radius.Diffusions();
             Diffusion = Radius.GetDiffusion(Distance);
         }
-        public SenseContext(SenseContext Source)
+        public AlertContext(AlertContext Source)
             : this(Source.Perception, Source.Hider)
         {
             Intensity = Source.Intensity;

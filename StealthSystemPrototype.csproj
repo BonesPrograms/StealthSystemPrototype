@@ -13,6 +13,6 @@
     <None Remove="obj\**" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Capabilities\Stealth\Alerts\Helpers\" />
+    <Folder Include="Capabilities\Stealth\Detection\Helpers\" />
   </ItemGroup>
 </Project>

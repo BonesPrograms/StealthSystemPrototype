@@ -20,12 +20,12 @@ using StealthSystemPrototype.Logging;
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public abstract class IAlert : GoalHandler, IComposite//, IComparable<BaseAlert>
+    public abstract class BaseDetection : GoalHandler, IComposite//, IComparable<BaseAlert>
     {
         [Serializable]
-        protected class AlertSource : IComposite
+        protected class DetectionSource : IComposite
         {
-            public IAlert ParentAlert;
+            public BaseDetection ParentAlert;
 
             private GameObject _Object;
             public GameObject Object => _Object;
@@ -55,43 +55,43 @@ namespace StealthSystemPrototype.Alerts
 
             #region Constructors
 
-            public AlertSource()
+            public DetectionSource()
             {
                 ParentAlert = null;
                 _Object = null;
                 ZoneID = null;
                 Location = default;
             }
-            public AlertSource(IAlert ParentAlert, GameObject Object, Cell Cell)
+            public DetectionSource(BaseDetection ParentAlert, GameObject Object, Cell Cell)
                 : this()
             {
                 this.ParentAlert = ParentAlert;
                 _Object = Object;
                 this.Cell = Cell;
             }
-            public AlertSource(IAlert ParentAlert, GameObject Object)
+            public DetectionSource(BaseDetection ParentAlert, GameObject Object)
                 : this(ParentAlert, Object, Object?.CurrentCell)
             {
             }
-            public AlertSource(IAlert ParentAlert, Cell Cell)
+            public DetectionSource(BaseDetection ParentAlert, Cell Cell)
                 : this(ParentAlert, null, Cell)
             {
             }
-            public AlertSource(IAlert ParentAlert, SenseContext Context)
+            public DetectionSource(BaseDetection ParentAlert, AlertContext Context)
                 : this(ParentAlert, Context.Perceiver, Context.Perceiver?.CurrentCell)
             {
             }
-            public AlertSource(AlertSource Source)
+            public DetectionSource(DetectionSource Source)
                 : this(Source.ParentAlert, Source.Object, Source.Cell)
             {
             }
-            public AlertSource(IAlert ParentAlert)
+            public DetectionSource(BaseDetection ParentAlert)
                 : this(ParentAlert.Source)
             {
                 SetParentAlert(ParentAlert);
             }
 
-            public AlertSource SetParentAlert(IAlert Alert)
+            public DetectionSource SetParentAlert(BaseDetection Alert)
             {
                 ParentAlert = Alert;
                 return this;
@@ -144,13 +144,13 @@ namespace StealthSystemPrototype.Alerts
         }
 
         [Serializable]
-        public struct AlertGrammar : IComposite
+        public struct DetectionGrammar : IComposite
         {
             public string Verb;
             public string Verbed;
             public string Verbing;
 
-            public AlertGrammar(string Verb, string Verbed, string Verbing)
+            public DetectionGrammar(string Verb, string Verbed, string Verbing)
             {
                 this.Verb = Verb;
                 this.Verbed = Verbed;
@@ -160,16 +160,16 @@ namespace StealthSystemPrototype.Alerts
 
         public string Name => GetType().ToStringWithGenerics();
 
-        private AlertGrammar _Grammar;
-        public AlertGrammar Grammar
+        private DetectionGrammar _Grammar;
+        public DetectionGrammar Grammar
         {
             get => _Grammar;
             protected set => _Grammar = value;
         }
 
-        public BasePerception Perception;
+        public IPerception Perception;
 
-        public ISense Sense;
+        public IAlert Alert;
 
         public Cell Origin;
 
@@ -178,7 +178,7 @@ namespace StealthSystemPrototype.Alerts
         public bool OverridesCombat;
 
         [NonSerialized]
-        protected AlertSource Source;
+        protected DetectionSource Source;
 
         public GameObject SourceObject => Source?.GetObject();
         public Cell SourceCell => Source?.GetCurrentCellOrCell();
@@ -188,32 +188,32 @@ namespace StealthSystemPrototype.Alerts
 
         #region Constructors
 
-        protected IAlert()
+        protected BaseDetection()
         {
             Perception = null;
-            Sense = null;
+            Alert = null;
             Origin = null;
             Level = AwarenessLevel.None;
             OverridesCombat = false;
             Source = null;
         }
-        protected IAlert(BasePerception Perception, ISense Sense, AwarenessLevel Level, bool OverridesCombat, AlertSource Source)
+        protected BaseDetection(IPerception Perception, IAlert Alert, AwarenessLevel Level, bool OverridesCombat, DetectionSource Source)
             : this()
         {
             this.Perception = Perception;
-            this.Sense = Sense;
+            this.Alert = Alert;
             Origin = Perception.Owner.CurrentCell;
             this.Level = Level;
             this.OverridesCombat = OverridesCombat;
             this.Source = Source?.SetParentAlert(this);
         }
-        public IAlert(SenseContext Context, ISense Sense, AwarenessLevel Level, bool OverridesCombat)
-            : this(Context.Perception, Sense, Level, OverridesCombat, (AlertSource)null)
+        public BaseDetection(AlertContext Context, IAlert Alert, AwarenessLevel Level, bool OverridesCombat)
+            : this(Context.Perception, Alert, Level, OverridesCombat, (DetectionSource)null)
         {
-            Source = new AlertSource(this, Context);
+            Source = new DetectionSource(this, Context);
         }
-        public IAlert(IAlert Source)
-            : this(Source.Perception, Source.Sense, Source.Level, Source.OverridesCombat, Source.Source)
+        public BaseDetection(BaseDetection Source)
+            : this(Source.Perception, Source.Alert, Source.Level, Source.OverridesCombat, Source.Source)
         {
         }
 
@@ -227,23 +227,23 @@ namespace StealthSystemPrototype.Alerts
         }
         public virtual void Read(SerializationReader Reader)
         {
-            Source = Reader.ReadComposite<AlertSource>();
-            Grammar = Reader.ReadComposite<AlertGrammar>();
+            Source = Reader.ReadComposite<DetectionSource>();
+            Grammar = Reader.ReadComposite<DetectionGrammar>();
         }
 
         #endregion
 
-        public abstract IAlert Copy();
+        public abstract BaseDetection Copy();
 
-        protected virtual IAlert<T, TSense> FromSenseContext<T, TSense>(SenseContext Context)
+        protected virtual Detection<T, TSense> FromAlertContext<T, TSense>(AlertContext Context)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
             => Context != null
             ? SetPerception<T, TSense>(Context.Perception)
-                .SetSource<T, TSense>(new AlertSource(this, Context))
-            : throw new ArgumentNullException(nameof(Context), "Cannot configure " + Name + " with null " + nameof(SenseContext) + ".");
+                .SetSource<T, TSense>(new DetectionSource(this, Context))
+            : throw new ArgumentNullException(nameof(Context), "Cannot configure " + Name + " with null " + nameof(AlertContext) + ".");
 
-        protected virtual IAlert<T, TSense> SetPerception<T, TSense>(BasePerception Perception)
+        protected virtual Detection<T, TSense> SetPerception<T, TSense>(IPerception Perception)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
@@ -251,18 +251,18 @@ namespace StealthSystemPrototype.Alerts
                 ?? throw New_ArgNullException(Perception, nameof(Perception));
 
             Origin = Perception.Owner.CurrentCell;
-            return this as IAlert<T, TSense>;
+            return this as Detection<T, TSense>;
         }
-        protected virtual IAlert<T, TSense> SetSense<T, TSense>(ISense Sense)
+        protected virtual Detection<T, TSense> SetSense<T, TSense>(ISense Sense)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
-            this.Sense = Sense
+            this.Alert = Sense
                 ?? throw New_ArgNullException(Sense, nameof(Sense));
 
-            return this as IAlert<T, TSense>;
+            return this as Detection<T, TSense>;
         }
-        protected virtual IAlert<T, TSense> SetAwarenessLevel<T, TSense>(AwarenessLevel Level)
+        protected virtual Detection<T, TSense> SetAwarenessLevel<T, TSense>(AwarenessLevel Level)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
@@ -270,30 +270,30 @@ namespace StealthSystemPrototype.Alerts
                 throw new ArgumentOutOfRangeException(nameof(Level), Name + " requires an " + nameof(AwarenessLevel) + " greater than " + AwarenessLevel.None.ToStringWithNum() + " to function.");
 
             this.Level = Level;
-            return this as IAlert<T, TSense>;
+            return this as Detection<T, TSense>;
         }
-        protected virtual IAlert<T, TSense> SetSource<T, TSense>(AlertSource Source)
+        protected virtual Detection<T, TSense> SetSource<T, TSense>(DetectionSource Source)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
             this.Source = Source
                 ?? throw New_ArgNullException(Source, nameof(Source));
 
-            return this as IAlert<T, TSense>;
+            return this as Detection<T, TSense>;
         }
-        protected virtual IAlert<T, TSense> SetOverridesCombat<T, TSense>(bool? OverridesCombat)
+        protected virtual Detection<T, TSense> SetOverridesCombat<T, TSense>(bool? OverridesCombat)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
             if (OverridesCombat.HasValue)
                 this.OverridesCombat = OverridesCombat.GetValueOrDefault();
 
-            return this as IAlert<T, TSense>;
+            return this as Detection<T, TSense>;
         }
         protected ArgumentNullException New_ArgNullException<T>(T Param, string ParamName)
             => new(ParamName, Name + " requires an " + Param.GetType().ToStringWithGenerics() + " to function.");
 
-        public static bool ValidateAlert(IAlert Alert)
+        public static bool ValidateAlert(BaseDetection Alert)
             => Alert != null
             && Alert.ParentBrain is Brain parentBrain
             && parentBrain.ParentObject is GameObject parentObject
@@ -301,7 +301,7 @@ namespace StealthSystemPrototype.Alerts
             && Alert.Perception != null
             && Alert.Origin != null;
 
-        public static bool ValidateAlert(ref IAlert Alert)
+        public static bool ValidateAlert(ref BaseDetection Alert)
         {
             if (!ValidateAlert(Alert))
             {

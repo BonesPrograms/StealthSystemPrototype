@@ -38,10 +38,10 @@ namespace StealthSystemPrototype.Senses
         public override int GetIntensity()
             => base.GetIntensity();
 
-        public override bool CanSense(BasePerception Perception, GameObject Entity)
+        public override bool CanSense(IPerception Perception, GameObject Entity)
             => base.CanSense(Perception, Entity);
 
-        public override AwarenessLevel CalculateAwareness<T>(SenseContext<T> Context)
+        public override AwarenessLevel CalculateAwareness<T>(AlertContext<T> Context)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -75,7 +75,7 @@ namespace StealthSystemPrototype.Senses
             return AwarenessFromRoll(roll);
         }
 
-        public override AwarenessLevel Sense<T>(SenseContext<T> Context)
+        public override AwarenessLevel Sense<T>(AlertContext<T> Context)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -94,7 +94,7 @@ namespace StealthSystemPrototype.Senses
             return CalculateAwareness(Context);
         }
 
-        public override bool TrySense<T>(SenseContext<T> Context)
+        public override bool TrySense<T>(AlertContext<T> Context)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -130,8 +130,8 @@ namespace StealthSystemPrototype.Senses
             }
         }
 
-        public override bool TrySense(SenseContext Context)
-            => TrySense(new SenseContext<TSense>(Context));
+        public override bool TrySense(AlertContext Context)
+            => TrySense(new AlertContext<TSense>(Context));
 
         protected override ISense Copy()
             => new ISense<TSense>(this);

@@ -31,7 +31,7 @@ namespace StealthSystemPrototype.Events
         public override void UpdateFromStringyEvent()
             =>base.UpdateFromStringyEvent();
 
-        public static bool CheckHider<T, TSense>(GameObject Hider, ref IAlert<T, TSense> Alert)
+        public static bool CheckHider<T, TSense>(GameObject Hider, ref Detection<T, TSense> Alert)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
@@ -43,11 +43,11 @@ namespace StealthSystemPrototype.Events
                 || !success)
                 return false;
 
-            Alert = E.Alert as IAlert<T, TSense>;
+            Alert = E.Alert as Detection<T, TSense>;
             return true;
         }
 
-        public static bool CheckPerceiver<T, TSense>(GameObject Perceiver, ref IAlert<T, TSense> Alert)
+        public static bool CheckPerceiver<T, TSense>(GameObject Perceiver, ref Detection<T, TSense> Alert)
             where T : IPerception<TSense>, new()
             where TSense : ISense<TSense>, new()
         {
@@ -59,7 +59,7 @@ namespace StealthSystemPrototype.Events
                 || !success)
                 return false;
 
-            Alert = E.Alert as IAlert<T, TSense>;
+            Alert = E.Alert as Detection<T, TSense>;
             return true;
         }
     }

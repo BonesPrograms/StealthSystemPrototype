@@ -16,23 +16,32 @@ using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiff
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     [Serializable]
-    public class BasePurview : IPurview, IComposite, IComparable<BasePurview>
+    public class BasePurview
+        : IPurview
+        , IComposite
     {
         public static BaseDoubleDiffuser DefaultDiffuser => new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
 
-        public static int MIN_VALUE => 0;
-        public static int MAX_VALUE => 84;
+        private IPerception _ParentPerception;
+        public IPerception ParentPerception
+        {
+            get => _ParentPerception;
+            set => _ParentPerception = value;
+        }
 
-        private static PurviewTypes[] _RadiusFlagValues;
-        public static PurviewTypes[] RadiusFlagValues => _RadiusFlagValues ??= Enum.GetValues(typeof(PurviewTypes)) as PurviewTypes[] 
-            ?? new PurviewTypes[0];
+        private int _Value;
+        public int Value
+        {
+            get => _Value;
+            protected set => _Value = value;
+        }
 
-        private int Value;
-
-        public string Attributes;
-        private BaseDoubleDiffuser DiffusionSequence;
-
-        private double[] _Diffusions;
+        private string _Attributes;
+        public string Attributes
+        {
+            get => _Attributes;
+            protected set => _Attributes = value;
+        }
 
         public int EffectiveValue => GetEffectiveValue();
 
@@ -40,82 +49,34 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         protected BasePurview()
         {
+            _ParentPerception = null;
             Value = 0;
-            Flags = PurviewTypes.None;
-            DiffusionSequence = null;
-            _Diffusions = null;
         }
-        public BasePurview(int Value, PurviewTypes Flags, BaseDoubleDiffuser DiffusionSequence = null)
+        public BasePurview(IPerception ParentPerception, int Value, string Attributes)
             : this()
         {
+            this.ParentPerception = ParentPerception;
             this.Value = Value;
-            this.Flags = Flags;
-            this.DiffusionSequence = DiffusionSequence ?? DefaultDiffuser;
-        }
-        public BasePurview(int Value, BaseDoubleDiffuser DiffusionSequence = null)
-            : this(Value, PurviewTypes.Line, DiffusionSequence)
-        {
+            this.Attributes = Attributes;
         }
         public BasePurview(BasePurview Source)
-            : this(Source.Value, Source.Flags, Source.DiffusionSequence)
-        {
-        }
-        public BasePurview(int Value, BasePurview Source)
-            : this(Value, Source.Flags, Source.DiffusionSequence)
-        {
-        }
-        public BasePurview(BasePurview Source, PurviewTypes Flags)
-            : this(Source.Value, Flags, Source.DiffusionSequence)
-        {
-        }
-        public BasePurview(BasePurview Source, BaseDoubleDiffuser DiffusionSequence = null)
-            : this(Source.Value, Source.Flags, DiffusionSequence)
+            : this(Source.ParentPerception, Source.Value, Source.Attributes)
         {
         }
 
         #endregion
 
-        public void Deconstruct(out int Radius, out PurviewTypes Flags)
-        {
-            Radius = GetValue();
-            Flags = this.Flags;
-        }
-
-        private static string FlagString(PurviewTypes FlagValue)
-            => RadiusFlagValues.Contains(FlagValue)
-            ? FlagValue.ToString().Acronymize()
-            : "?";
-
-        protected static string FlagStrings(PurviewTypes Flags, string Accumulator, PurviewTypes FlagValue)
-            => (FlagValue == PurviewTypes.None
-                    && Flags != FlagValue)
-                || !Flags.HasFlag(FlagValue)
-            ? Accumulator
-            : Accumulator + FlagString(FlagValue);
-
-        protected string FlagStrings(string Accumulator, PurviewTypes FlagValue)
-            => FlagStrings(Flags, Accumulator, FlagValue);
-
-        public string FlagsString()
-            => RadiusFlagValues
-                ?.Aggregate("", FlagStrings)
-            ?? "?";
-
         public override string ToString()
-            => GetValue() + "(" + EffectiveValue + "/" + Value + ")" + 
-            "{" + FlagsString() + "}";
+            => Value + "(E:" + EffectiveValue + ")" + "{" + Attributes + "}";
 
-        public int GetValue()
-            => Value.Clamp(MIN_VALUE, MAX_VALUE);
+        public virtual int GetEffectiveValue()
+            => Value + GetPurviewAdjustment(ParentPerception, Value);
 
-        public int GetEffectiveValue()
-            => Diffusions()
-                ?.Where(d => d > 0)
-                ?.Count()
-            ?? 0;
+        public virtual List<string> GetPerviewAttributes()
+            => Attributes?.CachedCommaExpansion();
 
-        public InclusiveRange AsInclusiveRange()
-            => new(GetValue());
+        public virtual int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0)
+            => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.Owner, ParentPerception, Value);
 
         public BasePurview SetValue(int Value)
         {
@@ -128,68 +89,33 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         #region Predicates
 
-        public static bool IsLine(BasePurview Radius)
-            => Radius.Flags.HasFlag(PurviewTypes.Line);
+        public virtual bool HasAttribute(string Attribute)
+            => GetPerviewAttributes().Contains(Attribute);
 
-        public static bool IsPathing(BasePurview Radius)
-            => Radius.Flags.HasFlag(PurviewTypes.Pathing);
+        public virtual bool HasAttributes(params string[] Attributes)
+            => !Attributes.IsNullOrEmpty()
+            && Attributes.All(a => HasAttribute(a));
 
-        public static bool IsArea(BasePurview Radius)
-            => Radius.Flags.HasFlag(PurviewTypes.Area);
-
-        public static bool Occludes(BasePurview Radius)
-            => Radius.Flags.HasFlag(PurviewTypes.Occludes);
-
-        public static bool Diffuses(BasePurview Radius)
-            => Radius.Flags.HasFlag(PurviewTypes.Diffuses);
-
-        public bool IsLine()
-            => IsLine(this);
-
-        public bool IsPathing()
-            => IsPathing(this);
-
-        public bool IsArea()
-            => IsArea(this);
-
-        public bool Occludes()
-            => Occludes(this);
-
-        public bool Diffuses()
-            => Diffuses(this);
+        public virtual bool IsWithin(IConcealedAction ConcealedAction)
+            => false;
 
         #endregion
+        #region Equatable
 
-        public double[] Diffusions()
-            => Diffuses()
-                && DiffusionSequence?.SetSteps(GetValue()) != null
-            ? _Diffusions ??= DiffusionSequence[..]
-            : _Diffusions ??= new double[GetValue()].Select(d => 1.0).ToArray();
+        public bool Equals(IPurview Other)
+            => Utils.EitherNull(this, Other, out bool areEqual)
+            ? areEqual
+            : Value == Other.Value
+                || EffectiveValue == Other.EffectiveValue;
 
-        public double GetDiffusion(int Distance)
-            => Diffusions()[Distance.Clamp(AsInclusiveRange())];
+        #endregion
+        #region Comparable
 
-        public string GetDiffusionDebug(bool Inline = true)
-            => DiffusionSequence.ToString(Short: false, Inline: Inline);
-
-        #region Comparison
-
-        public int CompareValueTo(BasePurview other)
-            => Value - other.Value;
-
-        public int CompareLineTo(BasePurview other)
-            => Flags.CompareTo(other.Flags);
-
-        public int CompareTo(BasePurview other)
-        {
-            int flagComp = 0;
-            foreach (PurviewTypes flag in RadiusFlagValues)
-                flagComp += Flags.HasFlag(flag).CompareTo(other.Flags.HasFlag(flag));
-
-            int valueCOmp = Value - other.Value;
-
-            return valueCOmp + flagComp;
-        }
+        public int CompareTo(IPurview Other)
+            => Utils.EitherNull(this, Other, out int comparison)
+            ? comparison
+            : (Value - Other.Value) +
+                (EffectiveValue - Other.EffectiveValue);
 
         #endregion
         #region Serialization
@@ -197,46 +123,38 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public static void WriteOptimized(
             SerializationWriter Writer,
             int Value,
-            PurviewTypes Flags,
-            BaseDoubleDiffuser DiffusionSequence)
-        {
-            Writer.WriteOptimized(Value);
-            Writer.WriteOptimized((int)Flags);
-            DiffusionSequence.Write(Writer);
-        }
-        public static void WriteOptimized(SerializationWriter Writer, BasePurview Radius)
-            => WriteOptimized(Writer, Radius.Value, Radius.Flags, Radius.DiffusionSequence);
+            string Attributes)
+            => IPurview.WriteOptimized(Writer, Value, Attributes);
 
-        public static void ReadOptimizedRadius(
+        public static void WriteOptimized(SerializationWriter Writer, BasePurview Purview)
+            => IPurview.WriteOptimized(Writer, Purview);
+
+        public static void ReadOptimizedPurview(
             SerializationReader Reader,
             out int Value,
-            out PurviewTypes Flags,
-            out BaseDoubleDiffuser DiffusionSequence)
+            out string Attributes)
+            => IPurview.ReadOptimizedPurview(Reader, out Value, out Attributes);
+
+        public static BasePurview ReadOptimizedPurview(SerializationReader Reader, IPerception ParentPerception)
         {
-            Value = Reader.ReadOptimizedInt32();
-            Flags = (PurviewTypes)Reader.ReadOptimizedInt32();
-            DiffusionSequence = Reader.ReadComposite() as BaseDoubleDiffuser;
-        }
-        public static BasePurview ReadOptimizedRadius(SerializationReader Reader)
-        {
-            ReadOptimizedRadius(Reader, out int value, out PurviewTypes flags, out BaseDoubleDiffuser DiffusionSequence);
-            return new(value, flags, DiffusionSequence);
+            IPurview.ReadOptimizedPurview(Reader, out int value, out string attributes);
+            return new(ParentPerception, value, attributes);
         }
 
-        public void Write(SerializationWriter Writer)
+        public virtual void Write(SerializationWriter Writer)
         {
-            WriteOptimized(Writer, Value, Flags, DiffusionSequence);
+            WriteOptimized(Writer, Value, Attributes);
         }
-        public void Read(SerializationReader Reader)
+        public virtual void Read(SerializationReader Reader)
         {
-            ReadOptimizedRadius(Reader, out Value, out Flags, out DiffusionSequence);
+            ReadOptimizedPurview(Reader, out _Value, out _Attributes);
         }
 
         #endregion
         #region Conversion
 
         public static explicit operator int(BasePurview Operand)
-            => Operand.GetValue();
+            => Operand.EffectiveValue;
 
         #endregion
     }

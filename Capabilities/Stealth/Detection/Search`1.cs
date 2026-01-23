@@ -15,20 +15,14 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public class Investigate<TSense> : IAlert<IPerception<TSense>, TSense>
+    public class Search<TSense> : Detection<IPerception<TSense>, TSense>
         where TSense : ISense<TSense>, new()
     {
         #region Constructors
 
-        public Investigate()
+        protected Search()
             : base()
         {
-            Grammar = new()
-            {
-                Verb = "investigate",
-                Verbed = "investigated",
-                Verbing = "investigating",
-            };
         }
 
         #endregion
@@ -36,9 +30,9 @@ namespace StealthSystemPrototype.Alerts
         public override void Create()
         {
             base.Create();
-            Think("I will " + GetType().ToStringWithGenerics() + " the " + nameof(Cell) + " at " + 
+            Think("I will " + GetType().ToStringWithGenerics() + " the " + nameof(Cell).Pluralize() + " adjacent to " + 
                 (SourceCell?.Location?.ToString() ?? "NO_LOCATION") + 
-                " because something there made me " + Level.ToString());
+                " because something there made me " + Level.ToString() + " and nothing was there.");
         }
     }
 }

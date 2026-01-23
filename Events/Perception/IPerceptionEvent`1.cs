@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Perceiver;
 
-        public BasePerception Perception;
+        protected IPerception Perception;
 
         public PerceptionRack Perceptions;
 
@@ -57,7 +57,7 @@ namespace StealthSystemPrototype.Events
 
         public static T FromPool(
             GameObject Perciever,
-            BasePerception Perception,
+            IPerception Perception,
             PerceptionRack Perceptions)
         {
             if (Perciever == null
@@ -71,7 +71,7 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
-        public static T FromPool(GameObject Perciever, BasePerception Perception)
+        public static T FromPool(GameObject Perciever, IPerception Perception)
             => FromPool(Perciever, Perception, null);
 
         public static T FromPool(GameObject Perciever, PerceptionRack Perceptions)
@@ -93,16 +93,13 @@ namespace StealthSystemPrototype.Events
 
         public virtual void UpdateFromStringyEvent()
         {
-            if (StringyEvent?.GetParameter(nameof(Perception)) is PerceptionRack perception)
-                Perceptions = perception;
-
             if (StringyEvent?.GetParameter(nameof(Perceptions)) is PerceptionRack perceptions)
                 Perceptions = perceptions;
         }
 
         protected static T Process(
             GameObject Perciever,
-            BasePerception Perception,
+            IPerception Perception,
             PerceptionRack Perceptions,
             out bool Success)
         {
@@ -123,6 +120,12 @@ namespace StealthSystemPrototype.Events
             }
             return E;
         }
+
+        public virtual string GetPerceptionName(bool Short = false)
+            => Perception?.GetName(Short);
+
+        public virtual bool CanPerceptionPerceive(IAlert Alert)
+            => Perception?.CanPerceive(Alert) ?? false;
     }
 }
 

@@ -599,7 +599,7 @@ namespace StealthSystemPrototype
             return null;
         }
 
-        public static IAlert FindAlert<TSense>(this Brain Brain, IPerception<TSense> Perception)
+        public static BaseDetection FindAlert<TSense>(this Brain Brain, IPerception<TSense> Perception)
             where TSense : ISense<TSense>, new()
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
@@ -607,32 +607,32 @@ namespace StealthSystemPrototype
 
 
             for (int i = goalHandlers.Count - 1; i >= 0; i--)
-                if (goalHandlers[i] is IAlert<IPerception<TSense>, TSense> alert
+                if (goalHandlers[i] is Detection<IPerception<TSense>, TSense> alert
                     && alert.Perception == Perception)
                     return alert;
 
             return null;
         }
 
-        public static IAlert FirstAlert(this Brain Brain, Predicate<IAlert> Predicate)
+        public static BaseDetection FirstAlert(this Brain Brain, Predicate<BaseDetection> Predicate)
             => Brain?.Goals?.Items
                 ?.FirstOrDefault(
-                    g => g is IAlert gAlert
+                    g => g is BaseDetection gAlert
                     && (Predicate == null || Predicate(gAlert))
-                ) as IAlert;
+                ) as BaseDetection;
 
-        public static IAlert FirstAlert(this Brain Brain)
-            => Brain?.Goals?.Items?.FirstOrDefault(g => g is IAlert) as IAlert;
+        public static BaseDetection FirstAlert(this Brain Brain)
+            => Brain?.Goals?.Items?.FirstOrDefault(g => g is BaseDetection) as BaseDetection;
 
-        public static bool AnyAlert(this Brain Brain, Predicate<IAlert> Predicate)
+        public static bool AnyAlert(this Brain Brain, Predicate<BaseDetection> Predicate)
             => Brain?.Goals?.Items is List<GoalHandler> goalHandlers
             && goalHandlers.Any(g
-                => g is IAlert gAlert
+                => g is BaseDetection gAlert
                 && (Predicate == null
                     || Predicate(gAlert)));
 
-        public static IAlert FindAlert(this Brain Brain, IAlert Alert)
-            => Brain.FindGoal(Alert.GetType()) as IAlert;
+        public static BaseDetection FindAlert(this Brain Brain, BaseDetection Alert)
+            => Brain.FindGoal(Alert.GetType()) as BaseDetection;
 
         #endregion
         #region Cells

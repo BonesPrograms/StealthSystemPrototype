@@ -19,7 +19,7 @@ namespace StealthSystemPrototype.Events
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
-        public IConcealedAction ConcealedAction;
+        public BaseConcealedAction ConcealedAction;
 
         public TryConcealActionEvent()
             : base()
@@ -37,7 +37,7 @@ namespace StealthSystemPrototype.Events
                 .SetParameterOrNullExisting(nameof(ConcealedAction), ConcealedAction)
                 ;
 
-        public static void Send(GameObject Hider, SneakPerformance Performance, IConcealedAction ConcealedAction)
+        public static void Send(GameObject Hider, SneakPerformance Performance, BaseConcealedAction ConcealedAction)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
