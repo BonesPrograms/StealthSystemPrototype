@@ -10,9 +10,14 @@ using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
-    public abstract class BaseConcealedAction : Rack<ISense>, IAlert
+    public abstract class BaseConcealedAction : Rack<IAlert>, IConcealedAction
     {
-        public GameObject Actor;
+        private GameObject _Actor;
+        public GameObject Actor
+        {
+            get => _Actor;
+            protected set => _Actor = value;
+        }
 
         public int MinID;
         public string ID;

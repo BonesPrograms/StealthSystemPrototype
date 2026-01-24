@@ -12,7 +12,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Senses;
 
-namespace StealthSystemPrototype.Alerts
+namespace StealthSystemPrototype.Detetections
 {
     [Serializable]
     public class Detection<TPerception, TAlert> : BaseDetection

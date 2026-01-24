@@ -16,10 +16,11 @@ using Range = System.Range;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Detetections;
 
 using static StealthSystemPrototype.Utils;
 using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 namespace StealthSystemPrototype
 {
@@ -345,6 +346,9 @@ namespace StealthSystemPrototype
             return true;
         }
 
+        public static IEnumerable<TSource> WhereNot<TSource>(this IEnumerable<TSource> Source, Func<TSource, bool> Predicate)
+            => Source.Where(t => !Predicate(t));
+
         #endregion
         #region Strings
 
@@ -599,7 +603,7 @@ namespace StealthSystemPrototype
             return null;
         }
 
-        public static BaseDetection FindAlert<TSense>(this Brain Brain, IPerception<TSense> Perception)
+        public static BaseDetection FindDetection<TSense>(this Brain Brain, IPerception<TSense> Perception)
             where TSense : ISense<TSense>, new()
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
@@ -701,8 +705,8 @@ namespace StealthSystemPrototype
                         yield return output;
         }
 
-        public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, Purview Radius)
-            => Cell?.GetCellsInACosmeticCircleSilent(Radius.EffectiveValue);
+        public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, IPurview Purview)
+            => Cell?.GetCellsInACosmeticCircleSilent(Purview.EffectiveValue);
 
         #endregion
         #region Collection Manipulation
@@ -712,6 +716,58 @@ namespace StealthSystemPrototype
             List?.ToList()?.Sort(Comparison);
             return List;
         }
+
+        public static void ForEach<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<KeyValuePair<K, V>> Proc)
+        {
+            if (Dictionary != null)
+                foreach (KeyValuePair<K, V> item in Dictionary)
+                    Proc(item);
+        }
+
+        public static void ForEach<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<K> KeyProc,
+            Action<V> ValueProc)
+            => Dictionary.ForEach(
+                Proc: delegate (KeyValuePair<K, V> kvp)
+                {
+                    KeyProc?.Invoke(kvp.Key);
+                    ValueProc?.Invoke(kvp.Value);
+                });
+
+        public static void ForEachKey<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<K> KeyProc)
+            => Dictionary.ForEach(KeyProc: KeyProc, ValueProc: null);
+
+        public static void ForEachValue<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<V> ValueProc)
+            => Dictionary.ForEach(KeyProc: null, ValueProc: ValueProc);
+
+        public static void DoAndThenForEach<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<IDictionary<K, V>> Do,
+            Action<KeyValuePair<K, V>> Proc)
+        {
+            Do?.Invoke(Dictionary);
+            Dictionary?.ForEach(Proc);
+        }
+
+        public static void DoAndThenForEach<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<IDictionary<K, V>> Do,
+            Action<K> KeyProc,
+            Action<V> ValueProc)
+            => Dictionary.DoAndThenForEach(
+                Do: Do,
+                Proc: delegate (KeyValuePair<K, V> kvp)
+                {
+                    KeyProc?.Invoke(kvp.Key);
+                    ValueProc?.Invoke(kvp.Value);
+                });
 
         #endregion
         #region Math?
@@ -732,6 +788,50 @@ namespace StealthSystemPrototype
 
         public static Range ReadOptimizedRange(this SerializationReader Reader)
             => new(Reader.ReadOptimizedInt32(), Reader.ReadOptimizedInt32());
+
+        public static void WriteOptimized(this SerializationWriter Writer, bool? Bool)
+        {
+            switch (Bool)
+            {
+                case true:
+                    Writer.WriteOptimized(1);
+                    break;
+                case false:
+                    Writer.WriteOptimized(-1);
+                    break;
+                default:
+                case null:
+                    Writer.WriteOptimized(0);
+                    break;
+            }
+        }
+        public static bool? ReadOptimizedNullableBool(this SerializationReader Reader)
+            => Reader.ReadOptimizedInt32() switch
+            {
+                1 => true,
+                -1 => false,
+                _ => null,
+            };
+
+        public static void WriteOptimized(this SerializationWriter Writer, Dictionary<string, string> Dictionary)
+            => Dictionary.DoAndThenForEach(
+                Do: d => Writer.WriteOptimized(Dictionary == null ? -1 : Dictionary.Keys.Count),
+                KeyProc: k => Writer.WriteOptimized(k),
+                ValueProc: v => Writer.WriteOptimized(v));
+
+        public static Dictionary<string, string> ReadOptimizedStringPairDictionary(this SerializationReader Reader)
+        {
+            int count = Reader.ReadOptimizedInt32();
+
+            if (count < 0)
+                return null;
+
+            Dictionary<string, string> readDictionary = new(count);
+            for (int i = 0; i < count; i++)
+                readDictionary[Reader.ReadOptimizedString()] = Reader.ReadOptimizedString();
+
+            return readDictionary;
+        }
 
         #endregion
         #region Indices
@@ -784,6 +884,20 @@ namespace StealthSystemPrototype
         #region Comparison
 
         // nuffin yet.
+
+        #endregion
+        #region Predicates
+
+        public static bool HasCustomAttribute<T>(this Type Type)
+            where T : Attribute
+            => Type.GetCustomAttribute<T>() != null;
+
+        public static bool HasCustomAttribute(this Type Type, Type Attribute)
+            => Type.GetCustomAttribute(Attribute) != null;
+
+        public static bool HasDefaultPublicParameterlessConstructor(this Type Type)
+            => Type?.GetDefaultConstructor() is ConstructorInfo constructorInfo
+            && constructorInfo.IsPublic;
 
         #endregion
     }

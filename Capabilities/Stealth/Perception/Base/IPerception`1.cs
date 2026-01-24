@@ -17,7 +17,7 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 using System.Reflection;
 using StealthSystemPrototype.Senses;
-using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Detetections;
 
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 

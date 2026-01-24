@@ -12,11 +12,10 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Senses;
 
-namespace StealthSystemPrototype.Alerts
+namespace StealthSystemPrototype.Detetections
 {
     [Serializable]
-    public class Investigate<TSense> : Detection<IPerception<TSense>, TSense>
-        where TSense : ISense<TSense>, new()
+    public class Investigate : BaseDetection
     {
         #region Constructors
 

@@ -12,7 +12,7 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class SimpleOlfactoryPerception : SimplePerception<Olfactory>
+    public class SimpleOlfactoryPerception : SimplePerception<Senses.Olfactory>
     {
         #region Constructors
 

@@ -12,7 +12,7 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class SimpleVisualPerception : SimplePerception<Visual>
+    public class SimpleVisualPerception : SimplePerception<Senses.Visual>
     {
         #region Constructors
 

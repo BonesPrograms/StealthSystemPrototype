@@ -17,6 +17,7 @@ using StealthSystemPrototype.Senses;
 using static StealthSystemPrototype.Const;
 
 using Debug = StealthSystemPrototype.Logging.Debug;
+using XRL.World.Parts.Mutation;
 
 namespace StealthSystemPrototype
 {
@@ -414,6 +415,43 @@ namespace StealthSystemPrototype
             return X.Length > 0
                 || Y.Length > 0;
         }
+
+        #endregion
+        #region Predicates
+
+        public static bool HasCustomAttribute<T>(Type Type)
+            where T : Attribute
+            => Type != null
+            && Type.HasCustomAttribute<T>();
+
+        public static bool HasCustomAttribute(Type Type, Type Attribute)
+            => Type != null
+            && Type.HasCustomAttribute(Attribute);
+
+        public static bool NotHasCustomAttribute<T>(Type Type)
+            where T : Attribute
+            => Type != null
+            && !HasCustomAttribute<T>(Type);
+
+        public static bool NotHasCustomAttribute(Type Type, Type Attribute)
+            => Type != null
+            && !HasCustomAttribute(Type, Attribute);
+
+        public static bool HasDefaultPublicParameterlessConstructor(Type Type)
+            => Type.HasDefaultPublicParameterlessConstructor();
+
+        public static bool IsAbstract(Type Type)
+            => Type != null
+            && Type.IsAbstract;
+
+        public static bool IsNotAbstract(Type Type)
+            => Type != null
+            && !IsAbstract(Type);
+
+        public static bool IsMentalWithBaseLevels(BaseMutation BaseMutation)
+            => BaseMutation !!= null
+            && BaseMutation.IsMental()
+            && BaseMutation.BaseLevel > 0;
 
         #endregion
         #region Math?

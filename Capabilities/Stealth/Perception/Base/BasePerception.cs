@@ -16,15 +16,17 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 using StealthSystemPrototype.Senses;
-using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Detetections;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 
 using SerializeField = UnityEngine.SerializeField;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Perceptions
 {
+    [StealthSystemBaseClass]
     [Serializable]
     public abstract class BasePerception
         : IComponent<GameObject>
@@ -46,65 +48,53 @@ namespace StealthSystemPrototype.Perceptions
                 Writer.WriteTokenized(Handler.GetType());
             }
 
-            public override IEventHandler ReadBind(SerializationReader Reader, int ID)
-            {
-                GameObject owner = Reader.ReadGameObject();
-                Type type = Reader.ReadTokenizedType();
-                foreach (IPerception perception in owner?.GetPerceptions() ?? new())
-                    if ((object)perception.GetType() == type)
-                        return perception;
+            protected IEventHandler GetHandler(GameObject Owner, Type Type)
+                => (Owner?.GetPerceptions() ?? new())
+                ?.FirstOrDefault(p => p.GetType() == Type);
 
-                return null;
-            }
+            public override IEventHandler ReadBind(SerializationReader Reader, int ID)
+                => Reader.ReadGameObject() is GameObject owner
+                    && Reader.ReadTokenizedType() is Type type
+                    && GetHandler(owner, type) is IEventHandler handler
+                ? handler
+                : null;
         }
 
-        public class RatingComparer : IComparer<IPerception>
+        public class PerceptionComparer : IComparer<IPerception>
         {
-            protected GameObject Entity;
-
-            private RatingComparer()
+            public enum ComparisonType
             {
-                Entity = null;
+                None,
+                Level,
+                EffectiveLevel,
+                Purview,
             }
-            public RatingComparer(GameObject Entity)
-                : base()
-            {
-                this.Entity = Entity;
-            }
+            protected ComparisonType Type;
 
+            public PerceptionComparer()
+            {
+                Type = ComparisonType.None;
+            }
+            public PerceptionComparer(ComparisonType Type)
+                : this()
+            {
+                this.Type = Type;
+            }
             public virtual int Compare(IPerception x, IPerception y)
-            {
-                if (EitherNull(x, y, out int comparison))
-                    return comparison;
-
-                if (Entity != null)
+                => EitherNull(x, y, out int comparison)
+                ? comparison
+                : Type switch
                 {
-                    int rollComp = x.Roll(Entity).CompareTo(y.Roll(Entity));
-                    if (rollComp != 0)
-                        return rollComp;
-                }
-                return x.CompareTo(y);
-            }
+                    ComparisonType.Level => x.CompareLevelTo(y),
+                    ComparisonType.EffectiveLevel => x.CompareEffectiveLevelTo(y),
+                    ComparisonType.Purview => x.ComparePurviewTo(y),
+                    ComparisonType.None or
+                    _ => x.CompareTo(y),
+                };
         }
 
         #endregion
         #region Const & Static Values
-
-        public const int MIN_DIE_ROLL = 0;
-        public const int MAX_DIE_ROLL = 100;
-        public static ClampedDieRoll BASE_DIE_ROLL => new(30..50, DIE_ROLL_CLAMP); // ~10 either side of AwarenessLevel.Suspect
-
-        public const int MIN_RADIUS = 0;
-        public const int MAX_RADIUS = 84; // corner to corner of a single zone.
-        public static BasePurview BASE_RADIUS => new(10, RADIUS_CLAMP, Purview.DefaultDiffuser);
-
-        public static InclusiveRange DIE_ROLL_CLAMP => new(MIN_DIE_ROLL, MAX_DIE_ROLL);
-        public static InclusiveRange RADIUS_CLAMP => new(MIN_RADIUS, MAX_RADIUS);
-
-        public static BasePurview.RadiusFlags VisualFlag => Purview.RadiusFlags.Line | Purview.RadiusFlags.Occludes | Purview.RadiusFlags.Diffuses;
-        public static BasePurview.RadiusFlags AuditoryFlag => Purview.RadiusFlags.Area | Purview.RadiusFlags.Pathing | Purview.RadiusFlags.Diffuses;
-        public static BasePurview.RadiusFlags OlfactoryFlag => Purview.RadiusFlags.Area | Purview.RadiusFlags.Pathing | Purview.RadiusFlags.Diffuses;
-        public static BasePurview.RadiusFlags PsionicFlag => Purview.RadiusFlags.Line | Purview.RadiusFlags.Area | Purview.RadiusFlags.Diffuses;
 
         #endregion
         #region Instance Fields & Properties
@@ -138,9 +128,16 @@ namespace StealthSystemPrototype.Perceptions
 
         public int EffectiveLevel => Level + GetLevelAdjustment(Level);
 
-        [NonSerialized]
-        protected IPurview _Purview;
-        public abstract IPurview Purview { get; set; }
+        private IPurview _Purview;
+        IPurview IPerception.Purview
+        {
+            get => _Purview ??= ((IPerception)this).GetPurview();
+            set
+            {
+                _Purview = value;
+                _Purview.SetParentPerception(this);
+            }
+        }
 
         #endregion
         #region Constructors
@@ -167,7 +164,7 @@ namespace StealthSystemPrototype.Perceptions
             : this(Owner)
         {
             this.Level = Level;
-            this.Purview = Purview;
+            this._Purview = Purview;
         }
 
         #endregion
@@ -180,7 +177,7 @@ namespace StealthSystemPrototype.Perceptions
             base.Write(Basis, Writer);
             Writer.WriteGameObject(Owner);
             Writer.WriteOptimized(Level);
-            IPurview.WriteOptimized(Writer, Purview);
+            IPurview.WriteOptimized(Writer, _Purview);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
@@ -201,11 +198,20 @@ namespace StealthSystemPrototype.Perceptions
 
         #region Base Methods
 
-        public abstract void Initialize();
+        public virtual void Initialize()
+        {
+        }
 
-        public abstract void Attach();
+        public virtual void Attach()
+        {
+        }
 
-        public abstract void Remove();
+        public virtual void Remove()
+        {
+        }
+
+        IPurview IPerception.GetPurview()
+            => null;
 
         public virtual BasePerception DeepCopy(GameObject Parent)
         {
@@ -222,17 +228,6 @@ namespace StealthSystemPrototype.Perceptions
 
             return perception;
         }
-
-        public virtual bool Validate()
-        {
-            if (Owner == null)
-                return false;
-
-            return true;
-        }
-
-        public virtual int GetLevelAdjustment(int Level = 0)
-            => AdjustTotalPerceptionLevelEvent.GetFor(Owner, this, Level);
 
         #endregion
         #region Virtual Event Registration
@@ -325,112 +320,64 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public virtual string GetName(bool Short = false)
-            => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
-
-        public virtual string ToString(bool Short, GameObject Entity = null, bool UseLastRoll = false)
-        {
-            string rollString = null;
-            if (Entity != null)
-                rollString = "(" + Roll(Entity) + ")";
-
-            return ShortName + "[" + BaseDieRoll + ":@R:" + BaseRadius + "]" + rollString;
-        }
+        public virtual string ToString(bool Short)
+            => GetName(Short) + "[" + EffectiveLevel + ":@P:" + ((IPerception)this).Purview.EffectiveValue + "]";
 
         public override string ToString()
             => ToString(false);
 
-        public virtual List<Cell> GetRadiusAreaCells()
-            => Purview.IsArea()
-                && Owner?.CurrentCell?.GetCellsInACosmeticCircle(Purview.EffectiveValue) is IEnumerable<Cell> cells
-            ? Event.NewCellList(cells)
-            : Event.NewCellList();
+        public virtual string GetName(bool Short = false)
+            => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
 
-        public bool CheckInPerview(IConcealedAction ConcealedAction)
+        public IDetection RaiseDetection(AlertContext AlertContext)
+        {
+            throw new NotImplementedException("Better implement this soon!");
+        }
+
+        public bool CheckInPurview(AlertContext Context)
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
+                    Debug.Arg(nameof(Owner), Owner?.MiniDebugName() ?? "null"),
+                    Debug.Arg(nameof(Context.Actor), Context?.Actor?.MiniDebugName() ?? "null"),
                 });
 
-            return Purview.IsWithin(ConcealedAction)
+            return Context?.AlertLocation is Cell alertLocation
+                && _Purview is IPurview purview
+                && purview.IsWithin(alertLocation);
         }
 
-        public virtual int Roll(GameObject Entity)
+        public abstract bool CanPerceiveAlert(IAlert Alert);
+
+        public virtual bool CanPerceive(AlertContext Context)
+            => ((IPerception)this).CanPerceive(Context);
+
+        public virtual bool TryPerceive(AlertContext Context)
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
-                });
+            if (Context == null)
+                return false;
 
-            if (Entity == null)
-                return 0;
+            if (!Validate())
+                return false;
 
-            return DieRoll.Roll();;
+            if (!CanPerceiveAlert(Context.Alert))
+                return false;
+
+            return true;
         }
 
-        public int[] Rolls(GameObject Entity, int Rolls = 1)
-        {
-            if (Entity == null)
-                throw new ArgumentNullException(nameof(Entity), nameof(this.Rolls) + " requires a " + nameof(GameObject) + " to perceive.");
+        public virtual void ClearCaches()
+            => _Purview?.ClearCaches();
 
-            if (Rolls < 1)
-                throw new ArgumentOutOfRangeException(nameof(Rolls), "Must be greater than or equal to 1.");
+        public virtual bool Validate()
+            => ((IPerception)this).Validate();
 
-            int[] rolls = new int[Rolls];
-            for (int i = 0; i < Rolls; i++)
-                rolls[i] = Roll(Entity);
+        public virtual int GetLevelAdjustment(int Level = 0)
+            => AdjustTotalPerceptionLevelEvent.GetFor(Owner, this, Level);
 
-            return rolls;
-        }
-
-        public virtual int RollAdvantage(GameObject Entity, int Rolls = 2)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Rolls), Rolls),
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
-                });
-
-            if (Entity == null)
-                throw new ArgumentNullException(nameof(Entity), nameof(RollAdvantage) + " requires a " + nameof(GameObject) + " to perceive.");
-
-            if (Rolls < 1)
-                throw new ArgumentOutOfRangeException(nameof(Rolls), "Must be greater than or equal to 1.");
-
-            GetMinMax(out int _, out int max, this.Rolls(Entity, Rolls));
-            return max;
-        }
-        public virtual int RollDisadvantage(GameObject Entity, int Rolls = 2)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Rolls), Rolls),
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
-                });
-
-            if (Entity == null)
-                throw new ArgumentNullException(nameof(Entity), nameof(RollDisadvantage) + " requires a " + nameof(GameObject) + " to perceive.");
-
-            if (Rolls < 1)
-                throw new ArgumentOutOfRangeException(nameof(Rolls), "Must be greater than or equal to 1.");
-
-            GetMinMax(out int min, out int _, this.Rolls(Entity, Rolls));
-            return min;
-        }
-
+        /*
         public bool RaiseAlert<TSense, TAlert>(AlertContext<TSense> Context, ISense<TSense> Sense, AwarenessLevel Level, bool? OverridesCombat = null)
             where TSense : ISense<TSense>, new()
             where TAlert : Detection<IPerception<TSense>, TSense>, new()
@@ -457,7 +404,23 @@ namespace StealthSystemPrototype.Perceptions
             }
             return false;
         }
+        */
 
+        #region Comparison
+
+        public virtual int CompareLevelTo(IPerception Other)
+            => ((IPerception)this).CompareLevelTo(Other);
+
+        public virtual int CompareEffectiveLevelTo(IPerception Other)
+            => ((IPerception)this).CompareEffectiveLevelTo(Other);
+
+        public virtual int ComparePurviewTo(IPerception Other)
+            => ((IPerception)this).ComparePurviewTo(Other);
+
+        public virtual int CompareTo(IPerception Other)
+            => ((IPerception)this).CompareLevelTo(Other);
+
+        #endregion
         #region Event Handling
 
         public override bool WantEvent(int ID, int Cascade)
@@ -466,23 +429,8 @@ namespace StealthSystemPrototype.Perceptions
             ;
         public override bool HandleEvent(EnteredCellEvent E)
         {
-            _RadiusAreaCells = null;
+            ClearCaches();
             return base.HandleEvent(E);
-        }
-
-        #endregion
-        #region Comparison
-
-        public int CompareTo(IPerception Other)
-        {
-            if (EitherNull(this, Other, out int comparison))
-                return comparison;
-
-            int levelComp = Level - Other.Level;
-            if (levelComp != 0)
-                return levelComp;
-
-            return Purview.CompareTo(Other.Purview);
         }
 
         #endregion

@@ -17,7 +17,7 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class EsperPsionicPerception : IPartPerception<Esper, Psionic>
+    public class EsperPsionicPerception : IPartPerception<Esper, Senses.Psionic>
     {
         #region Constructors
 

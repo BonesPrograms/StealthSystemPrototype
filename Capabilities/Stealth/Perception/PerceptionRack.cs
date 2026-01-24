@@ -17,7 +17,6 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Const;
-using static StealthSystemPrototype.Perceptions.IPerception;
 using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
@@ -279,9 +278,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return null;
         }
 
-        protected IPerception<TSense> Get<TSense>()
-            where TSense : ISense<TSense>, new()
-            => Get<IPerception<TSense>, TSense>();
+        public IPerception GetOfType(Type Type)
+        {
+            for (int i = 0; i < Count; i++)
+                if (Items[i].GetType() == Type)
+                    return Items[i];
+            return null;
+        }
+
+        public T Get<T>()
+            where T : class, IPerception, new()
+            => (T)GetOfType(typeof(T));
 
         public IPerception Get(string Name)
             => AsEnumerable(
@@ -304,9 +311,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => AsEnumerable(IsPerceptionOfSense<TSense>)
                 ?.FirstOrDefault() as IPerception<TSense>;
 
-        public bool TryGet<TSense>(out IPerception<TSense> Perception)
-            where TSense : ISense<TSense>, new()
-            => (Perception = Get<TSense>()) != null;
+        public bool TryGet<T>(out T Perception)
+            where T : IPerception, new()
+            => (Perception = Get<T>()) != null;
 
         public bool TryGet(string Name, out IPerception Perception)
             => (Perception = Get(Name)) != null;

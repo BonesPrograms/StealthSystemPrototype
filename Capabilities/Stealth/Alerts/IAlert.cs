@@ -5,6 +5,7 @@ using System.Text;
 using XRL.World;
 
 using StealthSystemPrototype.Perceptions;
+using XRL.Collections;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -12,9 +13,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     /// Contracts a type as being representative of the obviousness of one aspect of an <see cref="IConcealedAction"/> to an appropriate <see cref="IPerception"/>.
     /// </summary>
     public interface IAlert<T> : IAlert
-        where T : IAlert<T>, new()
+        where T : class, IAlert<T>, new()
     {
         public new T AdjustIntensity(int Amount);
+        public new T Copy();
     }
 
     /// <summary>
@@ -23,10 +25,24 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     /// <remarks>
     /// This serves as a non-generic base which should typically not be derived from directly.
     /// </remarks>
-    public interface IAlert
+    public interface IAlert : IDisposable, IComposite
     {
+        public bool IsBase { get; }
+
+        public string Name { get; }
+
+        public int DefaultIntensity { get; }
+
         public int Intensity { get; set; }
 
+        public Dictionary<string, string> Properties { get; set; }
+
+        public void Initialize();
+
+        public void Created();
+
         public IAlert AdjustIntensity(int Amount);
+
+        public IAlert Copy();
     }
 }

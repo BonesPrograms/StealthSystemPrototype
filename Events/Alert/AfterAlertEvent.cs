@@ -11,7 +11,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Detetections;
 using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Events
@@ -31,14 +31,14 @@ namespace StealthSystemPrototype.Events
         public override void UpdateFromStringyEvent()
             =>base.UpdateFromStringyEvent();
 
-        public static void Send<T, TSense>(GameObject Perceiver, GameObject Hider, Detection<T, TSense> Alert)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+        public static void Send<TPerception, TAlert>(GameObject Perceiver, GameObject Hider, Detection<TPerception, TAlert> Detection)
+            where TPerception : IPerception, new()
+            where TAlert : IAlert, new()
         {
             if (FromPool(
                     Perceiver: Perceiver,
                     Hider: Hider,
-                    Alert: Alert) is not AfterAlertEvent E)
+                    Alert: Detection) is not AfterAlertEvent E)
                 return;
 
             Process(E, out bool success);

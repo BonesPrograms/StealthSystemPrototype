@@ -16,6 +16,7 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Const;
 using static StealthSystemPrototype.Utils;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 namespace XRL.World.Parts
 {
@@ -286,6 +287,9 @@ namespace XRL.World.Parts
                     Debug.Arg(E.GetType().ToStringWithGenerics()),
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
+
+            if (ParentObject.GetFirstBodyPart("Face") is BodyPart facePart)
+                E.RequireBodyPartPerception<VisualBodyPartPerception>(facePart, 3, new VisualPurview(1));
 
             E.RequirePerception(new SimpleVisualPerception(ParentObject));
             E.RequirePerception(new SimpleAuditoryPerception(ParentObject));

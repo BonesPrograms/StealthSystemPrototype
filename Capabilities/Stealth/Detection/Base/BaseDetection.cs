@@ -17,148 +17,38 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Logging;
 
-namespace StealthSystemPrototype.Alerts
+namespace StealthSystemPrototype.Detetections
 {
+    [StealthSystemBaseClass]
     [Serializable]
-    public abstract class BaseDetection : GoalHandler, IComposite//, IComparable<BaseAlert>
+    public class BaseDetection<P, A>
+        : GoalHandler
+        , IDetection<P, A>
+        //, IComparable<BaseDetection>
+        where P : class, IAlertTypedPerception<A>, new()
+        where A : class, IAlert, new()
     {
-        [Serializable]
-        protected class DetectionSource : IComposite
+        private Guid _ID;
+        public Guid ID
         {
-            public BaseDetection ParentAlert;
-
-            private GameObject _Object;
-            public GameObject Object => _Object;
-
-            private Cell _Cell;
-            public Cell Cell
+            get
             {
-                get => _Cell == null
-                        && !ZoneID.IsNullOrEmpty()
-                        && The.ZoneManager is ZoneManager zoneManager
-                        && zoneManager.IsZoneLive(ZoneID)
-                    ? _Cell = zoneManager.GetZone(ZoneID).GetCell(Location)
-                    : _Cell;
-                set
-                {
-                    _Cell = value;
-                    ZoneID = _Cell?.ParentZone?.ZoneID;
-                    Location = _Cell?.Location ?? default;
-                }
+                if (_ID == Guid.Empty)
+                    _ID = Guid.NewGuid();
+                return _ID;
             }
-
-            private string ZoneID;
-            private Location2D Location;
-
-            private Brain ParentBrain => ParentAlert?.ParentBrain;
-            private GameObject ParentObject => ParentBrain?.ParentObject;
-
-            #region Constructors
-
-            public DetectionSource()
-            {
-                ParentAlert = null;
-                _Object = null;
-                ZoneID = null;
-                Location = default;
-            }
-            public DetectionSource(BaseDetection ParentAlert, GameObject Object, Cell Cell)
-                : this()
-            {
-                this.ParentAlert = ParentAlert;
-                _Object = Object;
-                this.Cell = Cell;
-            }
-            public DetectionSource(BaseDetection ParentAlert, GameObject Object)
-                : this(ParentAlert, Object, Object?.CurrentCell)
-            {
-            }
-            public DetectionSource(BaseDetection ParentAlert, Cell Cell)
-                : this(ParentAlert, null, Cell)
-            {
-            }
-            public DetectionSource(BaseDetection ParentAlert, AlertContext Context)
-                : this(ParentAlert, Context.Perceiver, Context.Perceiver?.CurrentCell)
-            {
-            }
-            public DetectionSource(DetectionSource Source)
-                : this(Source.ParentAlert, Source.Object, Source.Cell)
-            {
-            }
-            public DetectionSource(BaseDetection ParentAlert)
-                : this(ParentAlert.Source)
-            {
-                SetParentAlert(ParentAlert);
-            }
-
-            public DetectionSource SetParentAlert(BaseDetection Alert)
-            {
-                ParentAlert = Alert;
-                return this;
-            }
-
-            #endregion
-            #region Serialization
-
-            public void Write(SerializationWriter Writer)
-            {
-                Writer.WriteGameObject(Object);
-                Writer.WriteOptimized(ZoneID);
-                Writer.WriteOptimized(Location.X);
-                Writer.WriteOptimized(Location.Y);
-            }
-            public void Read(SerializationReader Reader)
-            {
-                _Object = Reader.ReadGameObject();
-                ZoneID = Reader.ReadOptimizedString();
-                Location = new(
-                    X: Reader.ReadOptimizedInt32(),
-                    Y: Reader.ReadOptimizedInt32());
-            }
-
-            #endregion
-
-            public bool HasObject()
-                => GameObject.Validate(Object)
-                && Object.CurrentCell != null
-                && !Object.InActiveZone()
-                && !Object.InSameZone(ParentObject);
-
-            public Cell GetCurrentCellOrCell()
-                => !ValidateAlert(ref ParentAlert)
-                    || !HasObject()
-                    || Object.CurrentCell is not Cell currentCell
-                ? Cell
-                : currentCell;
-
-            public bool TryGetCurrentCellOrCell(out Cell Cell)
-                => (Cell = GetCurrentCellOrCell()) != null;
-
-            public GameObject GetObject()
-                => GameObject.Validate(Object)
-                ? Object
-                : null;
-
-            public bool TryGetObject(out GameObject Object)
-                => (Object = GetObject()) != null;
+            protected set => _ID = value;
         }
 
-        [Serializable]
-        public struct DetectionGrammar : IComposite
+        private string _Name; 
+        public string Name => _Name ??= GetType().ToStringWithGenerics();
+
+        private DetectionSource _Source;
+        public DetectionSource Source
         {
-            public string Verb;
-            public string Verbed;
-            public string Verbing;
-
-            public DetectionGrammar(string Verb, string Verbed, string Verbing)
-            {
-                this.Verb = Verb;
-                this.Verbed = Verbed;
-                this.Verbing = Verbing;
-            }
+            get => _Source;
+            protected set => _Source = value;
         }
-
-        public string Name => GetType().ToStringWithGenerics();
 
         private DetectionGrammar _Grammar;
         public DetectionGrammar Grammar
@@ -167,149 +57,168 @@ namespace StealthSystemPrototype.Alerts
             protected set => _Grammar = value;
         }
 
-        public IPerception Perception;
+        private Type PerceptionType;
 
-        public IAlert Alert;
+        private P _Perception;
+        public P Perception
+        {
+            get => _Perception ??= ParentObject?.GetPerceptions()?.Get<P>();
+        }
+        IPerception IDetection.Perception => Perception;
 
-        public Cell Origin;
+        private A _Alert;
+        public A Alert
+        {
+            get => _Alert;
+            protected set => _Alert = value;
+        }
+        IAlert IDetection.Alert => Alert;
 
-        public AwarenessLevel Level;
+        private Cell _Origin;
+        public Cell Origin
+        {
+            get => _Origin;
+            protected set => _Origin = value;
+        }
 
-        public bool OverridesCombat;
+        private AwarenessLevel _Level;
+        public AwarenessLevel Level
+        {
+            get => _Level;
+            protected set => _Level = value;
+        }
 
-        [NonSerialized]
-        protected DetectionSource Source;
+        private int _Priority;
+        public int Priority
+        {
+            get => _Priority;
+            protected set => _Priority = value;
+        }
+
+        private bool _OverridesCombat;
+        public bool OverridesCombat
+        {
+            get => _OverridesCombat;
+            protected set => _OverridesCombat = value;
+        }
 
         public GameObject SourceObject => Source?.GetObject();
         public Cell SourceCell => Source?.GetCurrentCellOrCell();
         public Cell SourceOriginCell => Source?.Cell;
 
-        public bool IsValid => ValidateAlert(this);
+        public bool IsValid => IDetection.ValidateDetection(this);
 
         #region Constructors
 
         protected BaseDetection()
         {
-            Perception = null;
+            ID = Guid.Empty;
             Alert = null;
             Origin = null;
             Level = AwarenessLevel.None;
             OverridesCombat = false;
             Source = null;
         }
-        protected BaseDetection(IPerception Perception, IAlert Alert, AwarenessLevel Level, bool OverridesCombat, DetectionSource Source)
+        protected BaseDetection(P Perception, A Alert, AwarenessLevel Level, bool OverridesCombat, DetectionSource Source)
             : this()
         {
-            this.Perception = Perception;
+            _Perception = Perception;
+            PerceptionType = Perception.GetType();
             this.Alert = Alert;
             Origin = Perception.Owner.CurrentCell;
             this.Level = Level;
             this.OverridesCombat = OverridesCombat;
-            this.Source = Source?.SetParentAlert(this);
+            this.Source = Source?.SetParentDetection(this);
         }
-        public BaseDetection(AlertContext Context, IAlert Alert, AwarenessLevel Level, bool OverridesCombat)
-            : this(Context.Perception, Alert, Level, OverridesCombat, (DetectionSource)null)
+        public BaseDetection(AlertContext Context, A Alert, AwarenessLevel Level, bool OverridesCombat)
+            : this(Context.Perception as P, Alert, Level, OverridesCombat, null)
         {
             Source = new DetectionSource(this, Context);
         }
-        public BaseDetection(BaseDetection Source)
-            : this(Source.Perception, Source.Alert, Source.Level, Source.OverridesCombat, Source.Source)
+        public BaseDetection(IDetection Source)
+            : this(Source.Perception as P, Source.Alert as A, Source.Level, Source.OverridesCombat, Source.Source)
         {
         }
 
         #endregion
         #region Serialization
 
-        public virtual void Write(SerializationWriter Writer)
+        public virtual void WriteDetection(SerializationWriter Writer, IDetection Detection)
         {
+            Writer.Write(ID);
             Writer.WriteComposite(Source);
             Writer.WriteComposite(Grammar);
+            Writer.WriteComposite(Alert);
+            Writer.Write(Origin);
+            Writer.WriteOptimized((int)Level);
+            Writer.WriteOptimized(Priority);
+            Writer.Write(OverridesCombat);
+        }
+        public virtual void ReadDetection(SerializationReader Reader, IDetection Detection)
+        {
+            ID = Reader.ReadGuid();
+            Source = Reader.ReadComposite<DetectionSource>();
+            Grammar = Reader.ReadComposite<DetectionGrammar>();
+            Alert = Reader.ReadComposite<A>();
+            Origin = Reader.ReadCell();
+            Level = (AwarenessLevel)Reader.ReadOptimizedInt32();
+            Priority = Reader.ReadOptimizedInt32();
+            OverridesCombat = Reader.ReadBoolean();
+        }
+
+        public virtual void Write(SerializationWriter Writer)
+        {
+            WriteDetection(Writer, this);
         }
         public virtual void Read(SerializationReader Reader)
         {
-            Source = Reader.ReadComposite<DetectionSource>();
-            Grammar = Reader.ReadComposite<DetectionGrammar>();
+            ReadDetection(Reader, this);
         }
 
         #endregion
 
-        public abstract BaseDetection Copy();
+        public virtual IDetection<P, A> Copy()
+            => new BaseDetection<P, A>(this);
 
-        protected virtual Detection<T, TSense> FromAlertContext<T, TSense>(AlertContext Context)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+        IDetection IDetection.Copy()
+            => Copy();
+
+        protected virtual IDetection<P, A> FromAlertContext(AlertContext Context)
             => Context != null
-            ? SetPerception<T, TSense>(Context.Perception)
-                .SetSource<T, TSense>(new DetectionSource(this, Context))
+            ? SetSource(new DetectionSource(this, Context))
             : throw new ArgumentNullException(nameof(Context), "Cannot configure " + Name + " with null " + nameof(AlertContext) + ".");
 
-        protected virtual Detection<T, TSense> SetPerception<T, TSense>(IPerception Perception)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+        protected virtual IDetection<P, A> SetAlert(A Alert)
         {
-            this.Perception = Perception
-                ?? throw New_ArgNullException(Perception, nameof(Perception));
+            this.Alert = Alert
+                ?? throw New_ArgNullException(Alert, nameof(Alert));
 
-            Origin = Perception.Owner.CurrentCell;
-            return this as Detection<T, TSense>;
+            return this;
         }
-        protected virtual Detection<T, TSense> SetSense<T, TSense>(ISense Sense)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
-        {
-            this.Alert = Sense
-                ?? throw New_ArgNullException(Sense, nameof(Sense));
-
-            return this as Detection<T, TSense>;
-        }
-        protected virtual Detection<T, TSense> SetAwarenessLevel<T, TSense>(AwarenessLevel Level)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+        protected virtual IDetection<P, A> SetAwarenessLevel(AwarenessLevel Level)
         {
             if (Level == AwarenessLevel.None)
                 throw new ArgumentOutOfRangeException(nameof(Level), Name + " requires an " + nameof(AwarenessLevel) + " greater than " + AwarenessLevel.None.ToStringWithNum() + " to function.");
 
             this.Level = Level;
-            return this as Detection<T, TSense>;
+            return this;
         }
-        protected virtual Detection<T, TSense> SetSource<T, TSense>(DetectionSource Source)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+        protected virtual IDetection<P, A> SetSource(DetectionSource Source)
         {
             this.Source = Source
                 ?? throw New_ArgNullException(Source, nameof(Source));
 
-            return this as Detection<T, TSense>;
+            return this;
         }
-        protected virtual Detection<T, TSense> SetOverridesCombat<T, TSense>(bool? OverridesCombat)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+        protected virtual IDetection<P, A> SetOverridesCombat(bool? OverridesCombat)
         {
             if (OverridesCombat.HasValue)
                 this.OverridesCombat = OverridesCombat.GetValueOrDefault();
 
-            return this as Detection<T, TSense>;
+            return this;
         }
         protected ArgumentNullException New_ArgNullException<T>(T Param, string ParamName)
             => new(ParamName, Name + " requires an " + Param.GetType().ToStringWithGenerics() + " to function.");
-
-        public static bool ValidateAlert(BaseDetection Alert)
-            => Alert != null
-            && Alert.ParentBrain is Brain parentBrain
-            && parentBrain.ParentObject is GameObject parentObject
-            && GameObject.Validate(ref parentObject)
-            && Alert.Perception != null
-            && Alert.Origin != null;
-
-        public static bool ValidateAlert(ref BaseDetection Alert)
-        {
-            if (!ValidateAlert(Alert))
-            {
-                Alert = null;
-                return false;
-            }
-            return true;
-        }
 
         public override void Create()
         {
@@ -319,7 +228,7 @@ namespace StealthSystemPrototype.Alerts
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(ParentObject?.MiniDebugName()),
-                    Debug.Arg(Perception?.ToString(Short: true, SourceObject)),
+                    Debug.Arg(Perception?.ToString(Short: true)),
                 });
         }
 
@@ -336,5 +245,43 @@ namespace StealthSystemPrototype.Alerts
 
             base.TakeAction();
         }
+
+        #region Explicit Implementations
+
+        IDetection<P, A> IDetection<P, A>.FromAlertContext(AlertContext Context)
+            => FromAlertContext(Context);
+
+        IDetection<P, A> IDetection<P, A>.SetAlert(A Alert)
+            => SetAlert(Alert);
+
+        IDetection<P, A> IDetection<P, A>.SetAwarenessLevel(AwarenessLevel Level)
+            => SetAwarenessLevel(Level);
+
+        IDetection<P, A> IDetection<P, A>.SetSource(DetectionSource Source)
+            => SetSource(Source);
+
+        IDetection<P, A> IDetection<P, A>.SetOverridesCombat(bool? OverridesCombat)
+            => SetOverridesCombat(OverridesCombat);
+
+        IDetection IDetection.FromAlertContext(AlertContext Context)
+            => FromAlertContext(Context);
+
+        IDetection IDetection.SetAlert(IAlert Alert)
+            => SetAlert(Alert: new A()
+            {
+                Intensity = Alert.Intensity,
+                Properties = Alert.Properties,
+            });
+
+        IDetection IDetection.SetAwarenessLevel(AwarenessLevel Level)
+            => SetAwarenessLevel(Level);
+
+        IDetection IDetection.SetSource(DetectionSource Source)
+            => SetSource(Source);
+
+        IDetection IDetection.SetOverridesCombat(bool? OverridesCombat)
+            => SetOverridesCombat(OverridesCombat);
+
+        #endregion
     }
 }

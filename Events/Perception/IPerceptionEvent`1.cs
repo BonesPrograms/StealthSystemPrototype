@@ -125,7 +125,7 @@ namespace StealthSystemPrototype.Events
             => Perception?.GetName(Short);
 
         public virtual bool CanPerceptionPerceive(IAlert Alert)
-            => Perception?.CanPerceive(Alert) ?? false;
+            => Perception?.CanPerceiveAlert(Alert) ?? false;
     }
 }
 

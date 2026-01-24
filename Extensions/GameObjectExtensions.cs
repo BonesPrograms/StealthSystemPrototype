@@ -16,16 +16,18 @@ using Range = System.Range;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Detetections;
 
 using static StealthSystemPrototype.Utils;
 using XRL.UI;
 using StealthSystemPrototype.Senses;
+using XRL.World.Parts.Mutation;
 
 namespace StealthSystemPrototype
 {
     public static class GameObjectExtensions
     {
+        #region Debug Registry
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
             => Registry.RegisterEach(
@@ -34,6 +36,7 @@ namespace StealthSystemPrototype
                 {
                     { nameof(GetPerceptions), false },
                 });
+        #endregion
 
         public static PerceptionRack GetPerceptions(this GameObject Object)
             => Object.GetPart<UD_PerceptionHelper>()?.Perceptions;
@@ -118,6 +121,37 @@ namespace StealthSystemPrototype
                 foreach (Effect effect in effects)
                     if (effect is T tEffect)
                         Proc(tEffect);
+        }
+
+        public static bool HasMentalMutations(this GameObject Object, bool RequireBaseLevels = false)
+        {
+            if (!Object.TryGetPart(out Mutations mutations))
+                return false;
+
+            if (mutations.ActiveMutationList is not List<BaseMutation> activeMutations
+                || activeMutations.IsNullOrEmpty())
+                return false;
+
+            return RequireBaseLevels
+                ? activeMutations.Any(IsMentalWithBaseLevels)
+                : activeMutations.Any(bm => bm.IsMental());
+        }
+
+        public static bool EligibleForMentalMutations(this GameObject Object)
+        {
+            if (!Object.TryGetPart(out Mutations mutations))
+                return false;
+
+            if (mutations.HasMutation(nameof(Chimera)))
+                return false;
+
+            if (MutationFactory.AllMutationEntries()
+                    ?.Where(me => me.IsMental())
+                    ?.Any(me => mutations.IncludedInMutatePool(me, true))
+                ?? false)
+                return true;
+
+            return Object.HasMentalMutations(true);
         }
     }
 }
