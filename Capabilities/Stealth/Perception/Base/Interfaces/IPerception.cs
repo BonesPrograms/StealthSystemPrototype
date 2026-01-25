@@ -51,41 +51,68 @@ namespace StealthSystemPrototype.Perceptions
 
         #region Serialization
 
-        public IPurview ReadPurview(SerializationReader Reader, IPerception ParentPerception);
+        /// <summary>
+        /// Writes the <see cref="IPurview"/> member of an <see cref="IPerception"/> during its serialization. 
+        /// </summary>
+        /// <remarks>
+        /// Assume this will be called during the <see cref="IPerception"/>'s call to <see cref="IComposite.Write"/>.
+        /// </remarks>
+        /// <param name="Writer">The writer that will do the serialization.</param>
+        /// <param name="Purview">The <see cref="IPerception.Purview"/> to be written.</param>
+        public void WritePurview(SerializationWriter Writer, IPurview Purview);
 
-        public static void WriteOptimized(
-            SerializationWriter Writer,
-            GameObject Owner,
-            int Level,
-            IPurview Purview)
-        {
-            Writer.WriteGameObject(Owner);
-            Writer.WriteOptimized(Level);
-            IPurview.WriteOptimized(Writer, Purview);
-        }
-        public static void WriteOptimized(SerializationWriter Writer, IPerception Perception)
-            => WriteOptimized(Writer, Perception.Owner, Perception.Level, Perception.Purview);
-
-        public static void ReadOptimizedPurview(
-            SerializationReader Reader,
-            IPerception Perception,
-            out GameObject Owner,
-            out int Level,
-            out IPurview Purview)
-        {
-            Owner = Reader.ReadGameObject();
-            Level = Reader.ReadOptimizedInt32();
-            Purview = Perception.ReadPurview(Reader, Perception);
-        }
+        /// <summary>
+        /// Reads the <see cref="IPurview"/> member of an <see cref="IPerception"/> during its deserialization. 
+        /// </summary>
+        /// <remarks>
+        /// Assume this will be called during the <see cref="IPerception"/>'s call to <see cref="IComposite.Read"/>.
+        /// </remarks>
+        /// <param name="Reader">The reader that will do the deserialization.</param>
+        /// <param name="Purview">An assignable field or variable from which <see cref="IPerception.Purview"/> can be assigned.</param>
+        /// <param name="ParentPerception">The <see cref="IPerception"/> whose <see cref="IPerception.Purview"/> is being read, which should be assigned to its <see cref="IPurview.ParentPerception"/> field.</param>
+        public void ReadPurview(SerializationReader Reader, ref IPurview Purview, IPerception ParentPerception = null);
 
         #endregion
         #region Contracts
 
+        /// <summary>
+        /// Called once inside the <see cref="IPerception"/>'s default constructor.
+        /// </summary>
+        /// <remarks>
+        /// Override only to make common initialization assignments for derived types.
+        /// </remarks>
+        public void Construct();
+
+        /// <summary>
+        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack.
+        /// </summary>
+        public void Attach();
+
+        /// <summary>
+        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is removed from the rack.
+        /// </summary>
+        public void Remove();
+
+        /// <summary>
+        /// Creates deep copy of an <see cref="IPerception"/>, with all the same values as the original.
+        /// </summary>
+        /// <remarks>
+        /// Override this method to null any reference type members that shouldn't be sharing a reference.
+        /// </remarks>
+        /// <param name="Owner">The new <see cref="GameObject"/> for whom the deep copy is intended.</param>
+        /// <returns>A new <see cref="IPerception"/> with values matching the original, and reassigned reference members.</returns>
+        public IPerception DeepCopy(GameObject Owner);
+
+        public void AssignDefaultPurview(int? Value = null, string Attributes = null);
+
         public string ToString(bool Short);
 
+        /// <summary>
+        /// Produces an ID-like name for the <see cref="IPerception"/>
+        /// </summary>
+        /// <param name="Short"></param>
+        /// <returns></returns>
         public string GetName(bool Short = false);
-
-        public IPurview GetPurview();
 
         public bool CanPerceiveAlert(IAlert Alert);
 

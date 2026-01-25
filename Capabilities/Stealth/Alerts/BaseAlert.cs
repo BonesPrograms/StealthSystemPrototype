@@ -244,7 +244,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual int Intensity
         {
             get => _Intensity;
-            protected set => _Intensity = value;
+            set => _Intensity = value;
         }
 
         private Dictionary<string, string> _Properties;

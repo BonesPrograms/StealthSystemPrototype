@@ -16,13 +16,14 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Detetections
 {
     [Serializable]
     public class DetectionSource : IComposite
     {
-        public BaseDetection ParentDetection;
+        public IDetection ParentDetection;
 
         private GameObject _Object;
         public GameObject Object => _Object;

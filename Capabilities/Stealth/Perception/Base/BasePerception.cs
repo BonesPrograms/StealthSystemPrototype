@@ -128,15 +128,12 @@ namespace StealthSystemPrototype.Perceptions
 
         public int EffectiveLevel => Level + GetLevelAdjustment(Level);
 
-        private IPurview _Purview;
+        [NonSerialized]
+        protected IPurview _Purview;
         IPurview IPerception.Purview
         {
-            get => _Purview ??= ((IPerception)this).GetPurview();
-            set
-            {
-                _Purview = value;
-                _Purview.SetParentPerception(this);
-            }
+            get => _Purview;
+            set => _Purview = value;
         }
 
         #endregion
@@ -144,6 +141,12 @@ namespace StealthSystemPrototype.Perceptions
 
         public BasePerception()
         {
+            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
+            {
+                using Indent indent = new(1);
+                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+            }
+
             _Name = null;
             _ShortName = null;
 
@@ -151,10 +154,18 @@ namespace StealthSystemPrototype.Perceptions
 
             _Level = 0;
             _Purview = null;
+
+            Construct();
         }
         public BasePerception(GameObject Owner)
             : this()
         {
+            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
+            {
+                using Indent indent = new(1);
+                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+            }
+
             this.Owner = Owner;
         }
         public BasePerception(
@@ -163,28 +174,47 @@ namespace StealthSystemPrototype.Perceptions
             IPurview Purview)
             : this(Owner)
         {
+            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
+            {
+                using Indent indent = new(1);
+                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+            }
+
             this.Level = Level;
-            this._Purview = Purview;
+            _Purview = Purview;
+        }
+        public BasePerception(GameObject Basis, SerializationReader Reader)
+            : this()
+        {
+            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
+            {
+                using Indent indent = new(1);
+                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+            }
+
+            Read(Basis, Reader);
         }
 
         #endregion
         #region Serialization
 
-        public abstract IPurview ReadPurview(SerializationReader Reader, IPerception ParentPerception);
+        public abstract void WritePurview(SerializationWriter Writer, IPurview Purview);
+
+        public abstract void ReadPurview(SerializationReader Reader, ref IPurview Purview, IPerception ParentPerception = null);
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
             Writer.WriteGameObject(Owner);
             Writer.WriteOptimized(Level);
-            IPurview.WriteOptimized(Writer, _Purview);
+            WritePurview(Writer, _Purview);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
             Owner = Reader.ReadGameObject();
             Level = Reader.ReadOptimizedInt32();
-            _Purview = ReadPurview(Reader, this);
+            ReadPurview(Reader, ref _Purview, this);
         }
 
         public virtual void FinalizeRead(SerializationReader Reader)
@@ -198,22 +228,44 @@ namespace StealthSystemPrototype.Perceptions
 
         #region Base Methods
 
-        public virtual void Initialize()
+        /// <summary>
+        /// Called once inside the <see cref="IPerception"/>'s default constructor.
+        /// </summary>
+        /// <remarks>
+        /// Override only to make common initialization assignments for derived types.
+        /// </remarks>
+        public virtual void Construct()
         {
+            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
+            {
+                using Indent indent = new(1);
+                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+            }
         }
 
+        /// <summary>
+        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack.
+        /// </summary>
         public virtual void Attach()
         {
         }
 
+        /// <summary>
+        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is removed from the rack.
+        /// </summary>
         public virtual void Remove()
         {
         }
 
-        IPurview IPerception.GetPurview()
-            => null;
-
-        public virtual BasePerception DeepCopy(GameObject Parent)
+        /// <summary>
+        /// Creates deep copy of an <see cref="IPerception"/>, with all the same values as the original.
+        /// </summary>
+        /// <remarks>
+        /// Override this method to null any reference type members that shouldn't be sharing a reference.
+        /// </remarks>
+        /// <param name="Owner">The new <see cref="GameObject"/> for whom the deep copy is intended.</param>
+        /// <returns>A new <see cref="IPerception"/> with values matching the original, and reassigned reference members.</returns>
+        public virtual IPerception DeepCopy(GameObject Owner)
         {
             BasePerception perception = Activator.CreateInstance(GetType()) as BasePerception;
 
@@ -224,10 +276,12 @@ namespace StealthSystemPrototype.Perceptions
                     && !fieldInfo.IsLiteral)
                     fieldInfo.SetValue(perception, fieldInfo.GetValue(this));
 
-            perception.Owner = Parent;
+            perception.Owner = Owner;
 
             return perception;
         }
+
+        public abstract void AssignDefaultPurview(int? Value = null, string Attributes = null);
 
         #endregion
         #region Virtual Event Registration
@@ -329,11 +383,6 @@ namespace StealthSystemPrototype.Perceptions
         public virtual string GetName(bool Short = false)
             => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
 
-        public IDetection RaiseDetection(AlertContext AlertContext)
-        {
-            throw new NotImplementedException("Better implement this soon!");
-        }
-
         public bool CheckInPurview(AlertContext Context)
         {
             using Indent indent = new(1);
@@ -367,6 +416,9 @@ namespace StealthSystemPrototype.Perceptions
 
             return true;
         }
+
+        public virtual IDetection RaiseDetection(AlertContext AlertContext)
+            => throw new NotImplementedException("Better implement this soon!");
 
         public virtual void ClearCaches()
             => _Purview?.ClearCaches();

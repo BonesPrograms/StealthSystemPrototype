@@ -5,13 +5,14 @@ using StealthSystemPrototype.Capabilities.Stealth;
 
 using XRL.Liquids;
 using XRL.World;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 namespace StealthSystemPrototype.Perceptions
 {
     /// <summary>
-    /// Contracts a class as capable of detecting <see cref="Olfactory"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/>.
+    /// Contracts a class as capable of detecting <see cref="Olfactory"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/> by way of an <see cref="OlfactoryPurview"/>.
     /// </summary>
-    public interface IOlfactoryPerception : IAlertTypedPerception<Olfactory>
+    public interface IOlfactoryPerception : IAlertTypedPerception<Olfactory, OlfactoryPurview>
     {
         public bool AffectedByLiquidCovered { get; }
 

@@ -1,4 +1,6 @@
-﻿using StealthSystemPrototype.Capabilities.Stealth;
+﻿using System.Collections.Generic;
+
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Detetections;
 using XRL.World;
 
@@ -11,10 +13,10 @@ namespace StealthSystemPrototype.Perceptions
     {
         public IPart Source { get; }
 
-        public GameObject SourceObject { get; }
-
         public IPart GetSource();
 
-        public GameObject GetSourceObject();
+        public List<IPart> GetPotentialSources();
+
+        public IPart GetBestSource();
     }
 }

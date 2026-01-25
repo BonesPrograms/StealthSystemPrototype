@@ -3,6 +3,7 @@ using StealthSystemPrototype.Detetections;
 using XRL.World;
 using XRL.World.Parts.Skill;
 using XRL.World.Parts.Mutation;
+using System.Collections.Generic;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -11,7 +12,11 @@ namespace StealthSystemPrototype.Perceptions
     /// </summary>
     /// <typeparam name="T">The <see cref="BaseMutation"/> source of if the underlyign <see cref="IPartPerception{BaseMutation}"/></typeparam>
     public interface IMutionPerception<T> : IMutionPerception, IPartPerception<T>
-        where T : BaseMutation, new()
+        where T : BaseMutation
     {
+        public new List<T> GetPotentialSources()
+            => Owner?.GetPartsDescendedFrom<T>();
+
+        public new T GetBestSource();
     }
 }

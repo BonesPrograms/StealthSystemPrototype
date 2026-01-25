@@ -16,17 +16,16 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Detetections
 {
     [StealthSystemBaseClass]
     [Serializable]
-    public class BaseDetection<P, A>
+    public class BaseDetection
         : GoalHandler
-        , IDetection<P, A>
+        , IDetection
         //, IComparable<BaseDetection>
-        where P : class, IAlertTypedPerception<A>, new()
-        where A : class, IAlert, new()
     {
         private Guid _ID;
         public Guid ID
@@ -59,20 +58,18 @@ namespace StealthSystemPrototype.Detetections
 
         private Type PerceptionType;
 
-        private P _Perception;
-        public P Perception
+        private IPerception _Perception;
+        public IPerception Perception
         {
-            get => _Perception ??= ParentObject?.GetPerceptions()?.Get<P>();
+            get => _Perception ??= ParentObject?.GetPerceptions()?.GetOfType(PerceptionType);
         }
-        IPerception IDetection.Perception => Perception;
 
-        private A _Alert;
-        public A Alert
+        private IAlert _Alert;
+        public IAlert Alert
         {
             get => _Alert;
             protected set => _Alert = value;
         }
-        IAlert IDetection.Alert => Alert;
 
         private Cell _Origin;
         public Cell Origin
@@ -108,6 +105,8 @@ namespace StealthSystemPrototype.Detetections
 
         public bool IsValid => IDetection.ValidateDetection(this);
 
+        Brain IDetection.ParentBrain => ParentBrain;
+
         #region Constructors
 
         protected BaseDetection()
@@ -119,7 +118,7 @@ namespace StealthSystemPrototype.Detetections
             OverridesCombat = false;
             Source = null;
         }
-        protected BaseDetection(P Perception, A Alert, AwarenessLevel Level, bool OverridesCombat, DetectionSource Source)
+        protected BaseDetection(IPerception Perception, IAlert Alert, AwarenessLevel Level, bool OverridesCombat, DetectionSource Source)
             : this()
         {
             _Perception = Perception;
@@ -130,13 +129,13 @@ namespace StealthSystemPrototype.Detetections
             this.OverridesCombat = OverridesCombat;
             this.Source = Source?.SetParentDetection(this);
         }
-        public BaseDetection(AlertContext Context, A Alert, AwarenessLevel Level, bool OverridesCombat)
-            : this(Context.Perception as P, Alert, Level, OverridesCombat, null)
+        public BaseDetection(AlertContext Context, IAlert Alert, AwarenessLevel Level, bool OverridesCombat)
+            : this(Context.Perception, Alert, Level, OverridesCombat, null)
         {
             Source = new DetectionSource(this, Context);
         }
         public BaseDetection(IDetection Source)
-            : this(Source.Perception as P, Source.Alert as A, Source.Level, Source.OverridesCombat, Source.Source)
+            : this(Source.Perception, Source.Alert, Source.Level, Source.OverridesCombat, Source.Source)
         {
         }
 
@@ -148,7 +147,7 @@ namespace StealthSystemPrototype.Detetections
             Writer.Write(ID);
             Writer.WriteComposite(Source);
             Writer.WriteComposite(Grammar);
-            Writer.WriteComposite(Alert);
+            Alert.Write(Writer);
             Writer.Write(Origin);
             Writer.WriteOptimized((int)Level);
             Writer.WriteOptimized(Priority);
@@ -159,7 +158,7 @@ namespace StealthSystemPrototype.Detetections
             ID = Reader.ReadGuid();
             Source = Reader.ReadComposite<DetectionSource>();
             Grammar = Reader.ReadComposite<DetectionGrammar>();
-            Alert = Reader.ReadComposite<A>();
+            Alert = Reader.ReadComposite();
             Origin = Reader.ReadCell();
             Level = (AwarenessLevel)Reader.ReadOptimizedInt32();
             Priority = Reader.ReadOptimizedInt32();

@@ -3,6 +3,7 @@ using StealthSystemPrototype.Detetections;
 using XRL.World;
 using XRL.World.Parts.Skill;
 using XRL.World.Parts.Mutation;
+using System.Collections.Generic;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -14,5 +15,9 @@ namespace StealthSystemPrototype.Perceptions
         public new BaseMutation Source { get; }
 
         public new BaseMutation GetSource();
+
+        public new List<BaseMutation> GetPotentialSources();
+
+        public new BaseMutation GetBestSource();
     }
 }

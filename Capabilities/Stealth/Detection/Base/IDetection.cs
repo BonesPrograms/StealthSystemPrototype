@@ -16,6 +16,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Detetections
 {
@@ -24,9 +25,11 @@ namespace StealthSystemPrototype.Detetections
     /// </summary>
     public interface IDetection : IComposite
     {
-        #region GoalHandler Properties
+        #region GoalHandler Properties & Fields
 
         public GameObject ParentObject { get; }
+
+        public Brain ParentBrain { get; }
 
         public Zone CurrentZone { get; }
 

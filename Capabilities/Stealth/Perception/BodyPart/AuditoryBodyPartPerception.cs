@@ -22,90 +22,53 @@ using static StealthSystemPrototype.Utils;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class VisualBodyPartPerception
+    public class AuditoryBodyPartPerception
         : BaseBodyPartPerception
-        , IVisualPerception
+        , IAuditoryPerception
     {
-        public virtual VisualPurview Purview
+        public virtual AuditoryPurview Purview
         {
-            get => _Purview as VisualPurview;
+            get => _Purview as AuditoryPurview;
             set => _Purview = value;
         }
 
-        public virtual LightLevel MinimumLightLevel { get; protected set; }
-
         #region Constructors
 
-        public VisualBodyPartPerception()
+        public AuditoryBodyPartPerception()
             : base()
         {
         }
-        public VisualBodyPartPerception(
+        public AuditoryBodyPartPerception(
             GameObject Owner,
             BodyPart Source,
             int Level,
-            LightLevel MinimumLightLevel,
-            VisualPurview Purview)
+            AuditoryPurview Purview)
             : base(Owner, Source, Level, Purview)
         {
-            this.MinimumLightLevel = MinimumLightLevel;
         }
-        public VisualBodyPartPerception(
-            GameObject Owner,
+        public AuditoryBodyPartPerception(
             BodyPart Source,
             int Level,
-            VisualPurview Purview)
-            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
+            AuditoryPurview Purview)
+            : this(null, Source, Level, Purview)
         {
         }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            VisualPurview Purview)
-            : this(null, Source, Level, MinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            VisualPurview Purview)
-            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            int Purview)
-            : this(Owner, Source, Level, MinimumLightLevel, new VisualPurview(Purview))
-        {
-        }
-        public VisualBodyPartPerception(
+        public AuditoryBodyPartPerception(
             GameObject Owner,
             BodyPart Source,
             int Level,
             int Purview)
-            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
+            : this(Owner, Source, Level, new AuditoryPurview(Purview))
         {
         }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            int Purview)
-            : this(null, Source, Level, MinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
+        public AuditoryBodyPartPerception(
             BodyPart Source,
             int Level,
             int Purview)
-            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
+            : this(null, Source, Level, Purview)
         {
         }
-        public VisualBodyPartPerception(GameObject Basis, SerializationReader Reader)
+        public AuditoryBodyPartPerception(GameObject Basis, SerializationReader Reader)
             : base(Basis, Reader)
         {
         }
@@ -113,13 +76,13 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Serialization
 
-        public virtual void WritePurview(SerializationWriter Writer, VisualPurview Purview)
+        public virtual void WritePurview(SerializationWriter Writer, AuditoryPurview Purview)
             => Writer.Write(Purview);
 
         public sealed override void WritePurview(SerializationWriter Writer, IPurview Purview)
         {
-            if (Purview is not VisualPurview typedPurview)
-                typedPurview = _Purview as VisualPurview;
+            if (Purview is not AuditoryPurview typedPurview)
+                typedPurview = _Purview as AuditoryPurview;
 
             WritePurview(Writer, typedPurview);
 
@@ -132,21 +95,21 @@ namespace StealthSystemPrototype.Perceptions
 
         public virtual void ReadPurview(
             SerializationReader Reader,
-            ref VisualPurview Purview,
-            IAlertTypedPerception<Visual, VisualPurview> ParentPerception = null)
-            => Purview = new VisualPurview(Reader, ParentPerception ?? this);
+            ref AuditoryPurview Purview,
+            IAlertTypedPerception<Auditory, AuditoryPurview> ParentPerception = null)
+            => Purview = new AuditoryPurview(Reader, ParentPerception ?? this);
 
         public sealed override void ReadPurview(
             SerializationReader Reader,
             ref IPurview Purview,
             IPerception ParentPerception = null)
         {
-            if (Purview is not VisualPurview typedPurview)
-                typedPurview = _Purview as VisualPurview;
+            if (Purview is not AuditoryPurview typedPurview)
+                typedPurview = _Purview as AuditoryPurview;
 
             if (typedPurview != null)
             {
-                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Visual, VisualPurview> ?? this);
+                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Auditory, AuditoryPurview> ?? this);
                 _Purview = typedPurview;
             }
             else
@@ -159,12 +122,12 @@ namespace StealthSystemPrototype.Perceptions
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
-            Writer.WriteOptimized((byte)MinimumLightLevel);
+            // do writing here
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
-            MinimumLightLevel = (LightLevel)(byte)Reader.ReadOptimizedInt16();
+            // do reading here
         }
 
         #endregion
@@ -172,7 +135,7 @@ namespace StealthSystemPrototype.Perceptions
         public override void Construct()
         {
             base.Construct();
-            MinimumLightLevel = ((IVisualPerception)this).MinimumLightLevel;
+            // put default instance values here for the base parameterless constructor
         }
 
         public override bool CanPerceiveAlert(IAlert Alert)
@@ -180,7 +143,6 @@ namespace StealthSystemPrototype.Perceptions
 
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
-
 
         public override IDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);

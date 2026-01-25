@@ -23,12 +23,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         , IComposite
         where A : class, IAlert, new()
     {
-        protected IAlertTypedPerception<A> _ParentPerception;
-        public IAlertTypedPerception<A> ParentPerception
+        protected IAlertTypedPerception<A, IPurview<A>> _ParentPerception;
+        public IAlertTypedPerception<A, IPurview<A>> ParentPerception
         {
             get => _ParentPerception;
             set => _ParentPerception = value;
         }
+        IPerception IPurview.ParentPerception => ParentPerception;
 
         private int _Value;
         public int Value
@@ -46,12 +47,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public int EffectiveValue => GetEffectiveValue();
 
-        IPerception IPurview.ParentPerception
-        {
-            get => ParentPerception;
-            set => ParentPerception = value as IAlertTypedPerception<A>;
-        }
-
         #region Constructors
 
         protected BasePurview()
@@ -59,7 +54,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             _ParentPerception = null;
             Value = 0;
         }
-        public BasePurview(IAlertTypedPerception<A> ParentPerception, int Value, string Attributes)
+        public BasePurview(IAlertTypedPerception<A, IPurview<A>> ParentPerception, int Value, string Attributes)
             : this()
         {
             this.ParentPerception = ParentPerception;
@@ -70,9 +65,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             : this(Source.ParentPerception, Source.Value, Source.Attributes)
         {
         }
+        public BasePurview(SerializationReader Reader, IAlertTypedPerception<A, IPurview<A>> ParentPerception)
+        {
+            _ParentPerception = ParentPerception;
+            Read(Reader);
+        }
 
         #endregion
         #region Serialization
+
+        public virtual void FromReader(SerializationReader Reader, IAlertTypedPerception<A, IPurview<A>> ParentPerception)
+        {
+            Read(Reader);
+            this.ParentPerception = ParentPerception;
+        }
+
+        void IPurview.FromReader(SerializationReader Reader, IPerception ParentPerception)
+            => FromReader(Reader, ParentPerception as IAlertTypedPerception<A, IPurview<A>>);
 
         public static void WriteOptimized(
             SerializationWriter Writer,
@@ -89,7 +98,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             out string Attributes)
             => IPurview.ReadOptimizedPurview(Reader, out Value, out Attributes);
 
-        public static BasePurview<A> ReadOptimizedPurview(SerializationReader Reader, IAlertTypedPerception<A> ParentPerception)
+        public static BasePurview<A> ReadOptimizedPurview(SerializationReader Reader, IAlertTypedPerception<A, IPurview<A>> ParentPerception)
         {
             IPurview.ReadOptimizedPurview(Reader, out int value, out string attributes);
             return new(ParentPerception, value, attributes);
@@ -109,14 +118,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override string ToString()
             => Value + "(E:" + EffectiveValue + ")" + "{" + Attributes + "}";
 
-        public virtual IPurview<A> SetParentPerception(IAlertTypedPerception<A> ParentPerception)
+        public virtual IPurview<A> SetParentPerception(IAlertTypedPerception<A, IPurview<A>> ParentPerception)
         {
             _ParentPerception = ParentPerception;
             return this;
         }
 
         IPurview IPurview.SetParentPerception(IPerception ParentPerception)
-            => SetParentPerception((IAlertTypedPerception<A>)ParentPerception);
+            => SetParentPerception((IAlertTypedPerception<A, IPurview<A>>)ParentPerception);
 
         public virtual int GetEffectiveValue()
             => Value + GetPurviewAdjustment(ParentPerception, Value);
@@ -124,11 +133,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public virtual List<string> GetPerviewAttributes()
             => Attributes?.CachedCommaExpansion();
 
-        public virtual int GetPurviewAdjustment(IAlertTypedPerception<A> ParentPerception, int Value = 0)
+        public virtual int GetPurviewAdjustment(IAlertTypedPerception<A, IPurview<A>> ParentPerception, int Value = 0)
             => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.Owner, ParentPerception, Value);
 
         int IPurview.GetPurviewAdjustment(IPerception ParentPerception, int Value)
-            => GetPurviewAdjustment(ParentPerception as IAlertTypedPerception<A>, Value);
+            => GetPurviewAdjustment(ParentPerception as IAlertTypedPerception<A, IPurview<A>>, Value);
 
         public BasePurview<A> SetValue(int Value)
         {

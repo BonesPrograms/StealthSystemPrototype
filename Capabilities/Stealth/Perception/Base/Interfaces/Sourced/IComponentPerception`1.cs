@@ -9,14 +9,7 @@ namespace StealthSystemPrototype.Perceptions
     /// </summary>
     /// <typeparam name="T">The <see cref="IComponent{GameObject}"/> source of if the underlyign <see cref="ISourcedPerception{IComponent{GameObject}}"/></typeparam>
     public interface IComponentPerception<T> : ISourcedPerception<T>
-        where T : IComponent<GameObject>, new()
+        where T : IComponent<GameObject>
     {
-        public GameObject SourceObject { get; }
-
-        public GameObject GetSourceObject();
-
-        public new bool Validate()
-            => ((ISourcedPerception<T>)this).Validate()
-            && SourceObject != null;
     }
 }

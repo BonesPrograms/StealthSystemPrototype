@@ -44,5 +44,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IAlert AdjustIntensity(int Amount);
 
         public IAlert Copy();
+
+        public bool IsType(Type Type)
+            => Type.InheritsFrom(GetType());
+
+        public static void ReadAlert(SerializationWriter Writer, IAlert Alert)
+        {
+            Writer.WriteOptimized(Alert.Intensity);
+            Writer.WriteOptimized(Alert.Properties);
+        }
+
     }
 }

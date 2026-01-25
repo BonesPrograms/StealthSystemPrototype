@@ -9,28 +9,51 @@ using XRL.World;
 using XRL.World.Effects;
 using XRL.World.Parts;
 using XRL.World.Parts.Mutation;
+using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using System;
 
 namespace StealthSystemPrototype.Perceptions
 {
     /// <summary>
-    /// Contracts a class as capable of detecting <see cref="Psionic"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/>.
+    /// Contracts a class as capable of detecting <see cref="Psionic"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/> by way of an <see cref="PsionicPurview"/>.
     /// </summary>
-    public interface IPsionicPerception : IAlertTypedPerception<Psionic>
+    public interface IPsionicPerception : IAlertTypedPerception<Psionic, PsionicPurview>
     {
+        /// <summary>
+        /// Represents the minimum requirements of the <see cref="IConcealedAction.Actor"/> for the <see cref="IPsionicPerception.Owner"/> to be able to detect them.
+        /// </summary>
+        [Serializable]
+        public enum PsionicAttunement : short
+        {
+            /// <summary>Non-value. Serves as "default", and indicates inability to detect.</summary>
+            None,
+            /// <summary>The <see cref="IConcealedAction.Actor"/> is an <see cref="Esper"/>.</summary>
+            Espers,
+            /// <summary>The <see cref="IConcealedAction.Actor"/> is capable of acquiring mental mutations, whether they have any or not.</summary>
+            NonChimera,
+            /// <summary>The <see cref="IConcealedAction.Actor"/> has at least one mental mutation, including temporarily.</summary>
+            MentalMutations,
+            /// <summary>The <see cref="IConcealedAction.Actor"/> has a <see cref="Brain"/>.</summary>
+            Sentient,
+            /// <summary>The <see cref="IConcealedAction.Actor"/> <see cref="GameObject.IsAlive"/>.</summary>
+            Living,
+            /// <summary>The <see cref="IConcealedAction.Actor"/> needn't actually presently exist. Lingering <see cref="Psionic"/> "energy" is detectable.</summary>
+            Ambient,
+            /// <summary>Any an all <see cref="Psionic"/> activity is detectable, whatever that might look like.</summary>
+            Total,
+        }
         public bool RequiresConsciousness => true;
 
-        public bool CanOnlyDetectTarget { get; }
+        public bool IgnoreMentalShield => false;
 
-        public bool CanOnlyDetectLiving { get; }
-
-        public bool CanOnlyDetectBrain { get; }
-
-        public bool CanOnlyDetectEligibleForMentalMutations { get; }
-
-        public bool CanOnlyDetectWithMentalMutations { get; }
+        public PsionicAttunement Attunement => PsionicAttunement.Sentient;
 
         public new bool CanPerceive(AlertContext Context)
         {
+            if (Attunement == PsionicAttunement.None)
+                return false;
+
             if (!((IPerception)this).CanPerceive(Context))
                 return false;
 
@@ -39,24 +62,34 @@ namespace StealthSystemPrototype.Perceptions
                 return false;
 
             GameObject actor = Context?.Actor;
-            if (CanOnlyDetectTarget
-                && actor == null)
+            if (actor == null)
+                return Attunement >= PsionicAttunement.Ambient;
+
+            if (!IgnoreMentalShield
+                && actor.HasPart<MentalShield>())
                 return false;
 
-            if (CanOnlyDetectLiving
-                && !actor.IsAlive)
-                return false;
+            if (Attunement >= PsionicAttunement.Living
+                && actor.IsAlive)
+                return true;
 
-            if (CanOnlyDetectBrain
-                && actor.Brain == null)
-                return false;
+            if (Attunement >= PsionicAttunement.Sentient
+                && actor.Brain != null)
+                return true;
 
-            if (CanOnlyDetectEligibleForMentalMutations
-                && !actor.EligibleForMentalMutations())
-                return false;
+            if (Attunement >= PsionicAttunement.MentalMutations
+                && actor.HasMentalMutations())
+                return true;
 
-            return !CanOnlyDetectWithMentalMutations
-                || actor.HasMentalMutations();
+            if (Attunement >= PsionicAttunement.NonChimera
+                && actor.EligibleForMentalMutations())
+                return true;
+
+            if (Attunement >= PsionicAttunement.Espers
+                && actor.HasPart<Esper>())
+                return true;
+
+            return false;
         }
     }
 }

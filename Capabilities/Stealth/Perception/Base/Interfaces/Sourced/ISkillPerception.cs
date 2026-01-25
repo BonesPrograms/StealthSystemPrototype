@@ -1,4 +1,6 @@
-﻿using StealthSystemPrototype.Capabilities.Stealth;
+﻿using System.Collections.Generic;
+
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Detetections;
 using XRL.World;
 using XRL.World.Parts.Skill;
@@ -13,5 +15,9 @@ namespace StealthSystemPrototype.Perceptions
         public new BaseSkill Source { get; }
 
         public new BaseSkill GetSource();
+
+        public new List<BaseSkill> GetPotentialSources();
+
+        public new BaseSkill GetBestSource();
     }
 }

@@ -1,4 +1,6 @@
-﻿using StealthSystemPrototype.Capabilities.Stealth;
+﻿using XRL.World;
+
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Detetections;
 
 namespace StealthSystemPrototype.Perceptions
@@ -8,11 +10,13 @@ namespace StealthSystemPrototype.Perceptions
     /// </summary>
     /// <typeparam name="T">The source of if the underlyign <see cref="IPerception"/></typeparam>
     public interface ISourcedPerception<T> : IPerception
-        where T : class, new()
+        where T : class
     {
         public T Source { get; }
 
         public T GetSource();
+
+        public GameObject GetOwner(T Source = null);
 
         public new bool Validate()
             => ((IPerception)this).Validate()

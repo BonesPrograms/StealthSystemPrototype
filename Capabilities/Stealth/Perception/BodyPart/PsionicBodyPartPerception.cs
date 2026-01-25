@@ -18,94 +18,74 @@ using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
+using static StealthSystemPrototype.Perceptions.IPsionicPerception;
 
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class VisualBodyPartPerception
+    public class PsionicBodyPartPerception
         : BaseBodyPartPerception
-        , IVisualPerception
+        , IPsionicPerception
     {
-        public virtual VisualPurview Purview
+        public PsionicPurview Purview
         {
-            get => _Purview as VisualPurview;
+            get => _Purview as PsionicPurview;
             set => _Purview = value;
         }
 
-        public virtual LightLevel MinimumLightLevel { get; protected set; }
+        public virtual bool RequiresConsciousness { get; protected set; }
+        public virtual bool IgnoreMentalShield { get; protected set; }
+        public virtual PsionicAttunement Attunement { get; protected set; }
 
         #region Constructors
 
-        public VisualBodyPartPerception()
+        public PsionicBodyPartPerception()
             : base()
         {
         }
-        public VisualBodyPartPerception(
+        public PsionicBodyPartPerception(
             GameObject Owner,
             BodyPart Source,
             int Level,
-            LightLevel MinimumLightLevel,
-            VisualPurview Purview)
+            bool RequiresConsciousness,
+            bool IgnoreMentalShield,
+            PsionicAttunement Attunement,
+            PsionicPurview Purview)
             : base(Owner, Source, Level, Purview)
         {
-            this.MinimumLightLevel = MinimumLightLevel;
+            this.RequiresConsciousness = RequiresConsciousness;
+            this.IgnoreMentalShield = IgnoreMentalShield;
+            this.Attunement = Attunement;
         }
-        public VisualBodyPartPerception(
-            GameObject Owner,
+        public PsionicBodyPartPerception(
             BodyPart Source,
             int Level,
-            VisualPurview Purview)
-            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
+            bool RequiresConsciousness,
+            bool IgnoreMentalShield,
+            PsionicAttunement Attunement,
+            PsionicPurview Purview)
+            : this(
+                  Owner: null,
+                  Source: Source,
+                  Level: Level,
+                  RequiresConsciousness: RequiresConsciousness,
+                  IgnoreMentalShield: IgnoreMentalShield,
+                  Attunement: Attunement,
+                  Purview: Purview)
         {
         }
-        public VisualBodyPartPerception(
+        public PsionicBodyPartPerception(
             BodyPart Source,
             int Level,
-            LightLevel MinimumLightLevel,
-            VisualPurview Purview)
-            : this(null, Source, Level, MinimumLightLevel, Purview)
+            PsionicPurview Purview)
+            : base(
+                  Owner: null,
+                  Source: Source,
+                  Level: Level,
+                  Purview: Purview)
         {
         }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            VisualPurview Purview)
-            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            int Purview)
-            : this(Owner, Source, Level, MinimumLightLevel, new VisualPurview(Purview))
-        {
-        }
-        public VisualBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            int Purview)
-            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            int Purview)
-            : this(null, Source, Level, MinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            int Purview)
-            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(GameObject Basis, SerializationReader Reader)
+        public PsionicBodyPartPerception(GameObject Basis, SerializationReader Reader)
             : base(Basis, Reader)
         {
         }
@@ -113,13 +93,13 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Serialization
 
-        public virtual void WritePurview(SerializationWriter Writer, VisualPurview Purview)
+        public virtual void WritePurview(SerializationWriter Writer, PsionicPurview Purview)
             => Writer.Write(Purview);
 
         public sealed override void WritePurview(SerializationWriter Writer, IPurview Purview)
         {
-            if (Purview is not VisualPurview typedPurview)
-                typedPurview = _Purview as VisualPurview;
+            if (Purview is not PsionicPurview typedPurview)
+                typedPurview = _Purview as PsionicPurview;
 
             WritePurview(Writer, typedPurview);
 
@@ -132,21 +112,21 @@ namespace StealthSystemPrototype.Perceptions
 
         public virtual void ReadPurview(
             SerializationReader Reader,
-            ref VisualPurview Purview,
-            IAlertTypedPerception<Visual, VisualPurview> ParentPerception = null)
-            => Purview = new VisualPurview(Reader, ParentPerception ?? this);
+            ref PsionicPurview Purview,
+            IAlertTypedPerception<Psionic, PsionicPurview> ParentPerception = null)
+            => Purview = new PsionicPurview(Reader, ParentPerception ?? this);
 
         public sealed override void ReadPurview(
             SerializationReader Reader,
             ref IPurview Purview,
             IPerception ParentPerception = null)
         {
-            if (Purview is not VisualPurview typedPurview)
-                typedPurview = _Purview as VisualPurview;
+            if (Purview is not PsionicPurview typedPurview)
+                typedPurview = _Purview as PsionicPurview;
 
             if (typedPurview != null)
             {
-                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Visual, VisualPurview> ?? this);
+                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Psionic, PsionicPurview> ?? this);
                 _Purview = typedPurview;
             }
             else
@@ -159,12 +139,16 @@ namespace StealthSystemPrototype.Perceptions
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
-            Writer.WriteOptimized((byte)MinimumLightLevel);
+            Writer.Write(RequiresConsciousness);
+            Writer.Write(IgnoreMentalShield);
+            Writer.WriteOptimized((short)Attunement);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
-            MinimumLightLevel = (LightLevel)(byte)Reader.ReadOptimizedInt16();
+            RequiresConsciousness = Reader.ReadBoolean();
+            IgnoreMentalShield = Reader.ReadBoolean();
+            Attunement = (PsionicAttunement)Reader.ReadOptimizedInt16();
         }
 
         #endregion
@@ -172,7 +156,9 @@ namespace StealthSystemPrototype.Perceptions
         public override void Construct()
         {
             base.Construct();
-            MinimumLightLevel = ((IVisualPerception)this).MinimumLightLevel;
+            RequiresConsciousness = ((IPsionicPerception)this).RequiresConsciousness;
+            IgnoreMentalShield = ((IPsionicPerception)this).IgnoreMentalShield;
+            Attunement = ((IPsionicPerception)this).Attunement;
         }
 
         public override bool CanPerceiveAlert(IAlert Alert)
@@ -180,7 +166,6 @@ namespace StealthSystemPrototype.Perceptions
 
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
-
 
         public override IDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);

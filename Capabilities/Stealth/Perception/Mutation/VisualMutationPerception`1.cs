@@ -22,11 +22,12 @@ using static StealthSystemPrototype.Utils;
 namespace StealthSystemPrototype.Perceptions
 {
     [Serializable]
-    public class VisualBodyPartPerception
-        : BaseBodyPartPerception
+    public class VisualMutationPerception<T>
+        : BaseMutationPerception<T>
         , IVisualPerception
+        where T : BaseMutation
     {
-        public virtual VisualPurview Purview
+        public VisualPurview Purview
         {
             get => _Purview as VisualPurview;
             set => _Purview = value;
@@ -36,76 +37,29 @@ namespace StealthSystemPrototype.Perceptions
 
         #region Constructors
 
-        public VisualBodyPartPerception()
+        public VisualMutationPerception()
             : base()
         {
         }
-        public VisualBodyPartPerception(
+        public VisualMutationPerception(
             GameObject Owner,
-            BodyPart Source,
+            T Source,
             int Level,
             LightLevel MinimumLightLevel,
             VisualPurview Purview)
             : base(Owner, Source, Level, Purview)
         {
-            this.MinimumLightLevel = MinimumLightLevel;
+            MinimumLightLevel = MinimumLightLevel;
         }
-        public VisualBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            VisualPurview Purview)
-            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            BodyPart Source,
+        public VisualMutationPerception(
+            T Source,
             int Level,
             LightLevel MinimumLightLevel,
             VisualPurview Purview)
             : this(null, Source, Level, MinimumLightLevel, Purview)
         {
         }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            VisualPurview Purview)
-            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            int Purview)
-            : this(Owner, Source, Level, MinimumLightLevel, new VisualPurview(Purview))
-        {
-        }
-        public VisualBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            int Purview)
-            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            int Purview)
-            : this(null, Source, Level, MinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            int Purview)
-            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(GameObject Basis, SerializationReader Reader)
+        public VisualMutationPerception(GameObject Basis, SerializationReader Reader)
             : base(Basis, Reader)
         {
         }
@@ -181,15 +135,10 @@ namespace StealthSystemPrototype.Perceptions
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
 
-
         public override IDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);
 
-        public override BodyPart GetSource()
-            => ((IBodyPartPerception)this).GetSource();
-
-        public override bool Validate()
-            => base.Validate()
-            && Owner.Body?.GetFirstPart(SourceType, false) != null;
+        public override T GetSource()
+            => base.GetSource();
     }
 }

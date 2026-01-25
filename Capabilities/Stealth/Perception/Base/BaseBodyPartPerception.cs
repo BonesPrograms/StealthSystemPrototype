@@ -22,8 +22,9 @@ namespace StealthSystemPrototype.Perceptions
 {
     [StealthSystemBaseClass]
     [Serializable]
-    public abstract class BaseBodyPartPerception<TAlert> : BasePerception, IBodyPartPerception
-        where TAlert : class, IAlert, new()
+    public abstract class BaseBodyPartPerception
+        : BasePerception
+        , IBodyPartPerception
     {
         private string _SourceType;
         public string SourceType
@@ -44,7 +45,6 @@ namespace StealthSystemPrototype.Perceptions
         public BaseBodyPartPerception()
             : base()
         {
-            SourceType = null;
         }
         public BaseBodyPartPerception(
             GameObject Owner,
@@ -59,7 +59,17 @@ namespace StealthSystemPrototype.Perceptions
             BodyPart Source,
             int Level,
             IPurview Purview)
-            : this(Source?.ParentBody?.ParentObject, Source, Level, Purview)
+            : this(null, Source, Level, Purview)
+        {
+            using Indent indent = new(1);
+            if (Owner == null)
+            {
+                Debug.LogCritical("Assigned " + nameof(Owner), Debug.CallingTypeAndMethodNames(), Indent: indent);
+                Owner ??= GetOwner(Source);
+            }
+        }
+        public BaseBodyPartPerception(GameObject Basis, SerializationReader Reader)
+            : base(Basis, Reader)
         {
         }
 
@@ -79,12 +89,26 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
+        public override void Construct()
+        {
+            base.Construct();
+            SourceType = null;
+            using Indent indent = new(1);
+            if (Owner == null)
+            {
+                Debug.LogCritical("Assigned " + nameof(Owner), Debug.CallingTypeAndMethodNames(), Indent: indent);
+                Owner ??= GetOwner(Source);
+            }
+        }
+
         public virtual BodyPart GetSource()
             => ((IBodyPartPerception)this).GetSource();
+
+        public virtual GameObject GetOwner(BodyPart Source = null)
+            => Source?.ParentBody?.ParentObject;
 
         public override bool Validate()
             => base.Validate()
             && Owner.Body?.GetFirstPart(SourceType, false) != null;
-
     }
 }

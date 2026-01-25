@@ -12,7 +12,7 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 
 using static StealthSystemPrototype.Perceptions.IPerception;
-using StealthSystemPrototype.Senses;
+using static StealthSystemPrototype.Capabilities.Stealth.Perception.IPurview;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 namespace StealthSystemPrototype.Events
@@ -78,8 +78,8 @@ namespace StealthSystemPrototype.Events
             E.Type = Perception.GetType();
             E.PurviewType = Purview.GetType();
             E.BaseValue = BaseValue;
-            E.Min = IPurview.MIN_VALUE;
-            E.Max = IPurview.MAX_VALUE;
+            E.Min = MIN_VALUE;
+            E.Max = MAX_VALUE;
             E.GetStringyEvent();
             return E;
         }
@@ -153,7 +153,8 @@ namespace StealthSystemPrototype.Events
 
         public AdjustTotalPurviewEvent SetMinValue(int Min)
         {
-            this.Min = Min.Clamp(IPurview.MIN_VALUE, IPurview.MAX_VALUE);
+            this.Min = Min.Clamp(MIN_VALUE, MAX_VALUE);
+            Max = Max.Clamp(Min, MAX_VALUE);
             return this;
         }
         public AdjustTotalPurviewEvent AdjustByAmount(int Amount)
@@ -168,7 +169,8 @@ namespace StealthSystemPrototype.Events
         }
         public AdjustTotalPurviewEvent SetMaxValue(int Max)
         {
-            this.Max = Max.Clamp(IPurview.MIN_VALUE, IPurview.MAX_VALUE);
+            this.Max = Max.Clamp(MIN_VALUE, MAX_VALUE);
+            Min = Min.Clamp(MIN_VALUE, Max);
             return this;
         }
 
@@ -181,11 +183,11 @@ namespace StealthSystemPrototype.Events
         public int GetAdjustment()
         {
             int adjustment = CalculateAdjustment();
-            if (GetFinalValue() > IPurview.MAX_VALUE)
-                adjustment += IPurview.MAX_VALUE - GetFinalValue();
+            if (GetFinalValue() > MAX_VALUE)
+                adjustment += MAX_VALUE - GetFinalValue();
             else
-            if (GetFinalValue() < IPurview.MIN_VALUE)
-                adjustment += IPurview.MIN_VALUE - GetFinalValue();
+            if (GetFinalValue() < MIN_VALUE)
+                adjustment += MIN_VALUE - GetFinalValue();
             return adjustment;
         }
     }

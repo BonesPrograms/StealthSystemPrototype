@@ -23,7 +23,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public static int MAX_VALUE => 84;
 
-        public IPerception ParentPerception { get; set; }
+        public IPerception ParentPerception { get; }
 
         public int Value { get; }
 
@@ -32,6 +32,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         string Attributes { get; }
 
         #region Serialization
+
         public static void WriteOptimized(
             SerializationWriter Writer,
             int Value,
@@ -51,6 +52,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             Value = Reader.ReadOptimizedInt32();
             Attributes = Reader.ReadOptimizedString();
         }
+
+        public void FromReader(SerializationReader Reader, IPerception ParentPerception);
 
         #endregion
         #region Contracts

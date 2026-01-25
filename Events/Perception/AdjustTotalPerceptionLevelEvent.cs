@@ -43,8 +43,8 @@ namespace StealthSystemPrototype.Events
             BaseLevel = 0;
             LinearAdjustment = 0;
             PercentAdjustment = 0.0;
-            Min = MIN_LEVEL;
-            Max = MAX_LEVEL;
+            Min = 0;
+            Max = 0;
         }
 
         public override void Reset()
@@ -55,8 +55,8 @@ namespace StealthSystemPrototype.Events
             BaseLevel = 0;
             LinearAdjustment = 0;
             PercentAdjustment = 0.0;
-            Min = MIN_LEVEL;
-            Max = MAX_LEVEL;
+            Min = 0;
+            Max = 0;
         }
 
         public static AdjustTotalPerceptionLevelEvent FromPool(
@@ -144,6 +144,7 @@ namespace StealthSystemPrototype.Events
         public AdjustTotalPerceptionLevelEvent SetMinValue(int Min)
         {
             this.Min = Min.Clamp(MIN_LEVEL, MAX_LEVEL);
+            Max = Max.Clamp(Min, MAX_LEVEL);
             return this;
         }
         public AdjustTotalPerceptionLevelEvent AdjustByAmount(int Amount)
@@ -159,6 +160,7 @@ namespace StealthSystemPrototype.Events
         public AdjustTotalPerceptionLevelEvent SetMaxValue(int Max)
         {
             this.Max = Max.Clamp(MIN_LEVEL, MAX_LEVEL);
+            Min = Min.Clamp(MIN_LEVEL, Max);
             return this;
         }
 

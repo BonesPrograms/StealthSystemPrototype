@@ -12,33 +12,33 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     [Serializable]
-    public class VisualPurview : BasePurview<Visual>, IPurview<Visual>
+    public class EsperPurview : PsionicPurview
     {
-        // Purview.RadiusFlags.Line | Purview.RadiusFlags.Occludes | Purview.RadiusFlags.Diffuses
-        public static BaseDoubleDiffuser DefaultDiffuser => new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
-
-        public BaseDoubleDiffuser Diffuser;
-
+        // Purview.RadiusFlags.Line | Purview.RadiusFlags.Area | Purview.RadiusFlags.Diffuses
+       
         #region Constructors
 
-        protected VisualPurview()
+        protected EsperPurview()
             : base()
         {
+            _ParentPerception = null;
+            Value = 0;
             Diffuser = null;
         }
-        public VisualPurview(int Value, BaseDoubleDiffuser Diffuser = null)
+        public EsperPurview(int Value, BaseDoubleDiffuser Diffuser = null)
             : this()
         {
             this.Value = Value;
-            Attributes = "Line,Occludes,Diffuses";
+            Attributes = "Line,Area,Diffuses";
             this.Diffuser = Diffuser ?? DefaultDiffuser;
             this.Diffuser.SetSteps(Value);
         }
-        public VisualPurview(
+        public EsperPurview(
             int Value,
             string Attributes,
             BaseDoubleDiffuser Diffuser = null)
@@ -46,21 +46,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         {
             this.Attributes = Attributes;
         }
-        public VisualPurview(
-            IAlertTypedPerception<Visual, VisualPurview> ParentPerception,
+        public EsperPurview(
+            IAlertTypedPerception<Psionic, EsperPurview> ParentPerception,
             int Value,
             string Attributes,
             BaseDoubleDiffuser Diffuser = null)
             : this(Value, Attributes, Diffuser)
         {
-            this.ParentPerception = ParentPerception as IAlertTypedPerception<Visual, IPurview<Visual>>;
+            this.ParentPerception = ParentPerception as IAlertTypedPerception<Psionic, IPurview<Psionic>>;
         }
-        public VisualPurview(VisualPurview Source)
-            : this(Source.ParentPerception as IAlertTypedPerception<Visual, VisualPurview>, Source.Value, Source.Attributes, Source.Diffuser)
+        public EsperPurview(PsionicPurview Source)
+            : this(Source.ParentPerception as IAlertTypedPerception<Psionic, EsperPurview>, Source.Value, Source.Attributes, Source.Diffuser)
         {
         }
-        public VisualPurview(SerializationReader Reader, IAlertTypedPerception<Visual, VisualPurview> ParentPerception)
-            : base(Reader, ParentPerception as IAlertTypedPerception<Visual, IPurview<Visual>>)
+        public EsperPurview(SerializationReader Reader, IAlertTypedPerception<Psionic, EsperPurview> ParentPerception)
+            : base(Reader, ParentPerception as IAlertTypedPerception<Psionic, PsionicPurview>)
         {
         }
 
@@ -89,8 +89,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override List<string> GetPerviewAttributes()
             => base.GetPerviewAttributes();
 
-        public override int GetPurviewAdjustment(IAlertTypedPerception<Visual, IPurview<Visual>> ParentPerception, int Value = 0)
-            => base.GetPurviewAdjustment(ParentPerception, Value);
+        public override int GetPurviewAdjustment(
+            IAlertTypedPerception<Psionic, IPurview<Psionic>> ParentPerception,
+            int Value = 0)
+            => base.GetPurviewAdjustment(ParentPerception, Value) + (ParentPerception?.Owner?.Level ?? 0);
 
         #region Predicates
 
@@ -122,7 +124,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         #endregion
         #region Conversion
 
-        public static explicit operator int(VisualPurview Operand)
+        public static explicit operator int(EsperPurview Operand)
             => Operand.EffectiveValue;
 
         #endregion

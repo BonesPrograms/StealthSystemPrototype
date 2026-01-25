@@ -12,33 +12,34 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
+using StealthSystemPrototype.Senses;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     [Serializable]
-    public class VisualPurview : BasePurview<Visual>, IPurview<Visual>
+    public class OlfactoryPurview : BasePurview<Olfactory>, IPurview<Olfactory>
     {
-        // Purview.RadiusFlags.Line | Purview.RadiusFlags.Occludes | Purview.RadiusFlags.Diffuses
+        // Purview.RadiusFlags.Area | Purview.RadiusFlags.Pathing | Purview.RadiusFlags.Diffuses
         public static BaseDoubleDiffuser DefaultDiffuser => new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
 
         public BaseDoubleDiffuser Diffuser;
 
         #region Constructors
 
-        protected VisualPurview()
+        protected OlfactoryPurview()
             : base()
         {
             Diffuser = null;
         }
-        public VisualPurview(int Value, BaseDoubleDiffuser Diffuser = null)
+        public OlfactoryPurview(int Value, BaseDoubleDiffuser Diffuser = null)
             : this()
         {
             this.Value = Value;
-            Attributes = "Line,Occludes,Diffuses";
+            Attributes = "Area,Pathing,Diffuses";
             this.Diffuser = Diffuser ?? DefaultDiffuser;
             this.Diffuser.SetSteps(Value);
         }
-        public VisualPurview(
+        public OlfactoryPurview(
             int Value,
             string Attributes,
             BaseDoubleDiffuser Diffuser = null)
@@ -46,21 +47,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         {
             this.Attributes = Attributes;
         }
-        public VisualPurview(
-            IAlertTypedPerception<Visual, VisualPurview> ParentPerception,
+        public OlfactoryPurview(
+            IAlertTypedPerception<Olfactory, OlfactoryPurview> ParentPerception,
             int Value,
             string Attributes,
             BaseDoubleDiffuser Diffuser = null)
             : this(Value, Attributes, Diffuser)
         {
-            this.ParentPerception = ParentPerception as IAlertTypedPerception<Visual, IPurview<Visual>>;
+            this.ParentPerception = ParentPerception as IAlertTypedPerception<Olfactory, IPurview<Olfactory>>;
         }
-        public VisualPurview(VisualPurview Source)
-            : this(Source.ParentPerception as IAlertTypedPerception<Visual, VisualPurview>, Source.Value, Source.Attributes, Source.Diffuser)
+        public OlfactoryPurview(OlfactoryPurview Source)
+            : this(Source.ParentPerception as IAlertTypedPerception<Olfactory, OlfactoryPurview>, Source.Value, Source.Attributes, Source.Diffuser)
         {
         }
-        public VisualPurview(SerializationReader Reader, IAlertTypedPerception<Visual, VisualPurview> ParentPerception)
-            : base(Reader, ParentPerception as IAlertTypedPerception<Visual, IPurview<Visual>>)
+        public OlfactoryPurview(SerializationReader Reader, IAlertTypedPerception<Olfactory, OlfactoryPurview> ParentPerception)
+            : base(Reader, ParentPerception as IAlertTypedPerception<Olfactory, IPurview<Olfactory>>)
         {
         }
 
@@ -89,7 +90,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override List<string> GetPerviewAttributes()
             => base.GetPerviewAttributes();
 
-        public override int GetPurviewAdjustment(IAlertTypedPerception<Visual, IPurview<Visual>> ParentPerception, int Value = 0)
+        public override int GetPurviewAdjustment(IAlertTypedPerception<Olfactory, IPurview<Olfactory>> ParentPerception, int Value = 0)
             => base.GetPurviewAdjustment(ParentPerception, Value);
 
         #region Predicates
@@ -122,7 +123,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         #endregion
         #region Conversion
 
-        public static explicit operator int(VisualPurview Operand)
+        public static explicit operator int(OlfactoryPurview Operand)
             => Operand.EffectiveValue;
 
         #endregion

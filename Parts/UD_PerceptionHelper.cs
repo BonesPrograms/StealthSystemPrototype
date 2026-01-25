@@ -289,14 +289,20 @@ namespace XRL.World.Parts
                 });
 
             if (ParentObject.GetFirstBodyPart("Face") is BodyPart facePart)
-                E.RequireBodyPartPerception<VisualBodyPartPerception>(facePart, 3, new VisualPurview(1));
+            {
+                E.RequireBodyPartPerception<VisualBodyPartPerception, VisualPurview, Visual>(facePart, 3, new(5));
+                E.RequireBodyPartPerception<AuditoryBodyPartPerception, AuditoryPurview, Auditory>(facePart, 3, new(4));
+                E.RequireBodyPartPerception<OlfactoryBodyPartPerception, OlfactoryPurview, Olfactory>(facePart, 3, new(3));
+            }
 
+
+            if (ParentObject.TryGetPart(out Esper esper))
+                E.RequirePerception(new EsperPsionicPerception(esper, 1, new EsperPurview(4)));
+
+            /*
             E.RequirePerception(new SimpleVisualPerception(ParentObject));
             E.RequirePerception(new SimpleAuditoryPerception(ParentObject));
             E.RequirePerception(new SimpleOlfactoryPerception(ParentObject));
-
-            if (ParentObject.TryGetPart(out Esper esper))
-                E.RequirePerception(new EsperPsionicPerception(esper));
 
             if (ParentObject.TryGetPart(out HeightenedHearing heightenedHearing))
                 E.RequireAuditoryIPartPerception(heightenedHearing);
@@ -312,6 +318,7 @@ namespace XRL.World.Parts
 
             if (ParentObject.TryGetPart(out SensePsychic sensePsychic))
                 E.RequirePsionicIPartPerception(sensePsychic);
+            */
 
             Debug.Log(nameof(E.Perceptions), E.Perceptions?.Count ?? 0, Indent: indent[1]);
 
@@ -331,6 +338,7 @@ namespace XRL.World.Parts
             if (WantSync)
                 SyncPerceptions();
 
+            /*
             if (E.Alert.Name == nameof(Visual)
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
@@ -343,7 +351,7 @@ namespace XRL.World.Parts
             if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.AdjustDieRoll(2 * heightenedSmell.Level);
-
+            */
             if (E.Type.Name.EqualsAny(
                 new string[]
                 {
@@ -355,10 +363,10 @@ namespace XRL.World.Parts
                 && body.LoopPart(FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
             {
                 if (facesList.Count > 1)
-                    E.AdjustDieRoll(15);
+                    E.AdjustByAmount(15);
                 else
                 if (facesList.Count < 1)
-                    E.SetDieRollMax(0);
+                    E.SetMaxValue(0);
             }
             return base.HandleEvent(E);
         }
@@ -376,6 +384,7 @@ namespace XRL.World.Parts
             if (WantSync)
                 SyncPerceptions();
 
+            /*
             if (E.Alert.Name == nameof(Visual)
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
@@ -388,6 +397,7 @@ namespace XRL.World.Parts
             if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.SetMinRadius(E.Purview.GetValue() + Math.Min(heightenedSmell.Level, 5));
+            */
 
             if (E.Type.Name.EqualsAny(
                 new string[]
@@ -400,7 +410,7 @@ namespace XRL.World.Parts
                 && body.LoopPart(FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
             {
                 if (facesList.Count > 1)
-                    E.SetMinRadius(E.BaseValue.GetValue() + 2);
+                    E.SetMaxValue(E.GetBaseValue() + 2);
                 else
                 if (facesList.Count < 1)
                     E.SetMaxValue(0);
