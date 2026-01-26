@@ -123,7 +123,7 @@ namespace StealthSystemPrototype.Events
             bool DoRegistration = true,
             bool Creation = false)
             where P : class, IBodyPartPerception, IAlertTypedPerception<A, V>, new()
-            where V : class, IPurview<A>
+            where V : class, IPurview<A>, new()
             where A : class, IAlert, new()
         {
             P perception = new()
@@ -154,8 +154,8 @@ namespace StealthSystemPrototype.Events
             {
                 Source = BodyPart,
                 Level = Level,
-                Purview = Purview,
             };
+            perception.AssignDefaultPurview(Purview);
             if (perception != null)
             {
                 perception.Purview.SetParentPerception(perception);

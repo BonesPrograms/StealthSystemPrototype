@@ -12,11 +12,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     /// <summary>
     /// Contracts a type as being representative of the obviousness of one aspect of an <see cref="IConcealedAction"/> to an appropriate <see cref="IPerception"/>.
     /// </summary>
-    public interface IAlert<T> : IAlert
-        where T : class, IAlert<T>, new()
+    public interface IAlert<A> : IAlert
+        where A : IAlert<A>
     {
-        public new T AdjustIntensity(int Amount);
-        public new T Copy();
+        public new A AdjustIntensity(int Amount);
+        public new A Copy();
     }
 
     /// <summary>

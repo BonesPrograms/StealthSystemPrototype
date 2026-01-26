@@ -13,21 +13,9 @@ namespace StealthSystemPrototype.Perceptions
     public interface IPartPerception<T> : IPartPerception, IComponentPerception<T>
         where T : IPart
     {
-        /*
-        public new T Source { get; }
-
-        public new T GetSource()
-            => Owner?.GetPart<T>();
-        */
         public new List<T> GetPotentialSources()
             => Owner?.GetPartsDescendedFrom<T>();
 
         public new T GetBestSource();
-
-        /*
-        public new bool Validate()
-            => ((ISourcedPerception<T>)this).Validate()
-            && Source != null;
-        */
     }
 }

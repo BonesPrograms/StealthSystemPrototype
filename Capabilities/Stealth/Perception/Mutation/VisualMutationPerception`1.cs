@@ -27,7 +27,7 @@ namespace StealthSystemPrototype.Perceptions
         , IVisualPerception
         where T : BaseMutation
     {
-        public VisualPurview Purview
+        public virtual VisualPurview Purview
         {
             get => _Purview as VisualPurview;
             set => _Purview = value;
@@ -49,7 +49,15 @@ namespace StealthSystemPrototype.Perceptions
             VisualPurview Purview)
             : base(Owner, Source, Level, Purview)
         {
-            MinimumLightLevel = MinimumLightLevel;
+            this.MinimumLightLevel = MinimumLightLevel;
+        }
+        public VisualMutationPerception(
+            GameObject Owner,
+            T Source,
+            int Level,
+            VisualPurview Purview)
+            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
+        {
         }
         public VisualMutationPerception(
             T Source,
@@ -57,6 +65,45 @@ namespace StealthSystemPrototype.Perceptions
             LightLevel MinimumLightLevel,
             VisualPurview Purview)
             : this(null, Source, Level, MinimumLightLevel, Purview)
+        {
+        }
+        public VisualMutationPerception(
+            T Source,
+            int Level,
+            VisualPurview Purview)
+            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
+        {
+        }
+        public VisualMutationPerception(
+            GameObject Owner,
+            T Source,
+            int Level,
+            LightLevel MinimumLightLevel,
+            int Purview)
+            : this(Owner, Source, Level, MinimumLightLevel, new VisualPurview(Purview))
+        {
+        }
+        public VisualMutationPerception(
+            GameObject Owner,
+            T Source,
+            int Level,
+            int Purview)
+            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
+        {
+        }
+        public VisualMutationPerception(
+            T Source,
+            int Level,
+            LightLevel MinimumLightLevel,
+            int Purview)
+            : this(null, Source, Level, MinimumLightLevel, Purview)
+        {
+        }
+        public VisualMutationPerception(
+            T Source,
+            int Level,
+            int Purview)
+            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
         {
         }
         public VisualMutationPerception(GameObject Basis, SerializationReader Reader)
@@ -129,16 +176,36 @@ namespace StealthSystemPrototype.Perceptions
             MinimumLightLevel = ((IVisualPerception)this).MinimumLightLevel;
         }
 
+        public override void AssignDefaultPurview(int Value)
+            => Purview = GetDefaultPurview(Value);
+
+        public override IPurview GetDefaultPurview(int Value)
+            => GetDefaultPurview(
+                Value: Value,
+                purviewArgs: new object[]
+                {
+                    VisualPurview.DefaultDiffuser.SetSteps(Value),
+                });
+
+        public virtual VisualPurview GetDefaultPurview(int Value, params object[] purviewArgs)
+        {
+            var purview = new VisualPurview(this as IAlertTypedPerception<Visual, IPurview<Visual>>, Value);
+            if (!purviewArgs.IsNullOrEmpty())
+                foreach (object arg in purviewArgs)
+                {
+                    if (arg is BaseDoubleDiffuser diffuserArg)
+                        purview.Diffuser = diffuserArg;
+                }
+            return purview;
+        }
+
         public override bool CanPerceiveAlert(IAlert Alert)
-            => ((IAlertTypedPerception<Visual, IPurview<Visual>>)this).CanPerceiveAlert(Alert);
+            => ((IAlertTypedPerception<Visual, VisualPurview>)this).CanPerceiveAlert(Alert);
 
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
 
         public override IDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);
-
-        public override T GetSource()
-            => base.GetSource();
     }
 }

@@ -3,16 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL;
 using XRL.World;
+using XRL.World.Parts;
 
 using StealthSystemPrototype.Perceptions;
-using static StealthSystemPrototype.Utils;
 using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
+
+using static StealthSystemPrototype.Utils;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     /// <summary>
-    /// Contracts a type as being capable of determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/>
+    /// Contracts a type as being capable of determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/>.
     /// </summary>
     public interface IPurview
         : IComposite
@@ -29,48 +33,28 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public int EffectiveValue { get; }
 
-        string Attributes { get; }
+        /// <summary>
+        /// Whether or not this purview is interrupted by <see cref="Render.Occluding"/> <see cref="GameObject"/>s.
+        /// </summary>
+        public bool Occludes { get; }
 
-        #region Serialization
-
-        public static void WriteOptimized(
-            SerializationWriter Writer,
-            int Value,
-            string Attributes)
-        {
-            Writer.WriteOptimized(Value);
-            Writer.WriteOptimized(Attributes);
-        }
-        public static void WriteOptimized(SerializationWriter Writer, IPurview Purview)
-            => WriteOptimized(Writer, Purview.Value, Purview.Attributes);
-
-        public static void ReadOptimizedPurview(
-            SerializationReader Reader,
-            out int Value,
-            out string Attributes)
-        {
-            Value = Reader.ReadOptimizedInt32();
-            Attributes = Reader.ReadOptimizedString();
-        }
-
-        public void FromReader(SerializationReader Reader, IPerception ParentPerception);
-
-        #endregion
         #region Contracts
 
+        /// <summary>
+        /// Called once inside the <see cref="IPurview"/>'s default constructor.
+        /// </summary>
+        /// <remarks>
+        /// Override only to make common initialization assignments for derived types.
+        /// </remarks>
+        public void Construct();
+
         public IPurview SetParentPerception(IPerception ParentPerception);
-
-        public List<string> GetPerviewAttributes();
-
-        public bool HasAttribute(string Attribute);
-
-        public bool HasAttributes(params string[] Attributes);
 
         public int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0);
 
         public int GetEffectiveValue();
 
-        public bool IsWithin(Cell Cell);
+        public bool IsWithin(AlertContext Context);
 
         public void ClearCaches();
 

@@ -4,6 +4,7 @@ using StealthSystemPrototype.Detetections;
 using StealthSystemPrototype.Capabilities.Stealth;
 
 using XRL.World;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 namespace StealthSystemPrototype.Perceptions
 {

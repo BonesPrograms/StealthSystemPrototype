@@ -13,18 +13,19 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
 using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     [StealthSystemBaseClass]
     [Serializable]
-    public class BasePurview<A>
+    public abstract class BasePurview<A>
         : IPurview<A>
         , IComposite
-        where A : class, IAlert, new()
+        where A : IAlert, new()
     {
         protected IAlertTypedPerception<A, IPurview<A>> _ParentPerception;
-        public IAlertTypedPerception<A, IPurview<A>> ParentPerception
+        public virtual IAlertTypedPerception<A, IPurview<A>> ParentPerception
         {
             get => _ParentPerception;
             set => _ParentPerception = value;
@@ -38,31 +39,26 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             protected set => _Value = value;
         }
 
-        private string _Attributes;
-        public string Attributes
-        {
-            get => _Attributes;
-            protected set => _Attributes = value;
-        }
-
         public int EffectiveValue => GetEffectiveValue();
+
+        public abstract bool Occludes { get; }
 
         #region Constructors
 
-        protected BasePurview()
+        public BasePurview()
         {
             _ParentPerception = null;
             Value = 0;
+            Construct();
         }
-        public BasePurview(IAlertTypedPerception<A, IPurview<A>> ParentPerception, int Value, string Attributes)
+        protected BasePurview(IAlertTypedPerception<A, IPurview<A>> ParentPerception, int Value)
             : this()
         {
             this.ParentPerception = ParentPerception;
             this.Value = Value;
-            this.Attributes = Attributes;
         }
         public BasePurview(BasePurview<A> Source)
-            : this(Source.ParentPerception, Source.Value, Source.Attributes)
+            : this(Source.ParentPerception, Source.Value)
         {
         }
         public BasePurview(SerializationReader Reader, IAlertTypedPerception<A, IPurview<A>> ParentPerception)
@@ -74,49 +70,25 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         #endregion
         #region Serialization
 
-        public virtual void FromReader(SerializationReader Reader, IAlertTypedPerception<A, IPurview<A>> ParentPerception)
-        {
-            Read(Reader);
-            this.ParentPerception = ParentPerception;
-        }
-
-        void IPurview.FromReader(SerializationReader Reader, IPerception ParentPerception)
-            => FromReader(Reader, ParentPerception as IAlertTypedPerception<A, IPurview<A>>);
-
-        public static void WriteOptimized(
-            SerializationWriter Writer,
-            int Value,
-            string Attributes)
-            => IPurview.WriteOptimized(Writer, Value, Attributes);
-
-        public static void WriteOptimized(SerializationWriter Writer, BasePurview<A> Purview)
-            => IPurview.WriteOptimized(Writer, Purview);
-
-        public static void ReadOptimizedPurview(
-            SerializationReader Reader,
-            out int Value,
-            out string Attributes)
-            => IPurview.ReadOptimizedPurview(Reader, out Value, out Attributes);
-
-        public static BasePurview<A> ReadOptimizedPurview(SerializationReader Reader, IAlertTypedPerception<A, IPurview<A>> ParentPerception)
-        {
-            IPurview.ReadOptimizedPurview(Reader, out int value, out string attributes);
-            return new(ParentPerception, value, attributes);
-        }
-
         public virtual void Write(SerializationWriter Writer)
         {
-            WriteOptimized(Writer, Value, Attributes);
+            Writer.Write(ParentPerception);
+            Writer.WriteOptimized(Value);
         }
         public virtual void Read(SerializationReader Reader)
         {
-            ReadOptimizedPurview(Reader, out _Value, out _Attributes);
+            ParentPerception = Reader.ReadComposite() as IAlertTypedPerception<A, IPurview<A>>;
+            Value = Reader.ReadOptimizedInt32();
         }
 
         #endregion
 
         public override string ToString()
-            => Value + "(E:" + EffectiveValue + ")" + "{" + Attributes + "}";
+            => Value + "(E:" + EffectiveValue + ")" + (Occludes ? "[" + nameof(Occludes) + "]" : null);
+
+        public virtual void Construct()
+        {
+        }
 
         public virtual IPurview<A> SetParentPerception(IAlertTypedPerception<A, IPurview<A>> ParentPerception)
         {
@@ -129,9 +101,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public virtual int GetEffectiveValue()
             => Value + GetPurviewAdjustment(ParentPerception, Value);
-
-        public virtual List<string> GetPerviewAttributes()
-            => Attributes?.CachedCommaExpansion();
 
         public virtual int GetPurviewAdjustment(IAlertTypedPerception<A, IPurview<A>> ParentPerception, int Value = 0)
             => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.Owner, ParentPerception, Value);
@@ -150,14 +119,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         #region Predicates
 
-        public virtual bool HasAttribute(string Attribute)
-            => GetPerviewAttributes().Contains(Attribute);
-
-        public virtual bool HasAttributes(params string[] Attributes)
-            => !Attributes.IsNullOrEmpty()
-            && Attributes.All(a => HasAttribute(a));
-
-        public virtual bool IsWithin(Cell Cell)
+        public virtual bool IsWithin(AlertContext Context)
             => false;
 
         public virtual void ClearCaches()

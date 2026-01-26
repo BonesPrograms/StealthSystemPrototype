@@ -290,9 +290,9 @@ namespace XRL.World.Parts
 
             if (ParentObject.GetFirstBodyPart("Face") is BodyPart facePart)
             {
-                E.RequireBodyPartPerception<VisualBodyPartPerception, VisualPurview, Visual>(facePart, 3, new(5));
-                E.RequireBodyPartPerception<AuditoryBodyPartPerception, AuditoryPurview, Auditory>(facePart, 3, new(4));
-                E.RequireBodyPartPerception<OlfactoryBodyPartPerception, OlfactoryPurview, Olfactory>(facePart, 3, new(3));
+                E.RequireBodyPartPerception<VisualBodyPartPerception>(facePart, Level: 3, Purview: 5);
+                E.RequireBodyPartPerception<AuditoryBodyPartPerception>(facePart, Level: 3, Purview: 4);
+                E.RequireBodyPartPerception<OlfactoryBodyPartPerception>(facePart, Level: 3, Purview: 3);
             }
 
 

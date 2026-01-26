@@ -641,6 +641,12 @@ namespace StealthSystemPrototype
         #endregion
         #region Cells
 
+        public static int CosmeticDistanceToCell(this Cell Cell, Cell OtherCell)
+            => Cell != null
+                && OtherCell != null
+            ? Cell.CosmeticDistanceTo(OtherCell.X, OtherCell.Y)
+            : 0;
+
         public static bool HasLOSTo(this Cell Cell, Cell OtherCell)
         {
             using Indent indent = new(1);
@@ -769,6 +775,27 @@ namespace StealthSystemPrototype
                     ValueProc?.Invoke(kvp.Value);
                 });
 
+        public static T[] GetSubset<T>(this T[] Array, Range Range)
+        {
+            int listCount = Array.Length;
+            int startIndex = Range.Start.GetOffset(listCount);
+            int endIndex = Range.End.GetOffset(listCount);
+            int rangeLength = endIndex - startIndex;
+            if (rangeLength < 0)
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(Range),
+                    message: "Length of " + nameof(Range) + " (" + Range.ToString() + ") is negative for " + 
+                        nameof(Array) + " of " + Array.Length + " elements.");
+
+            T[] output = new T[rangeLength];
+            for (int i = 0; i < rangeLength; i++)
+                output[i] = Array[i + startIndex];
+
+            return output;
+        }
+        public static IList<T> GetSubset<T>(this IList<T> List, Range Range)
+            => List?.ToArray()?.GetSubset(Range);
+
         #endregion
         #region Math?
 
@@ -840,27 +867,6 @@ namespace StealthSystemPrototype
             => !Index.IsFromEnd
             ? Index.Value
             : -Index.Value;
-
-        #endregion
-        #region Ranges
-
-        public static int Sum(this Range Range, bool IncludeIntermediateValues)
-            => new InclusiveRange(Range).Sum(IncludeIntermediateValues);
-
-        public static int Sum(this Range Range)
-            => Range.Sum(false);
-
-        public static int Average(this Range Range)
-            => new InclusiveRange(Range).Average();
-
-        public static int Length(this Range Range)
-            => new InclusiveRange(Range).AbsLength;
-
-        public static int Floor(this Range Range)
-            => new InclusiveRange(Range).Start;
-
-        public static int Ceiling(this Range Range)
-            => new InclusiveRange(Range).End;
 
         #endregion
         #region InclusiveRanges

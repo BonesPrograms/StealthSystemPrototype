@@ -175,12 +175,34 @@ namespace StealthSystemPrototype.Perceptions
             MinimumLightLevel = ((IVisualPerception)this).MinimumLightLevel;
         }
 
+        public override void AssignDefaultPurview(int Value)
+            => Purview = GetDefaultPurview(Value);
+
+        public override IPurview GetDefaultPurview(int Value)
+            => GetDefaultPurview(
+                Value: Value, 
+                purviewArgs: new object[]
+                {
+                    VisualPurview.DefaultDiffuser.SetSteps(Value),
+                });
+
+        public virtual VisualPurview GetDefaultPurview(int Value, params object[] purviewArgs)
+        {
+            var purview = new VisualPurview(this as IAlertTypedPerception<Visual, IPurview<Visual>>, Value);
+            if (!purviewArgs.IsNullOrEmpty())
+                foreach (object arg in purviewArgs)
+                {
+                    if (arg is BaseDoubleDiffuser diffuserArg)
+                        purview.Diffuser = diffuserArg;
+                }
+            return purview;
+        }
+
         public override bool CanPerceiveAlert(IAlert Alert)
-            => ((IAlertTypedPerception<Visual, IPurview<Visual>>)this).CanPerceiveAlert(Alert);
+            => ((IAlertTypedPerception<Visual, VisualPurview>)this).CanPerceiveAlert(Alert);
 
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
-
 
         public override IDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);

@@ -10,14 +10,13 @@ namespace StealthSystemPrototype.Perceptions
     /// <summary>
     /// Contracts a class as capable of detecting <see cref="IConcealedAction"/>s and issuing <see cref="BaseDetection"/>s based on the presence of a <see cref="BaseMutation"/> source.
     /// </summary>
-    public interface IMutionPerception : IPartPerception
+    /// <typeparam name="T">The <see cref="BaseMutation"/> source of if the underlyign <see cref="IPartPerception{BaseMutation}"/></typeparam>
+    public interface IMutationPerception<T> : IMutationPerception, IPartPerception<T>
+        where T : BaseMutation
     {
-        public new BaseMutation Source { get; }
+        public new List<T> GetPotentialSources()
+            => Owner?.GetPartsDescendedFrom<T>();
 
-        public new BaseMutation GetSource();
-
-        public new List<BaseMutation> GetPotentialSources();
-
-        public new BaseMutation GetBestSource();
+        public new T GetBestSource();
     }
 }

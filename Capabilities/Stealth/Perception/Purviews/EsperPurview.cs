@@ -19,44 +19,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
     [Serializable]
     public class EsperPurview : PsionicPurview
     {
-        // Purview.RadiusFlags.Line | Purview.RadiusFlags.Area | Purview.RadiusFlags.Diffuses
-       
         #region Constructors
 
-        protected EsperPurview()
+        public EsperPurview()
             : base()
         {
-            _ParentPerception = null;
-            Value = 0;
-            Diffuser = null;
         }
-        public EsperPurview(int Value, BaseDoubleDiffuser Diffuser = null)
-            : this()
+        public EsperPurview(
+            IAlertTypedPerception<Psionic, IPurview<Psionic>> ParentPerception,
+            int Value,
+            BaseDoubleDiffuser Diffuser = null)
+            : base(ParentPerception, Value)
         {
-            this.Value = Value;
-            Attributes = "Line,Area,Diffuses";
             this.Diffuser = Diffuser ?? DefaultDiffuser;
             this.Diffuser.SetSteps(Value);
         }
-        public EsperPurview(
-            int Value,
-            string Attributes,
-            BaseDoubleDiffuser Diffuser = null)
-            : this(Value, Diffuser)
+        public EsperPurview(int Value, BaseDoubleDiffuser Diffuser = null)
+            : base(Value, Diffuser)
         {
-            this.Attributes = Attributes;
         }
-        public EsperPurview(
-            IAlertTypedPerception<Psionic, EsperPurview> ParentPerception,
-            int Value,
-            string Attributes,
-            BaseDoubleDiffuser Diffuser = null)
-            : this(Value, Attributes, Diffuser)
-        {
-            this.ParentPerception = ParentPerception as IAlertTypedPerception<Psionic, IPurview<Psionic>>;
-        }
-        public EsperPurview(PsionicPurview Source)
-            : this(Source.ParentPerception as IAlertTypedPerception<Psionic, EsperPurview>, Source.Value, Source.Attributes, Source.Diffuser)
+        public EsperPurview(EsperPurview Source)
+            : base(Source.ParentPerception, Source.Value, Source.Diffuser)
         {
         }
         public EsperPurview(SerializationReader Reader, IAlertTypedPerception<Psionic, EsperPurview> ParentPerception)
@@ -70,12 +53,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override void Write(SerializationWriter Writer)
         {
             base.Write(Writer);
-            Writer.Write(Diffuser);
         }
         public override void Read(SerializationReader Reader)
         {
             base.Read(Reader);
-            Diffuser = Reader.ReadComposite() as BaseDoubleDiffuser;
         }
 
         #endregion
@@ -86,24 +67,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override int GetEffectiveValue()
             => base.GetEffectiveValue();
 
-        public override List<string> GetPerviewAttributes()
-            => base.GetPerviewAttributes();
-
         public override int GetPurviewAdjustment(
             IAlertTypedPerception<Psionic, IPurview<Psionic>> ParentPerception,
             int Value = 0)
             => base.GetPurviewAdjustment(ParentPerception, Value) + (ParentPerception?.Owner?.Level ?? 0);
 
         #region Predicates
-
-        public override bool HasAttribute(string Attribute)
-            => base.HasAttribute(Attribute);
-
-        public override bool HasAttributes(params string[] Attributes)
-            => base.HasAttributes(Attributes);
-
-        public override bool IsWithin(Cell Cell)
-            => base.IsWithin(Cell);
 
         public override void ClearCaches()
         {

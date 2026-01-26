@@ -22,10 +22,10 @@ namespace StealthSystemPrototype.Perceptions
     [Serializable]
     public abstract class BaseMutationPerception<T>
         : BaseIPartPerception<T>
-        , IMutionPerception<T>
+        , IMutationPerception<T>
         where T : BaseMutation
     {
-        BaseMutation IMutionPerception.Source => Source;
+        BaseMutation IMutationPerception.Source => Source;
 
         #region Constructors
 
@@ -100,13 +100,13 @@ namespace StealthSystemPrototype.Perceptions
 
         #region Explicit Implementations
 
-        List<BaseMutation> IMutionPerception.GetPotentialSources()
+        List<BaseMutation> IMutationPerception.GetPotentialSources()
             => GetPotentialSources()?.ConvertAll(p => p as BaseMutation);
 
-        BaseMutation IMutionPerception.GetSource()
+        BaseMutation IMutationPerception.GetSource()
             => GetSource();
 
-        BaseMutation IMutionPerception.GetBestSource()
+        BaseMutation IMutationPerception.GetBestSource()
             => GetBestSource();
 
         #endregion

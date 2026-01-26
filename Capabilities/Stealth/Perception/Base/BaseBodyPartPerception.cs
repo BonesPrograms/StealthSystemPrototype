@@ -26,15 +26,15 @@ namespace StealthSystemPrototype.Perceptions
         : BasePerception
         , IBodyPartPerception
     {
-        private string _SourceType;
-        public string SourceType
+        protected string _SourceType;
+        public virtual string SourceType
         {
             get => _SourceType;
             protected set => _SourceType = value;
         }
 
-        private BodyPart _Source;
-        public BodyPart Source
+        protected BodyPart _Source;
+        public virtual BodyPart Source
         {
             get => _Source ??= GetSource();
             set => _Source = value;

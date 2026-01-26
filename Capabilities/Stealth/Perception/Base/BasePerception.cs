@@ -244,9 +244,23 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         /// <summary>
+        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as initial.
+        /// </summary>
+        public virtual void Initialize()
+        {
+        }
+
+        /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack.
         /// </summary>
         public virtual void Attach()
+        {
+        }
+
+        /// <summary>
+        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as not creation.
+        /// </summary>
+        public virtual void AddedAfterCreation()
         {
         }
 
@@ -281,7 +295,10 @@ namespace StealthSystemPrototype.Perceptions
             return perception;
         }
 
-        public abstract void AssignDefaultPurview(int? Value = null, string Attributes = null);
+        public virtual void AssignDefaultPurview(int Value)
+            => ((IPerception)this).AssignDefaultPurview(Value);
+
+        public abstract IPurview GetDefaultPurview(int Value);
 
         #endregion
         #region Virtual Event Registration
@@ -383,7 +400,7 @@ namespace StealthSystemPrototype.Perceptions
         public virtual string GetName(bool Short = false)
             => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
 
-        public bool CheckInPurview(AlertContext Context)
+        public virtual bool CheckInPurview(AlertContext Context)
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
@@ -393,9 +410,8 @@ namespace StealthSystemPrototype.Perceptions
                     Debug.Arg(nameof(Context.Actor), Context?.Actor?.MiniDebugName() ?? "null"),
                 });
 
-            return Context?.AlertLocation is Cell alertLocation
-                && _Purview is IPurview purview
-                && purview.IsWithin(alertLocation);
+            return _Purview is IPurview purview
+                && purview.IsWithin(Context);
         }
 
         public abstract bool CanPerceiveAlert(IAlert Alert);
@@ -418,7 +434,17 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         public virtual IDetection RaiseDetection(AlertContext AlertContext)
-            => throw new NotImplementedException("Better implement this soon!");
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(ToString()),
+                    Debug.Arg(nameof(AlertContext.Perceiver), AlertContext?.Perceiver.MiniDebugName()),
+                    Debug.Arg(nameof(AlertContext.Actor), AlertContext?.Actor.MiniDebugName()),
+                });
+            return null;
+        }
 
         public virtual void ClearCaches()
             => _Purview?.ClearCaches();

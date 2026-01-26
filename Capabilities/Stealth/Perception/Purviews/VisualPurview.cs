@@ -12,51 +12,48 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     [Serializable]
-    public class VisualPurview : BasePurview<Visual>, IPurview<Visual>
+    public class VisualPurview
+        : BasePurview<Visual>
+        , ILinePurview
+        , IDiffusingPurview
     {
-        // Purview.RadiusFlags.Line | Purview.RadiusFlags.Occludes | Purview.RadiusFlags.Diffuses
-        public static BaseDoubleDiffuser DefaultDiffuser => new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
+        public static BaseDoubleDiffuser DefaultDiffuser => IDiffusingPurview.DefaultDiffuser;
 
-        public BaseDoubleDiffuser Diffuser;
+        public override bool Occludes => true;
+
+        private BaseDoubleDiffuser _Diffuser;
+        public virtual BaseDoubleDiffuser Diffuser
+        {
+            get => _Diffuser;
+            set => _Diffuser = value;
+        }
 
         #region Constructors
 
-        protected VisualPurview()
+        public VisualPurview()
             : base()
         {
-            Diffuser = null;
         }
-        public VisualPurview(int Value, BaseDoubleDiffuser Diffuser = null)
-            : this()
+        public VisualPurview(
+            IAlertTypedPerception<Visual, IPurview<Visual>> ParentPerception,
+            int Value,
+            BaseDoubleDiffuser Diffuser = null)
+            : base(ParentPerception, Value)
         {
-            this.Value = Value;
-            Attributes = "Line,Occludes,Diffuses";
             this.Diffuser = Diffuser ?? DefaultDiffuser;
             this.Diffuser.SetSteps(Value);
         }
-        public VisualPurview(
-            int Value,
-            string Attributes,
-            BaseDoubleDiffuser Diffuser = null)
-            : this(Value, Diffuser)
+        public VisualPurview(int Value, BaseDoubleDiffuser Diffuser = null)
+            : this(null, Value, Diffuser)
         {
-            this.Attributes = Attributes;
-        }
-        public VisualPurview(
-            IAlertTypedPerception<Visual, VisualPurview> ParentPerception,
-            int Value,
-            string Attributes,
-            BaseDoubleDiffuser Diffuser = null)
-            : this(Value, Attributes, Diffuser)
-        {
-            this.ParentPerception = ParentPerception as IAlertTypedPerception<Visual, IPurview<Visual>>;
         }
         public VisualPurview(VisualPurview Source)
-            : this(Source.ParentPerception as IAlertTypedPerception<Visual, VisualPurview>, Source.Value, Source.Attributes, Source.Diffuser)
+            : this(Source.ParentPerception, Source.Value, Source.Diffuser)
         {
         }
         public VisualPurview(SerializationReader Reader, IAlertTypedPerception<Visual, VisualPurview> ParentPerception)
@@ -80,28 +77,42 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         #endregion
 
+        public override void Construct()
+        {
+            base.Construct();
+            Diffuser ??= GetDefaultDiffuser();
+        }
+
         public override string ToString()
             => base.ToString();
 
         public override int GetEffectiveValue()
             => base.GetEffectiveValue();
 
-        public override List<string> GetPerviewAttributes()
-            => base.GetPerviewAttributes();
-
         public override int GetPurviewAdjustment(IAlertTypedPerception<Visual, IPurview<Visual>> ParentPerception, int Value = 0)
             => base.GetPurviewAdjustment(ParentPerception, Value);
 
+        public void AssignDefaultDiffuser()
+            => Diffuser = GetDefaultDiffuser();
+
+        public virtual BaseDoubleDiffuser GetDefaultDiffuser()
+            => DefaultDiffuser.SetSteps(Value) as BaseDoubleDiffuser;
+
+        public virtual double Diffuse(int Value)
+        {
+            if (Diffuser == null)
+                return Value;
+
+            if (Diffuser.TryGetValue(Value, out double diffusedValue))
+                return diffusedValue;
+
+            return 0;
+        }
+
         #region Predicates
 
-        public override bool HasAttribute(string Attribute)
-            => base.HasAttribute(Attribute);
-
-        public override bool HasAttributes(params string[] Attributes)
-            => base.HasAttributes(Attributes);
-
-        public override bool IsWithin(Cell Cell)
-            => base.IsWithin(Cell);
+        public override bool IsWithin(AlertContext Context)
+            => base.IsWithin(Context);
 
         public override void ClearCaches()
         {

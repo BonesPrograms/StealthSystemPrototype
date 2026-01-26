@@ -51,6 +51,8 @@ namespace StealthSystemPrototype.Perceptions
 
         #region Serialization
 
+        public void FinalizeRead(SerializationReader Reader);
+
         /// <summary>
         /// Writes the <see cref="IPurview"/> member of an <see cref="IPerception"/> during its serialization. 
         /// </summary>
@@ -75,6 +77,14 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Contracts
 
+        public void ApplyRegistrar(GameObject Object, bool Active = false);
+
+        public void ApplyUnregistrar(GameObject Object, bool Active = false);
+
+        public void RegisterActive(GameObject Object, IEventRegistrar Registrar);
+
+        public void Register(GameObject Object, IEventRegistrar Registrar);
+
         /// <summary>
         /// Called once inside the <see cref="IPerception"/>'s default constructor.
         /// </summary>
@@ -84,9 +94,19 @@ namespace StealthSystemPrototype.Perceptions
         public void Construct();
 
         /// <summary>
+        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as initial.
+        /// </summary>
+        public void Initialize();
+
+        /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack.
         /// </summary>
         public void Attach();
+
+        /// <summary>
+        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as not creation.
+        /// </summary>
+        public void AddedAfterCreation();
 
         /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is removed from the rack.
@@ -103,7 +123,9 @@ namespace StealthSystemPrototype.Perceptions
         /// <returns>A new <see cref="IPerception"/> with values matching the original, and reassigned reference members.</returns>
         public IPerception DeepCopy(GameObject Owner);
 
-        public void AssignDefaultPurview(int? Value = null, string Attributes = null);
+        public void AssignDefaultPurview(int Value);
+
+        public IPurview GetDefaultPurview(int Value);
 
         public string ToString(bool Short);
 
@@ -113,6 +135,8 @@ namespace StealthSystemPrototype.Perceptions
         /// <param name="Short"></param>
         /// <returns></returns>
         public string GetName(bool Short = false);
+
+        public bool CheckInPurview(AlertContext Context);
 
         public bool CanPerceiveAlert(IAlert Alert);
 

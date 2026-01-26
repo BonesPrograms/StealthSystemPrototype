@@ -137,7 +137,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             string Delimiter,
             bool Short,
             GameObject Entity)
-            => Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next.ToString(Short: Short, Entity: Entity);
+            => Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next.ToString(Short: Short);
 
         private string AggregatePerceptionSense(
             string Accumulator,
@@ -145,9 +145,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             string Delimiter,
             bool Short,
             GameObject Entity,
-            ISense Sense = null)
-            => Sense == null
-                || Next.IsForSense(Sense)
+            IAlert Alert = null)
+            => Alert == null
+                || Next.CanPerceiveAlert(Alert)
             ? AggregatePerception(
                 Accumulator: Accumulator,
                 Next: Next,
@@ -160,7 +160,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             string Delimiter,
             bool Short,
             GameObject Entity,
-            ISense Sense = null)
+            IAlert Alert = null)
         {
             if (Items == null)
                 MetricsManager.LogException(
@@ -170,7 +170,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             IPerception[] items = new IPerception[Count];
             Array.Copy(Items, items, Count);
-            return items?.Aggregate("", (a, n) => AggregatePerceptionSense(a, n, Delimiter, Short, Entity, Sense));
+            return items?.Aggregate("", (a, n) => AggregatePerceptionSense(a, n, Delimiter, Short, Entity, Alert));
         }
 
         public virtual string ToString(
