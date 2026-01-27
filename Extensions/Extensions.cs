@@ -595,27 +595,31 @@ namespace StealthSystemPrototype
         public static void AddOpinionDetection<D>(
             this Brain Brain,
             AlertContext Context,
+            AwarenessLevel Level = AwarenessLevel.None,
             float Magnitude = 1f)
             where D : IOpinionDetection, new()
         {
             if (!Brain.TryGetOpinions(Context.Actor, out var opinions))
                 return;
 
-            if (Brain.ParentObject is not GameObject parentObject)
-                return;
-
             long currentTurn = The.Game?.TimeTicks ?? 0;
             D opinionDetection = null;
             bool renew = false;
             for (int v = opinions.Count - 1; v >= 0; v--)
-                if (opinions[v] is D existingOpinion)
+                if (opinions[v] is D existingOpinionDetection)
                 {
-                    if (currentTurn - existingOpinion.Time >= existingOpinion.Cooldown)
+                    if (currentTurn - existingOpinionDetection.Time >= existingOpinionDetection.Cooldown)
                     {
-                        opinionDetection = existingOpinion;
-                        Magnitude = Math.Min(existingOpinion.Limit, existingOpinion.Magnitude + Magnitude);
                         renew = true;
+                        opinionDetection = existingOpinionDetection;
                         opinions.RemoveAt(v);
+
+                        if (Level < opinionDetection.Level)
+                            Level = opinionDetection.Level;
+                        else
+                            Level.Increment();
+
+                        Magnitude = Math.Min(opinionDetection.Limit, opinionDetection.Magnitude + Magnitude);
                         break;
                     }
                     return;
@@ -623,7 +627,7 @@ namespace StealthSystemPrototype
 
             opinionDetection.Time = currentTurn;
             opinionDetection.Magnitude = Magnitude;
-            opinionDetection.Initialize(Context);
+            opinionDetection.Initialize(Context, Level);
             opinions.Add(opinionDetection);
             Brain.AfterAddOpinionDetection(opinionDetection, Context, renew);
         }
@@ -670,15 +674,15 @@ namespace StealthSystemPrototype
             return null;
         }
 
-        public static IDetectionResponseGoal FindDetectionResponse<A>(this Brain Brain, A Alert)
-            where A : class, IAlert, new()
-            => Brain.FindDetectionResponse(Where: r => r.Alert.GetType() == Alert.GetType());
+        public static IDetectionResponseGoal FindDetectionResponse(this Brain Brain, IOpinionDetection Opinion)
+            => Brain.FindDetectionResponse(Where: r => r.SourceOpinion == Opinion);
 
-        public static IDetectionResponseGoal FindDetectionResponse(this Brain Brain, IAlertTypedPerception Perception)
-            => Brain.FindDetectionResponse(Where: r => r.Perception.SameAs(Perception));
+        public static IDetectionResponseGoal FindDetectionResponse<D>(this Brain Brain, D Opinion = null)
+            where D : IOpinionDetection, new()
+            => Brain.FindDetectionResponse(Where: r => r.SourceOpinion.GetType() == (Opinion.GetType() ?? typeof(D)));
 
         public static IDetectionResponseGoal FindDetectionResponse<R>(this Brain Brain)
-            where R : IDetectionResponseGoal
+            where R : IDetectionResponseGoal, new()
             => Brain.FindDetectionResponse(Where: r => r.GetType() == typeof(R));
 
         public static bool AnyDetectionResponse(this Brain Brain, Predicate<IDetectionResponseGoal> Where)

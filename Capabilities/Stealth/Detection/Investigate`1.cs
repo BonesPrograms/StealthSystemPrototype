@@ -17,17 +17,20 @@ namespace StealthSystemPrototype.Detetections
     [Serializable]
     public class Investigate : IDetectionResponseGoal
     {
+        private ResponseGrammar? _ResponseGrammar;
+        public override ResponseGrammar Grammar => _ResponseGrammar ??= new()
+        {
+            Verb = "investigate",
+            Verbed = "investigated",
+            Verbing = "investigating",
+        };
+
         #region Constructors
 
         public Investigate()
             : base()
         {
-            Grammar = new()
-            {
-                Verb = "investigate",
-                Verbed = "investigated",
-                Verbing = "investigating",
-            };
+            _ResponseGrammar = null;
         }
 
         #endregion
@@ -35,9 +38,6 @@ namespace StealthSystemPrototype.Detetections
         public override void Create()
         {
             base.Create();
-            Think("I will " + GetType().ToStringWithGenerics() + " the " + nameof(Cell) + " at " + 
-                (SourceCell?.Location?.ToString() ?? "NO_LOCATION") + 
-                " because something there made me " + Level.ToString());
         }
     }
 }

@@ -18,6 +18,7 @@ using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using System.Reflection;
 
 namespace StealthSystemPrototype.Detetections
 {
@@ -25,31 +26,18 @@ namespace StealthSystemPrototype.Detetections
     /// Represents the record of an <see cref="IPerception"/> having successfully detected an <see cref="IAlert"/> within an <see cref="IConcealedAction"/>, and handles the pushing of .
     /// </summary>
     [StealthSystemBaseClass]
-    public abstract class IOpinionDetection
-        : IOpinion
+    public abstract class IOpinionDetection : IOpinion
     {
         public abstract IDetectionResponseGoal Response { get; }
 
-        public GameObject Subject;
-
-        public GameObject Object;
-
-        public IAlertTypedPerception Perception;
-
-        public IAlert Alert;
-
-        public Cell Origin;
+        public AlertContext AlertContext;
 
         public AwarenessLevel Level;
 
         public IOpinionDetection()
             : base()
         {
-            Subject = null;
-            Object = null;
-            Perception = null;
-            Alert = null;
-            Origin = null;
+            AlertContext = null;
             Level = AwarenessLevel.None;
         }
 
@@ -57,28 +45,41 @@ namespace StealthSystemPrototype.Detetections
 
         public override void Write(SerializationWriter Writer)
         {
-
+            Writer.Write(AlertContext);
+            Writer.WriteOptimized((int)Level);
         }
 
         public override void Read(SerializationReader Reader)
         {
-
+            AlertContext = new(Reader);
+            Level = (AwarenessLevel)Reader.ReadOptimizedInt32();
         }
 
         #endregion
 
-        public virtual void Initialize(AlertContext Context)
+        public virtual void Initialize(AlertContext AlertContext, AwarenessLevel Level)
         {
-            Response.Initialize(Context);
-            Actor.Brain.PushGoal(Response);
+            this.AlertContext = AlertContext;
+
+            Response.Initialize(this);
+            AlertContext.Perceiver.Brain.PushGoal(Response);
         }
 
-        public abstract IOpinionDetection Copy();
+        public virtual D DeepCopy<D>(GameObject Perceiver)
+            where D : IOpinionDetection, new()
+        {
+            D opinionDetection = Activator.CreateInstance(GetType()) as D;
 
-        protected abstract IOpinionDetection FromAlertContext(AlertContext Context);
+            FieldInfo[] fields = GetType().GetFields();
 
-        protected abstract IOpinionDetection SetAlert(IAlert Alert);
+            foreach (FieldInfo fieldInfo in fields)
+                if ((fieldInfo.Attributes & FieldAttributes.NotSerialized) == 0
+                    && !fieldInfo.IsLiteral)
+                    fieldInfo.SetValue(opinionDetection, fieldInfo.GetValue(this));
 
-        protected abstract IOpinionDetection SetAwarenessLevel(AwarenessLevel Level);
+            opinionDetection.Initialize(AlertContext.DeepCopy(Perceiver), Level);
+
+            return opinionDetection;
+        }
     }
 }
