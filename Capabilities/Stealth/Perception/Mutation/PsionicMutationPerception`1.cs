@@ -173,13 +173,39 @@ namespace StealthSystemPrototype.Perceptions
             Attunement = ((IPsionicPerception)this).Attunement;
         }
 
+        public override Type GetAlertType()
+            => ((IAlertTypedPerception<Psionic, PsionicPurview>)this).GetAlertType();
+
+        public override void AssignDefaultPurview(int Value)
+            => Purview = GetDefaultPurview(Value);
+
+        public override IPurview GetDefaultPurview(int Value)
+            => GetDefaultPurview(
+                Value: Value,
+                purviewArgs: new object[]
+                {
+                    PsionicPurview.DefaultDiffuser.SetSteps(Value),
+                });
+
+        public virtual PsionicPurview GetDefaultPurview(int Value, params object[] purviewArgs)
+        {
+            var purview = new PsionicPurview(this as IAlertTypedPerception<Psionic, IPurview<Psionic>>, Value);
+            if (!purviewArgs.IsNullOrEmpty())
+                foreach (object arg in purviewArgs)
+                {
+                    if (arg is BaseDoubleDiffuser diffuserArg)
+                        purview.Diffuser = diffuserArg;
+                }
+            return purview;
+        }
+
         public override bool CanPerceiveAlert(IAlert Alert)
             => ((IAlertTypedPerception<Visual, IPurview<Visual>>)this).CanPerceiveAlert(Alert);
 
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
 
-        public override IDetection RaiseDetection(AlertContext Context)
+        public override IOpinionDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);
 
         public override T GetSource()

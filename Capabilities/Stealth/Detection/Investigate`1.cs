@@ -15,7 +15,7 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Detetections
 {
     [Serializable]
-    public class Investigate : BaseDetection
+    public class Investigate : IDetectionResponseGoal
     {
         #region Constructors
 

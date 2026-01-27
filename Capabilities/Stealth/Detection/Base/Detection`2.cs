@@ -15,7 +15,7 @@ using StealthSystemPrototype.Senses;
 namespace StealthSystemPrototype.Detetections
 {
     [Serializable]
-    public class Detection<TPerception, TAlert> : BaseDetection
+    public class Detection<TPerception, TAlert> : IDetectionResponseGoal
         where TPerception : IPerception, new()
         where TAlert : IAlert, new()
     {
@@ -46,7 +46,7 @@ namespace StealthSystemPrototype.Detetections
             AfterAlertEvent.Send(SourceObject, ParentObject, this);
         }
 
-        public override BaseDetection Copy()
+        public override IDetectionResponseGoal Copy()
             => new Detection<TPerception, TAlert>(this);
 
         public static Detection<TPerception, TAlert> NewFromContext(AlertContext<TAlert> Context, ISense Sense, AwarenessLevel Level, bool? OverridesCombat = null)

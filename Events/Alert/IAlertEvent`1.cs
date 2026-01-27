@@ -27,7 +27,7 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Hider;
 
-        public BaseDetection Alert;
+        public IDetectionResponseGoal Alert;
 
         public Event StringyEvent;
 
@@ -60,7 +60,7 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(
             GameObject Perceiver,
             GameObject Hider,
-            BaseDetection Alert,
+            IDetectionResponseGoal Alert,
             bool StringyEvent = true)
         {
             if ((Perceiver == null
@@ -78,7 +78,7 @@ namespace StealthSystemPrototype.Events
 
         public static T HiderFromPool(
             GameObject Hider,
-            BaseDetection Alert)
+            IDetectionResponseGoal Alert)
         {
             if (Hider == null
                 || FromPool(null, Hider, Alert, StringyEvent: false) is not T E)
@@ -90,7 +90,7 @@ namespace StealthSystemPrototype.Events
 
         public static T PerceiverFromPool(
             GameObject Perceiver,
-            BaseDetection Alert)
+            IDetectionResponseGoal Alert)
         {
             if (Perceiver == null
                 || FromPool(Perceiver, null, Alert, StringyEvent: false) is not T E)
@@ -114,7 +114,7 @@ namespace StealthSystemPrototype.Events
         public virtual void UpdateFromStringyEvent()
         {
             if (StringyEvent?.GetParameter(nameof(Alert)) != null)
-                Alert = StringyEvent?.GetParameter<BaseDetection>(nameof(Alert));
+                Alert = StringyEvent?.GetParameter<IDetectionResponseGoal>(nameof(Alert));
         }
 
         protected static T Process(T E, out bool Success)
@@ -177,13 +177,13 @@ namespace StealthSystemPrototype.Events
 
         protected static T PerceiverProcess(
             GameObject Perceiver,
-            BaseDetection Alert,
+            IDetectionResponseGoal Alert,
             out bool Success)
             => Process(PerceiverFromPool(Perceiver, Alert), out Success);
 
         protected static T HiderProcess(
             GameObject Hider,
-            BaseDetection Alert,
+            IDetectionResponseGoal Alert,
             out bool Success)
             => Process(HiderFromPool(Hider, Alert), out Success);
     }

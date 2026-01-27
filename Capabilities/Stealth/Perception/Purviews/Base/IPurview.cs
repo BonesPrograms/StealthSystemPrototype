@@ -27,6 +27,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public static int MAX_VALUE => 84;
 
+        public static int DEFAULT_VALUE => 4;
+
         public IPerception ParentPerception { get; }
 
         public int Value { get; }

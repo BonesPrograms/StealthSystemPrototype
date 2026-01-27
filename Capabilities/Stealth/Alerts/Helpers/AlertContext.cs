@@ -28,6 +28,8 @@ namespace StealthSystemPrototype.Alerts
 
         public GameObject Actor { get; protected set; }
 
+        public GameObject AlertObject { get; protected set; }
+
         public Cell AlertLocation { get; protected set; }
 
         public IPurview Purview => Perception?.Purview;

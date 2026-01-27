@@ -5,6 +5,7 @@ using System.Text;
 
 using XRL.Rules;
 using XRL.World;
+using XRL.World.Parts;
 using XRL.World.Anatomy;
 using XRL.World.Parts.Mutation;
 
@@ -19,7 +20,6 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Perceptions.IPsionicPerception;
-using XRL.World.Parts;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -116,6 +116,26 @@ namespace StealthSystemPrototype.Perceptions
         public override void Construct()
             => base.Construct();
 
+        public override IPurview GetDefaultPurview(int Value)
+            => GetDefaultPurview(
+                Value: Value,
+                purviewArgs: new object[]
+                {
+                    EsperPurview.DefaultDiffuser.SetSteps(Value),
+                });
+
+        public override PsionicPurview GetDefaultPurview(int Value, params object[] purviewArgs)
+        {
+            var purview = new EsperPurview(this as IAlertTypedPerception<Psionic, IPurview<Psionic>>, Value);
+            if (!purviewArgs.IsNullOrEmpty())
+                foreach (object arg in purviewArgs)
+                {
+                    if (arg is BaseDoubleDiffuser diffuserArg)
+                        purview.Diffuser = diffuserArg;
+                }
+            return purview;
+        }
+
         public override int GetLevelAdjustment(int Level = 0)
             => base.GetLevelAdjustment(Level) + (Owner?.StatMod("Ego") ?? 0);
 
@@ -125,7 +145,7 @@ namespace StealthSystemPrototype.Perceptions
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
 
-        public override IDetection RaiseDetection(AlertContext Context)
+        public override IOpinionDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);
 
         public override Esper GetSource()

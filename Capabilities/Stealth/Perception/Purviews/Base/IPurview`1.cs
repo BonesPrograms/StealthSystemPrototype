@@ -15,7 +15,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
     /// Contracts a type as being capable of determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/>.
     /// </summary>
     public interface IPurview<A> : IPurview
-        where A : IAlert, new()
+        where A : IAlert
     {
         public new IAlertTypedPerception<A, IPurview<A>> ParentPerception { get; set; }
 

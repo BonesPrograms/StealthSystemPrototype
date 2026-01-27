@@ -33,10 +33,10 @@ namespace XRL.World.Parts
 
         public bool PlayerPerceptable => ParentObject
                 ?.Brain
-                ?.AnyAlert(a => a.SourceObject?.IsPlayer() ?? false)
+                ?.AnyDetectionResponse(a => a.SourceObject?.IsPlayer() ?? false)
             ?? false;
 
-        public AwarenessLevel PlayerAwareness => ParentObject?.Brain?.FirstAlert(a => a.SourceObject?.IsPlayer() ?? false)?.Level ?? AwarenessLevel.None;
+        public AwarenessLevel PlayerAwareness => ParentObject?.Brain?.FirstDetectionResponse(a => a.SourceObject?.IsPlayer() ?? false)?.Level ?? AwarenessLevel.None;
 
         #endregion
         #endregion

@@ -31,6 +31,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public string Name { get; }
 
+        public Type Type => GetType();
+
         public int DefaultIntensity { get; }
 
         public int Intensity { get; set; }

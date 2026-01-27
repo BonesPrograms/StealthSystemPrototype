@@ -20,13 +20,13 @@ using StealthSystemPrototype.Logging;
 namespace StealthSystemPrototype.Detetections
 {
     [Serializable]
-    public struct DetectionGrammar : IComposite
+    public struct ResponseGrammar : IComposite
     {
         public string Verb;
         public string Verbed;
         public string Verbing;
 
-        public DetectionGrammar(string Verb, string Verbed, string Verbing)
+        public ResponseGrammar(string Verb, string Verbed, string Verbing)
         {
             this.Verb = Verb;
             this.Verbed = Verbed;

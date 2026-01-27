@@ -6,6 +6,7 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using XRL.World;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using System;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -14,7 +15,7 @@ namespace StealthSystemPrototype.Perceptions
     /// </summary>
     /// <typeparam name="A">A class that implements <see cref="IAlert"/> with a default, parameterless constructor.</typeparam>
     public interface IAlertTypedPerception<A, V> : IAlertTypedPerception
-        where A : IAlert, new()
+        where A : IAlert
         where V : IPurview<A>
     {
         public new V Purview { get; set; }
@@ -42,6 +43,9 @@ namespace StealthSystemPrototype.Perceptions
             SerializationReader Reader,
             ref V Purview,
             IAlertTypedPerception<A, V> ParentPerception = null);
+
+        public new Type GetAlertType()
+            => typeof(A);
 
         public new void AssignDefaultPurview(int Value)
             => Purview = GetDefaultPurview(Value);

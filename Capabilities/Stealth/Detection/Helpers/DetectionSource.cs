@@ -23,7 +23,7 @@ namespace StealthSystemPrototype.Detetections
     [Serializable]
     public class DetectionSource : IComposite
     {
-        public IDetection ParentDetection;
+        public IOpinionDetection ParentDetection;
 
         private GameObject _Object;
         public GameObject Object => _Object;
@@ -60,22 +60,22 @@ namespace StealthSystemPrototype.Detetections
             ZoneID = null;
             Location = default;
         }
-        public DetectionSource(IDetection ParentAlert, GameObject Object, Cell Cell)
+        public DetectionSource(IOpinionDetection ParentAlert, GameObject Object, Cell Cell)
             : this()
         {
             this.ParentDetection = ParentAlert;
             _Object = Object;
             this.Cell = Cell;
         }
-        public DetectionSource(IDetection ParentAlert, GameObject Object)
+        public DetectionSource(IOpinionDetection ParentAlert, GameObject Object)
             : this(ParentAlert, Object, Object?.CurrentCell)
         {
         }
-        public DetectionSource(IDetection ParentAlert, Cell Cell)
+        public DetectionSource(IOpinionDetection ParentAlert, Cell Cell)
             : this(ParentAlert, null, Cell)
         {
         }
-        public DetectionSource(IDetection ParentAlert, AlertContext Context)
+        public DetectionSource(IOpinionDetection ParentAlert, AlertContext Context)
             : this(ParentAlert, Context.Perceiver, Context.Perceiver?.CurrentCell)
         {
         }
@@ -83,13 +83,13 @@ namespace StealthSystemPrototype.Detetections
             : this(Source.ParentDetection, Source.Object, Source.Cell)
         {
         }
-        public DetectionSource(IDetection ParentAlert)
+        public DetectionSource(IOpinionDetection ParentAlert)
             : this(ParentAlert.Source)
         {
             SetParentDetection(ParentAlert);
         }
 
-        public DetectionSource SetParentDetection(IDetection Detection)
+        public DetectionSource SetParentDetection(IOpinionDetection Detection)
         {
             ParentDetection = Detection;
             return this;
@@ -123,7 +123,7 @@ namespace StealthSystemPrototype.Detetections
             && !Object.InSameZone(ParentObject);
 
         public Cell GetCurrentCellOrCell()
-            => !IDetection.ValidateDetection(ref ParentDetection)
+            => !IOpinionDetection.ValidateDetection(ref ParentDetection)
                 || !HasObject()
                 || Object.CurrentCell is not Cell currentCell
             ? Cell

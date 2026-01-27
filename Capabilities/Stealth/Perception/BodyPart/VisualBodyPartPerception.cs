@@ -175,6 +175,9 @@ namespace StealthSystemPrototype.Perceptions
             MinimumLightLevel = ((IVisualPerception)this).MinimumLightLevel;
         }
 
+        public override Type GetAlertType()
+            => ((IAlertTypedPerception<Visual, VisualPurview>)this).GetAlertType();
+
         public override void AssignDefaultPurview(int Value)
             => Purview = GetDefaultPurview(Value);
 
@@ -204,7 +207,7 @@ namespace StealthSystemPrototype.Perceptions
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
 
-        public override IDetection RaiseDetection(AlertContext Context)
+        public override IOpinionDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);
 
         public override BodyPart GetSource()

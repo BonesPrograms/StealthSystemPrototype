@@ -30,7 +30,7 @@ namespace StealthSystemPrototype.Perceptions
     [Serializable]
     public abstract class BasePerception
         : IComponent<GameObject>
-        , IPerception
+        , IAlertTypedPerception
         , IWitnessEventHandler
         , IPerceptionEventHandler
         , ISneakEventHandler
@@ -272,7 +272,7 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         /// <summary>
-        /// Creates deep copy of an <see cref="IPerception"/>, with all the same values as the original.
+        /// Creates a deep copy of an <see cref="IPerception"/>, with all the same values as the original.
         /// </summary>
         /// <remarks>
         /// Override this method to null any reference type members that shouldn't be sharing a reference.
@@ -295,8 +295,17 @@ namespace StealthSystemPrototype.Perceptions
             return perception;
         }
 
+        public virtual bool SameAs(IPerception Other)
+            => Other is IAlertTypedPerception typedOther
+            && SameAlertAs(typedOther);
+
+        public virtual bool SameAlertAs(IAlertTypedPerception Other)
+            => ((IAlertTypedPerception)this).SameAlertAs(Other);
+
+        public abstract Type GetAlertType();
+
         public virtual void AssignDefaultPurview(int Value)
-            => ((IPerception)this).AssignDefaultPurview(Value);
+            => ((IPerception)this).Purview = GetDefaultPurview(Value);
 
         public abstract IPurview GetDefaultPurview(int Value);
 
@@ -433,27 +442,18 @@ namespace StealthSystemPrototype.Perceptions
             return true;
         }
 
-        public virtual IDetection RaiseDetection(AlertContext AlertContext)
+        public virtual IOpinionDetection RaiseDetection(AlertContext Context)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(ToString()),
-                    Debug.Arg(nameof(AlertContext.Perceiver), AlertContext?.Perceiver.MiniDebugName()),
-                    Debug.Arg(nameof(AlertContext.Actor), AlertContext?.Actor.MiniDebugName()),
+                    Debug.Arg(nameof(Context.Perceiver), Context?.Perceiver.MiniDebugName()),
+                    Debug.Arg(nameof(Context.Actor), Context?.Actor.MiniDebugName()),
                 });
             return null;
         }
-
-        public virtual void ClearCaches()
-            => _Purview?.ClearCaches();
-
-        public virtual bool Validate()
-            => ((IPerception)this).Validate();
-
-        public virtual int GetLevelAdjustment(int Level = 0)
-            => AdjustTotalPerceptionLevelEvent.GetFor(Owner, this, Level);
 
         /*
         public bool RaiseAlert<TSense, TAlert>(AlertContext<TSense> Context, ISense<TSense> Sense, AwarenessLevel Level, bool? OverridesCombat = null)
@@ -483,6 +483,15 @@ namespace StealthSystemPrototype.Perceptions
             return false;
         }
         */
+
+        public virtual void ClearCaches()
+            => _Purview?.ClearCaches();
+
+        public virtual bool Validate()
+            => ((IPerception)this).Validate();
+
+        public virtual int GetLevelAdjustment(int Level = 0)
+            => AdjustTotalPerceptionLevelEvent.GetFor(Owner, this, Level);
 
         #region Comparison
 

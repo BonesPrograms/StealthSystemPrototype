@@ -138,6 +138,20 @@ namespace StealthSystemPrototype.Perceptions
             // put default instance values here for the base parameterless constructor
         }
 
+        public override Type GetAlertType()
+            => ((IAlertTypedPerception<Auditory, AuditoryPurview>)this).GetAlertType();
+
+        public override void AssignDefaultPurview(int Value)
+            => Purview = GetDefaultPurview(Value);
+
+        public override IPurview GetDefaultPurview(int Value)
+            => GetDefaultPurview(
+                Value: Value,
+                purviewArgs: new object[]
+                {
+                    AuditoryPurview.DefaultDiffuser.SetSteps(Value),
+                });
+
         public virtual AuditoryPurview GetDefaultPurview(int Value, params object[] purviewArgs)
         {
             var purview = new AuditoryPurview(this as IAlertTypedPerception<Auditory, IPurview<Auditory>>, Value);
@@ -156,7 +170,7 @@ namespace StealthSystemPrototype.Perceptions
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
 
-        public override IDetection RaiseDetection(AlertContext Context)
+        public override IOpinionDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);
 
         public override BodyPart GetSource()

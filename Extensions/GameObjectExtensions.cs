@@ -63,7 +63,7 @@ namespace StealthSystemPrototype
 
         public static IPerception GetFirstPerceptionOfSense<TSense>(this GameObject Object, TSense Sense = null)
             where TSense : ISense<TSense>, new()
-            => Object.RequirePerceptions().GetFirstOfSense<TSense>();
+            => Object.RequirePerceptions().GetFirstOfAlert<TSense>();
 
         public static bool TryGetPerception<TSense>(this GameObject Object, out IPerception<TSense> Item)
             where TSense : ISense<TSense>, new()

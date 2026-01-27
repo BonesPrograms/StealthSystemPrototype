@@ -11,7 +11,7 @@ using XRL.World;
 namespace StealthSystemPrototype.Perceptions
 {
     /// <summary>
-    /// Contracts a class as capable of detecting <see cref="IConcealedAction"/>s and issuing <see cref="BaseDetection"/>s based on the presence of a <see cref="BodyPart"/> source.
+    /// Contracts a class as capable of detecting <see cref="IConcealedAction"/>s and issuing <see cref="BaseOpinionGoal"/>s based on the presence of a <see cref="BodyPart"/> source.
     /// </summary>
     public interface IBodyPartPerception : ISourcedPerception<BodyPart>
     {

@@ -24,7 +24,7 @@ using StealthSystemPrototype.Alerts;
 namespace StealthSystemPrototype.Perceptions
 {
     /// <summary>
-    /// Contracts a class as capable of detecting <see cref="IConcealedAction"/>s and issuing <see cref="BaseDetection"/>s.
+    /// Contracts a class as capable of detecting <see cref="IConcealedAction"/>s and issuing <see cref="BaseOpinionGoal"/>s.
     /// </summary>
     public interface IPerception
         : IComposite
@@ -85,6 +85,8 @@ namespace StealthSystemPrototype.Perceptions
 
         public void Register(GameObject Object, IEventRegistrar Registrar);
 
+        public bool FireEvent(Event E);
+
         /// <summary>
         /// Called once inside the <see cref="IPerception"/>'s default constructor.
         /// </summary>
@@ -114,7 +116,7 @@ namespace StealthSystemPrototype.Perceptions
         public void Remove();
 
         /// <summary>
-        /// Creates deep copy of an <see cref="IPerception"/>, with all the same values as the original.
+        /// Creates a deep copy of an <see cref="IPerception"/>, with all the same values as the original.
         /// </summary>
         /// <remarks>
         /// Override this method to null any reference type members that shouldn't be sharing a reference.
@@ -136,6 +138,8 @@ namespace StealthSystemPrototype.Perceptions
         /// <returns></returns>
         public string GetName(bool Short = false);
 
+        public bool SameAs(IPerception Other);
+
         public bool CheckInPurview(AlertContext Context);
 
         public bool CanPerceiveAlert(IAlert Alert);
@@ -144,9 +148,9 @@ namespace StealthSystemPrototype.Perceptions
             => Context?.Alert is IAlert alert
             && CanPerceiveAlert(alert);
 
-        public bool TryPerceive(AlertContext AlertContext);
+        public bool TryPerceive(AlertContext Context);
 
-        public IDetection RaiseDetection(AlertContext AlertContext);
+        public IOpinionDetection RaiseDetection(AlertContext Context);
 
         public int GetLevelAdjustment(int Level = 0);
 

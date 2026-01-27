@@ -18,6 +18,9 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Const;
 using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Alerts;
+using static StealthSystemPrototype.Perceptions.BasePerception;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -225,37 +228,58 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-        public T Add<T, TSense>(
+        public P Add<P>(
+            int Level,
+            int PurviewValue,
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+            where P : class, IPerception, new()
         {
-            T perception = new ();
-            Add(perception, DoRegistration, Initial, Creation);
-            return perception;
+            P perception = new()
+            {
+                Level = Level,
+            };
+            if (perception != null)
+            {
+                perception.AssignDefaultPurview(PurviewValue);
+                perception.Purview.SetParentPerception(perception);
+                Add(
+                    Perception: perception,
+                    DoRegistration: DoRegistration,
+                    Initial: Initial,
+                    Creation: Creation);
+                return perception;
+            }
+
+            return null;
         }
 
-        public T Add<T, TSense>(
+        public P Add<P>(
+            bool DoRegistration = true,
+            bool Initial = false,
+            bool Creation = false)
+            where P : class, IPerception, new()
+            => Add<P>(0, IPurview.DEFAULT_VALUE, DoRegistration, Initial, Creation);
+
+        public P Add<P>(
+            int Level,
+            int PurviewValue,
             bool DoRegistration = true,
             bool Creation = false)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
-            => Add<T, TSense>(DoRegistration, false, Creation);
+            where P : class, IPerception, new()
+            => Add<P>(Level, PurviewValue, DoRegistration, false, Creation);
 
-        public bool Has<T, TSense>()
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
-            => Contains<T>();
+        public bool Has<P>()
+            where P : class, IPerception, new()
+            => Contains<P>();
 
-        public bool Has<TSense>(IPerception<TSense> Perception)
-            where TSense : ISense<TSense>, new()
-            => Contains(Perception);
+        public bool Has(IPerception Perception)
+            => base.Contains(Perception);
 
-        public bool HasSense<T>()
-            where T : ISense<T>, new()
-            => Contains<T>();
+        public bool HasAlert<A>()
+            where A : class, IAlert<A>, new()
+            => ContainsAlert<A>();
 
         public bool Has(string Name)
             => AsEnumerable(
@@ -268,13 +292,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 }))
             ?.FirstOrDefault() != null;
 
-        public IPerception<TSense> Get<T, TSense>()
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+        public P Get<P>()
+            where P : class, IPerception, new()
         {
             for (int i = 0; i < Count; i++)
-                if (Items[i].GetType() == typeof(T))
-                    return Items[i] as IPerception<TSense>;
+                if (Items[i].GetType() == typeof(P))
+                    return Items[i] as P;
             return null;
         }
 
@@ -286,9 +309,19 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return null;
         }
 
-        public T Get<T>()
-            where T : class, IPerception, new()
-            => (T)GetOfType(typeof(T));
+        public List<IAlertTypedPerception<A, IPurview<A>>> GetForAlert<A>(A Alert = null)
+            where A : class, IAlert, new()
+        {
+            if (Items == null)
+                throw new InnerArrayNullException(nameof(Items));
+
+            List<IAlertTypedPerception<A, IPurview<A>>> output = new();
+            for (int i = 0; i < Count; i++)
+                if (Items[i] is IAlertTypedPerception<A, IPurview<A>> typedPerception)
+                    output.Add(typedPerception);
+
+            return output;
+        }
 
         public IPerception Get(string Name)
             => AsEnumerable(
@@ -301,32 +334,35 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 }))
             ?.FirstOrDefault();
 
-        private static bool IsPerceptionOfSense<TSense>(IPerception IPerception)
-            where TSense : ISense<TSense>, new()
-            => IPerception is IPerception<TSense> perception
-            && perception.Sense == typeof(TSense);
+        protected static bool IsPerceptionOfAlert<A>(IPerception IPerception)
+            where A : class, IAlert, new()
+            => IPerception is IAlertTypedPerception<A, IPurview<A>>;
 
-        public IPerception<TSense> GetFirstOfSense<TSense>()
-            where TSense : ISense<TSense>, new()
-            => AsEnumerable(IsPerceptionOfSense<TSense>)
-                ?.FirstOrDefault() as IPerception<TSense>;
+        public IPerception GetFirstOfAlert<A>(A Alert)
+            where A : class, IAlert, new()
+            => AsEnumerable<A>()
+                ?.FirstOrDefault();
 
-        public bool TryGet<T>(out T Perception)
-            where T : IPerception, new()
-            => (Perception = Get<T>()) != null;
+        public IAlertTypedPerception<A, IPurview<A>> GetFirstTypedOfAlert<A>(A Alert)
+            where A : class, IAlert, new()
+            => AsEnumerable<A>()
+                ?.FirstOrDefault();
+
+        public bool TryGet<P>(out P Perception)
+            where P : class, IPerception, new()
+            => (Perception = Get<P>()) != null;
 
         public bool TryGet(string Name, out IPerception Perception)
             => (Perception = Get(Name)) != null;
 
-        public IPerception<TSense> Require<T, TSense>(
+        public IPerception Require<P>(
             bool Creation = false)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+            where P : class, IPerception, new()
         {
-            if (TryGet(out IPerception<TSense> perception))
+            if (TryGet(out P perception))
                 return perception;
 
-            return Add<T, TSense>(DoRegistration: true, Creation);
+            return Add<P>(DoRegistration: true, Creation);
         }
 
         protected IPerception RemovePerceptionAt(int Index)
@@ -340,15 +376,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return perception;
         }
 
-        public bool Remove<T>(T Item)
-            where T : IPerception, new()
+        public bool Remove<P>(P Perception)
+            where P : class, IPerception, new()
         {
-            if (Item == null)
-                throw new ArgumentNullException(nameof(Item), "Cannot be null.");
+            if (Perception == null)
+                throw new ArgumentNullException(nameof(Perception), "Cannot be null.");
 
             if (GetArray() is IPerception[] perceptions)
                 for (int i = 0; i < perceptions.Length; i++)
-                    if (perceptions[i] == Item)
+                    if (perceptions[i] == Perception)
                     {
                         RemovePerceptionAt(i);
                         return true;
@@ -409,10 +445,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return allValid;
         }
 
-        public void ClearRatings()
+        public void ClearCaches()
         {
             for (int i = 0; i < Count; i++)
-                Items[i].ClearRating();
+                Items[i].ClearCaches();
         }
 
         public IEnumerable<IPerception> GetPerceptionsBestFirst(
@@ -427,9 +463,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 return null;
 
             if (ClearFirst)
-                ClearRatings();
+                ClearCaches();
 
-            perceptionsList.Sort(new RatingComparer(Entity));
+            perceptionsList.Sort(new PerceptionComparer());
 
             return perceptionsList
                 ?.Where(Filter.ToFunc());
@@ -473,77 +509,48 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IPerception GetHighestRatedPerceptionFor(GameObject Entity)
             => GetHighestRatedPerceptionFor(Entity, true);
 
-        public virtual bool Sense<TSense>(
-            TSense Sense,
-            GameObject Entity)
-            where TSense : ISense<TSense>, new()
+        public virtual bool CanPerceiveAlert(IAlert Alert)
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
-                });
+            if (Alert == null)
+                throw new ArgumentNullException(nameof(Alert), nameof(this.CanPerceiveAlert) + " requires an " + nameof(IAlert) + " to check for perceivablitiy.");
 
-            if (Entity == null)
-                throw new ArgumentNullException(nameof(Entity), nameof(this.Sense) + " requires a " + nameof(GameObject) + " to perceive.");
+            if (Items == null)
+                throw new InnerArrayNullException(nameof(Items));
 
-            foreach (AlertContext<TSense> context in GetSenseContexts(Sense, Entity))
-                if (Sense.TrySense(context))
+            for (int i = 0; i < Count; i++)
+                if (Items[i].CanPerceiveAlert(Alert))
                     return true;
 
             return false;
         }
 
-        public bool Sense<TSense>(BaseConcealedAction ConcealedAction, GameObject Entity)
-            where TSense : ISense<TSense>, new()
+        public bool CanPerceive(AlertContext Context)
         {
-            if (ConcealedAction.IsNullOrEmpty()
-                || Entity == null)
-                return new();
-
-            foreach (ISense sense in ConcealedAction)
-                if (sense is TSense tSense
-                    && Sense(tSense, Entity))
+            if (Context?.Alert is IAlert alert)
+            {
+                if (CanPerceiveAlert(alert))
                     return true;
 
+                if (Items == null)
+                    throw new InnerArrayNullException(nameof(Items));
+
+                for (int i = 0; i < Count; i++)
+                    if (Items[i].CanPerceive(Context))
+                        return true;
+            }
             return false;
         }
 
-        public virtual bool Sense(
-            ISense Sense,
-            GameObject Entity)
+        public virtual bool TryPerceive(AlertContext Context)
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
-                });
+            if (Items == null)
+                throw new InnerArrayNullException(nameof(Items));
 
-            if (Entity == null)
-                throw new ArgumentNullException(nameof(Entity), nameof(this.Sense) + " requires a " + nameof(GameObject) + " to perceive.");
+            bool any = false;
+            for (int i = 0; i < Count; i++)
+                any = Items[i].CanPerceive(Context) || any;
 
-            foreach (AlertContext context in GetSenseContexts(Entity))
-                if (Sense.TrySense(context))
-                    return true;
-
-            return false;
-        }
-
-        public bool Sense(BaseConcealedAction ConcealedAction, GameObject Entity)
-        {
-            if (ConcealedAction.IsNullOrEmpty()
-                || Entity == null)
-                return new();
-
-            foreach (ISense sense in ConcealedAction)
-                if (Sense(sense, Entity))
-                    return true;
-
-            return false;
+            return any;
         }
 
         #region Event Dispatch
@@ -664,10 +671,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 || !Owner.HasRegisteredEvent(E.ID))
                 return true;
 
-            foreach (IPerception percetion in this)
-                if (percetion.FireEvent(E))
+            foreach (IPerception perception in this)
+                if (perception.FireEvent(E))
                 {
-                    Debug.CheckNah(percetion.Name, Indent: indent[1]);
+                    Debug.CheckNah(perception.Name, Indent: indent[1]);
                     return false;
                 }
             Debug.CheckYeh("All Cleared", Indent: indent[1]);
@@ -689,26 +696,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return false;
         }
 
-        public virtual bool ContainsSense<T>()
-            where T : ISense<T>, new()
+        public virtual bool ContainsAlert<A>()
+            where A : class, IAlert<A>, new()
         {
             for (int i = 0; i < Length; i++)
-                if (Items[i] is IPerception<T> typedPerception
-                    && typedPerception.Sense == typeof(T))
+                if (Items[i] is IAlertTypedPerception<A,IPurview<A>>)
                     return true;
 
             return false;
         }
-        public virtual bool ContainsType(IPerception Item)
-            => ContainsType(Item.GetType());
+        public virtual bool ContainsType(IPerception Perception)
+            => ContainsType(Perception.GetType());
 
-        public virtual bool Contains<T>(T Item = null)
-            where T : IPerception
-            => ContainsType(Item?.GetType() ?? typeof(T));
-
-        public virtual bool Contains<T>()
-            where T : ISense<T>, new()
-            => ContainsSense<T>();
+        public virtual bool Contains<P>(P Perception = null)
+            where P : class, IPerception, new()
+            => ContainsType(Perception?.GetType() ?? typeof(P));
 
         #endregion
         #region Conversion Methods
@@ -728,41 +730,54 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-        public IEnumerable<IPerception<TSense>> AsEnumerable<TSense>(Predicate<IPerception<TSense>> Filter = null)
-            where TSense : ISense<TSense>, new()
+        protected static bool IsAlertTypedPerception<A>(IPerception Perception)
+            where A : class, IAlert, new()
+            => Perception is IAlertTypedPerception<A, IPurview<A>>;
+
+        protected static IAlertTypedPerception<A, IPurview<A>> AsAlertTypedPerception<A>(IPerception Perception)
+            where A : class, IAlert, new()
+            => Perception as IAlertTypedPerception<A, IPurview<A>>;
+
+        public IEnumerable<IAlertTypedPerception<A, IPurview<A>>> AsEnumerable<A>(Predicate<IAlertTypedPerception<A, IPurview<A>>> Filter = null)
+            where A : class, IAlert, new()
         {
             try
             {
                 if (Items == null)
                     throw new InnerArrayNullException(nameof(Items));
 
-                return Items.Where((Func<IPerception, bool>)(e => e is IPerception<TSense>))?.Select<IPerception, IPerception<TSense>>((Func<IPerception, IPerception<TSense>>)(e => e as IPerception<TSense>))?.Where<IPerception<TSense>>((Func<IPerception<TSense>, bool>)(Filter?.ToFunc<IPerception<TSense>>()));
+                return Items
+                    .Where(IsAlertTypedPerception<A>)
+                    .Select(AsAlertTypedPerception<A>)
+                    .Where(Filter.ToFunc());
             }
             catch (InnerArrayNullException)
             {
-                return new IPerception<TSense>[0];
+                return new IAlertTypedPerception<A, IPurview<A>>[0];
             }
         }
 
-        public IEnumerable<AlertContext<TSense>> GetSenseContexts<TSense>(TSense Sense, GameObject Entity)
-            where TSense : ISense<TSense>, new()
+        public IEnumerable<AlertContext> GetAlertContexts(IConcealedAction ConcealedAction, Cell AlertLocation)
         {
-            if (Entity == null
-                && Sense == null)
-                yield break;
+            if (ConcealedAction == null)
+                throw new ArgumentNullException(
+                    paramName: nameof(ConcealedAction),
+                    message: nameof(this.GetAlertContexts) + " requires an " + nameof(IConcealedAction) + " from which to construct " + nameof(AlertContext).Pluralize() + ".");
 
-            foreach (IPerception perception in this)
-                if (perception is IPerception<TSense> tSensePerception)
-                yield return new(Sense.GetIntensity(), tSensePerception, Entity);
-        }
+            if (Items == null)
+                throw new InnerArrayNullException(nameof(Items));
 
-        public IEnumerable<AlertContext> GetSenseContexts(GameObject Entity)
-        {
-            if (Entity == null)
-                yield break;
-
-            foreach (IPerception perception in this)
-                yield return new(perception, Entity);
+            foreach (IAlert alert in ConcealedAction)
+                for (int i = 0; i < Count; i++)
+                    if (Items[i] is IAlertTypedPerception typedPerception
+                        && typedPerception.AlertType == alert.Type)
+                    yield return new AlertContext(
+                        ParentAction: ConcealedAction,
+                        Perception: typedPerception,
+                        Alert: alert,
+                        Intensity: alert.Intensity,
+                        Actor: ConcealedAction.Actor,
+                        AlertLocation: AlertLocation ?? ConcealedAction.Actor?.CurrentCell);
         }
 
         #endregion

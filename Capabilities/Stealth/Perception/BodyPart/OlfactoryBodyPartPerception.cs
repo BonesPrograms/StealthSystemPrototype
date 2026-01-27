@@ -265,13 +265,39 @@ namespace StealthSystemPrototype.Perceptions
             InsensitiveLiquids = null;
         }
 
+        public override Type GetAlertType()
+            => ((IAlertTypedPerception<Olfactory, OlfactoryPurview>)this).GetAlertType();
+
+        public override void AssignDefaultPurview(int Value)
+            => Purview = GetDefaultPurview(Value);
+
+        public override IPurview GetDefaultPurview(int Value)
+            => GetDefaultPurview(
+                Value: Value,
+                purviewArgs: new object[]
+                {
+                    OlfactoryPurview.DefaultDiffuser.SetSteps(Value),
+                });
+
+        public virtual OlfactoryPurview GetDefaultPurview(int Value, params object[] purviewArgs)
+        {
+            var purview = new OlfactoryPurview(this as IAlertTypedPerception<Olfactory, IPurview<Olfactory>>, Value);
+            if (!purviewArgs.IsNullOrEmpty())
+                foreach (object arg in purviewArgs)
+                {
+                    if (arg is BaseDoubleDiffuser diffuserArg)
+                        purview.Diffuser = diffuserArg;
+                }
+            return purview;
+        }
+
         public override bool CanPerceiveAlert(IAlert Alert)
             => ((IAlertTypedPerception<Visual, IPurview<Visual>>)this).CanPerceiveAlert(Alert);
 
         public override bool TryPerceive(AlertContext Context)
             => base.TryPerceive(Context);
 
-        public override IDetection RaiseDetection(AlertContext Context)
+        public override IOpinionDetection RaiseDetection(AlertContext Context)
             => base.RaiseDetection(Context);
 
         public override BodyPart GetSource()

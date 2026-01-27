@@ -21,6 +21,7 @@ using StealthSystemPrototype.Detetections;
 using static StealthSystemPrototype.Utils;
 using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype
 {
@@ -591,6 +592,58 @@ namespace StealthSystemPrototype
         #endregion
         #region Brains & Goals
 
+        public static void AddOpinionDetection<D>(
+            this Brain Brain,
+            AlertContext Context,
+            float Magnitude = 1f)
+            where D : IOpinionDetection, new()
+        {
+            if (!Brain.TryGetOpinions(Context.Actor, out var opinions))
+                return;
+
+            if (Brain.ParentObject is not GameObject parentObject)
+                return;
+
+            long currentTurn = The.Game?.TimeTicks ?? 0;
+            D opinionDetection = null;
+            bool renew = false;
+            for (int v = opinions.Count - 1; v >= 0; v--)
+                if (opinions[v] is D existingOpinion)
+                {
+                    if (currentTurn - existingOpinion.Time >= existingOpinion.Cooldown)
+                    {
+                        opinionDetection = existingOpinion;
+                        Magnitude = Math.Min(existingOpinion.Limit, existingOpinion.Magnitude + Magnitude);
+                        renew = true;
+                        opinions.RemoveAt(v);
+                        break;
+                    }
+                    return;
+                }
+
+            opinionDetection.Time = currentTurn;
+            opinionDetection.Magnitude = Magnitude;
+            opinionDetection.Initialize(Context);
+            opinions.Add(opinionDetection);
+            Brain.AfterAddOpinionDetection(opinionDetection, Context, renew);
+        }
+
+        public static void AfterAddOpinionDetection(
+            this Brain Brain,
+            IOpinionDetection Opinion,
+            AlertContext Context,
+            bool Renew = false)
+        {
+            if (!Renew && Opinion.Value < 0)
+            {
+                int feeling = Context.Perceiver.Brain.GetFeeling(Context.Actor);
+                if (feeling < -10
+                    && feeling - Opinion.Value >= -10)
+                    Brain.PlayWorldSound("sfx_creature_angered");
+            }
+            AfterAddOpinionEvent.Send(Opinion, Context.Perceiver, Context.Actor, Context.AlertObject, Renew);
+        }
+
         public static GoalHandler FindGoal(this Brain Brain, Type Type)
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
@@ -603,40 +656,33 @@ namespace StealthSystemPrototype
             return null;
         }
 
-        public static BaseDetection FindDetection<TSense>(this Brain Brain, IPerception<TSense> Perception)
-            where TSense : ISense<TSense>, new()
+        public static IDetectionResponseGoal FindDetectionResponse(this Brain Brain, Predicate<IDetectionResponseGoal> Where)
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
                 return null;
 
-
-            for (int i = goalHandlers.Count - 1; i >= 0; i--)
-                if (goalHandlers[i] is Detection<IPerception<TSense>, TSense> alert
-                    && alert.Perception == Perception)
-                    return alert;
+            for (int v = goalHandlers.Count - 1; v >= 0; v--)
+                if (goalHandlers[v] is IDetectionResponseGoal detectionResponseGoal
+                    && (Where == null
+                        || Where(detectionResponseGoal)))
+                    return detectionResponseGoal;
 
             return null;
         }
 
-        public static BaseDetection FirstAlert(this Brain Brain, Predicate<BaseDetection> Predicate)
-            => Brain?.Goals?.Items
-                ?.FirstOrDefault(
-                    g => g is BaseDetection gAlert
-                    && (Predicate == null || Predicate(gAlert))
-                ) as BaseDetection;
+        public static IDetectionResponseGoal FindDetectionResponse<A>(this Brain Brain, A Alert)
+            where A : class, IAlert, new()
+            => Brain.FindDetectionResponse(Where: r => r.Alert.GetType() == Alert.GetType());
 
-        public static BaseDetection FirstAlert(this Brain Brain)
-            => Brain?.Goals?.Items?.FirstOrDefault(g => g is BaseDetection) as BaseDetection;
+        public static IDetectionResponseGoal FindDetectionResponse(this Brain Brain, IAlertTypedPerception Perception)
+            => Brain.FindDetectionResponse(Where: r => r.Perception.SameAs(Perception));
 
-        public static bool AnyAlert(this Brain Brain, Predicate<BaseDetection> Predicate)
-            => Brain?.Goals?.Items is List<GoalHandler> goalHandlers
-            && goalHandlers.Any(g
-                => g is BaseDetection gAlert
-                && (Predicate == null
-                    || Predicate(gAlert)));
+        public static IDetectionResponseGoal FindDetectionResponse<R>(this Brain Brain)
+            where R : IDetectionResponseGoal
+            => Brain.FindDetectionResponse(Where: r => r.GetType() == typeof(R));
 
-        public static BaseDetection FindAlert(this Brain Brain, BaseDetection Alert)
-            => Brain.FindGoal(Alert.GetType()) as BaseDetection;
+        public static bool AnyDetectionResponse(this Brain Brain, Predicate<IDetectionResponseGoal> Where)
+            => Brain?.FindDetectionResponse(Where) != null;
 
         #endregion
         #region Cells
