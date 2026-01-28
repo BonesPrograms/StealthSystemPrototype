@@ -88,20 +88,12 @@ namespace XRL.World.Parts
 
         public bool WantSync;
 
-        #region Debugging
-
-        private IPerception _BestPerception;
-        public IPerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
-
-        #endregion
         #endregion
 
         public UD_PerceptionHelper()
         {
             _Perceptions = null;
             WantSync = false;
-
-            _BestPerception = null;
         }
 
         #region Serialization
@@ -109,13 +101,11 @@ namespace XRL.World.Parts
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             Writer.WriteObject(_Perceptions);
-            Writer.WriteObject(_BestPerception);
             base.Write(Basis, Writer);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             _Perceptions = Reader.ReadObject() as PerceptionRack;
-            _BestPerception = Reader.ReadObject() as IPerception;
             base.Read(Basis, Reader);
         }
 
@@ -142,9 +132,6 @@ namespace XRL.World.Parts
 
             WantSync = false;
         }
-
-        public void ClearBestPerception()
-            => _BestPerception = null;
 
         private static bool IsClearPerceptionsMinEvent(int ID)
             => !ValidatePerceptionsMinEvents.IsNullOrEmpty()
@@ -351,7 +338,6 @@ namespace XRL.World.Parts
             if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.AdjustDieRoll(2 * heightenedSmell.Level);
-            */
             if (E.Type.Name.EqualsAny(
                 new string[]
                 {
@@ -368,6 +354,7 @@ namespace XRL.World.Parts
                 if (facesList.Count < 1)
                     E.SetMaxValue(0);
             }
+            */
             return base.HandleEvent(E);
         }
         public bool HandleEvent(AdjustTotalPurviewEvent E)

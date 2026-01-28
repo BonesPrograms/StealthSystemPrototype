@@ -20,18 +20,22 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         , IReadOnlyList<IAlert>
         , IReadOnlyCollection<IAlert>
     {
-        public string ID { get; set; }
+        public string ID { get; }
 
-        public string Name { get; set; }
+        public string Name { get; }
 
-        public string Action { get; set; }
+        public string Action { get; }
 
-        public GameObject Actor { get; set; }
+        public GameObject Actor { get; }
 
-        public GameObject AlertObject { get; set; }
+        public GameObject AlertObject { get; }
 
-        public Cell AlertLocation { get; set; }
+        public Cell AlertLocation { get; }
 
-        public bool Aggressive { get; set; }
+        public bool Aggressive { get; }
+
+        public SneakPerformance SneakPerformance { get; }
+
+        public int this[IAlert Alert] { get; }
     }
 }

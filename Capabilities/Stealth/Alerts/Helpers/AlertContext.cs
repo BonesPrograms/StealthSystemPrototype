@@ -47,11 +47,11 @@ namespace StealthSystemPrototype.Alerts
             protected set => _Alert = value;
         }
 
-        private int _Intensity;
-        public int Intensity
+        private int _ActionIntensity;
+        public int AlertConcealment
         {
-            get => _Intensity;
-            protected set => _Intensity = value;
+            get => _ActionIntensity;
+            protected set => _ActionIntensity = value;
         }
 
         private GameObject _Actor;
@@ -82,7 +82,7 @@ namespace StealthSystemPrototype.Alerts
             ParentAction = null;
             Perception = null;
             Alert = null;
-            Intensity = 0;
+            AlertConcealment = 0;
             Hider = null;
             AlertObject = null;
             AlertLocation = null;
@@ -91,8 +91,8 @@ namespace StealthSystemPrototype.Alerts
             IConcealedAction ParentAction,
             IPerception Perception,
             IAlert Alert,
-            int Intensity,
-            GameObject Actor,
+            int AlertConcealment,
+            GameObject Hider,
             GameObject AlertObject,
             Cell AlertLocation)
             : this()
@@ -100,8 +100,8 @@ namespace StealthSystemPrototype.Alerts
             this.ParentAction = ParentAction;
             this.Perception = Perception;
             this.Alert = Alert;
-            this.Intensity = Intensity;
-            this.Hider = Actor;
+            this.AlertConcealment = AlertConcealment;
+            this.Hider = Hider;
             this.AlertObject = AlertObject;
             this.AlertLocation = AlertLocation;
         }
@@ -110,8 +110,8 @@ namespace StealthSystemPrototype.Alerts
                   ParentAction: Source.ParentAction,
                   Perception: Source.Perception,
                   Alert: Source.Alert,
-                  Intensity: Source.Intensity - 1,
-                  Actor: Source.Hider,
+                  AlertConcealment: Source.AlertConcealment - 1,
+                  Hider: Source.Hider,
                   AlertObject: Source.AlertObject,
                   AlertLocation:Source.AlertLocation)
         {
@@ -131,7 +131,7 @@ namespace StealthSystemPrototype.Alerts
             Writer.Write(Perception);
             Writer.WriteGameObject(Perceiver);
             Writer.Write(Alert);
-            Writer.WriteOptimized(Intensity);
+            Writer.WriteOptimized(AlertConcealment);
             Writer.WriteGameObject(Hider);
             Writer.WriteGameObject(AlertObject);
             Writer.Write(AlertLocation);
@@ -142,7 +142,7 @@ namespace StealthSystemPrototype.Alerts
             Perception = Reader.ReadComposite() as IPerception;
             Perceiver = Reader.ReadGameObject();
             Alert = Reader.ReadComposite() as IAlert;
-            Intensity = Reader.ReadOptimizedInt32();
+            AlertConcealment = Reader.ReadOptimizedInt32();
             Hider = Reader.ReadGameObject();
             AlertObject = Reader.ReadGameObject();
             AlertLocation = Reader.ReadCell();
@@ -170,7 +170,7 @@ namespace StealthSystemPrototype.Alerts
             => GameObject.Validate(Hider)
             && GameObject.Validate(Perceiver)
             && Perception.Validate()
-            && Intensity > 0;
+            && AlertConcealment > 0;
 
         public static bool Validate(ref AlertContext Context)
         {

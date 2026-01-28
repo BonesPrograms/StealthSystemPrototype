@@ -318,9 +318,9 @@ namespace XRL.World.Effects
                     Aggressive: false,
                     Description: !E.Forced ? "sneaking around" : "being knocked around")
                 {
-                    SneakPerformance.GetAlert<Visual>(Intensity: 10),
-                    SneakPerformance.GetAlert<Auditory>(Intensity: 10),
-                    SneakPerformance.GetAlert<Olfactory>(Intensity: 8),
+                    IAlert.GetAlert<Visual>(Intensity: 10),
+                    IAlert.GetAlert<Auditory>(Intensity: 10),
+                    IAlert.GetAlert<Olfactory>(Intensity: 8),
                 });
             return base.HandleEvent(E);
         }
@@ -328,7 +328,7 @@ namespace XRL.World.Effects
         {
             E.AddEntry(this, nameof(IsMoveSpeedMultiplierApplied), IsMoveSpeedMultiplierApplied);
             E.AddEntry(this, nameof(AppliedMoveSpeedMultiplierAmount), AppliedMoveSpeedMultiplierAmount);
-            E.AddEntry(this, SneakPerformance.PerformanceEntriesDebugString(out string performanceEntriesContents), performanceEntriesContents);
+            E.AddEntry(this, SneakPerformance.EntriesDebugString(out string performanceEntriesContents), performanceEntriesContents);
             E.AddEntry(this, SneakPerformance.CollectedStatsEntriesDebugString(out string collectedStatsEntriesContents), collectedStatsEntriesContents);
             return base.HandleEvent(E);
         }

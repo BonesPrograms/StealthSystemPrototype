@@ -795,8 +795,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                         ParentAction: ConcealedAction,
                         Perception: typedPerception,
                         Alert: alert,
-                        Intensity: alert.Intensity,
-                        Actor: ConcealedAction.Actor,
+                        AlertConcealment: ConcealedAction.SneakPerformance[alert],
+                        Hider: ConcealedAction.Actor,
                         AlertObject: ConcealedAction.AlertObject ?? ConcealedAction.Actor,
                         AlertLocation: ConcealedAction.AlertLocation ?? ConcealedAction.Actor?.CurrentCell);
         }

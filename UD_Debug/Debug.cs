@@ -15,7 +15,6 @@ using StealthSystemPrototype;
 using static StealthSystemPrototype.Options;
 using static StealthSystemPrototype.Const;
 using static StealthSystemPrototype.Utils;
-// using static StealthSystemPrototype.Logging.DebugMethodRegistry;
 
 namespace StealthSystemPrototype.Logging
 {

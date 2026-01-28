@@ -27,18 +27,6 @@ namespace XRL.World.Parts
 
         public SneakerRack ZoneSneakers;
 
-        #region Debugging
-
-        public IPerception BestPerception => PerceptionHelper?.BestPerception;
-
-        public bool PlayerPerceptable => ParentObject
-                ?.Brain
-                ?.AnyDetectionResponse(a => a.SourceObject?.IsPlayer() ?? false)
-            ?? false;
-
-        public AwarenessLevel PlayerAwareness => ParentObject?.Brain?.FirstDetectionResponse(a => a.SourceObject?.IsPlayer() ?? false)?.Level ?? AwarenessLevel.None;
-
-        #endregion
         #endregion
 
         public UD_Witness()
@@ -89,12 +77,6 @@ namespace XRL.World.Parts
                 Debug.Log((ParentObject?.DebugName?.Strip() ?? "no one") + " " + nameof(Perceptions) + ":", Indent: indent);
                 Debug.Log(Perceptions?.ToString(Delimiter: indent[1] + "\n", Short: true, null) ?? indent[1] + "none??", Indent: indent);
             }
-
-            if (ConstantDebugOutput
-                && !ParentObject.IsPlayer())
-            {
-                PerceptionHelper?.ClearBestPerception();
-            }
             return base.HandleEvent(E);
         }
         public bool HandleEvent(GetWitnessesEvent E)
@@ -132,8 +114,10 @@ namespace XRL.World.Parts
                 && The.Player is GameObject player
                 && !ParentObject.IsPlayer()
                 && ParentObject != player
-                && PlayerPerceptable)
+                //&& PlayerPerceptable
+                )
             {
+                /*
                 if (PlayerAwareness > AwarenessLevel.Suspect)
                     E.ApplyColors("R", "r", int.MaxValue, int.MaxValue);
                 else
@@ -142,6 +126,7 @@ namespace XRL.World.Parts
                 else
                 if (PlayerAwareness > AwarenessLevel.None)
                     E.ApplyColors("Y", "y", int.MaxValue, int.MaxValue);
+                */
             }
             return base.Render(E);
         }

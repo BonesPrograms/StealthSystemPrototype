@@ -8,6 +8,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -222,6 +223,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             _AlertTypesByName = CacheAlertTypesByName(true) as Dictionary<string, Type>;
         }
 
+        public static A GetAlert<A>(int Intensity)
+            where A : class, IAlert, new()
+            => new()
+            {
+                Intensity = Intensity
+            };
+
         #endregion
         public bool IsBase { get; }
 
@@ -245,6 +253,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public bool IsType(Type Type)
             => Type.InheritsFrom(GetType());
+
+        public bool IsMatch(AlertContext Context)
+            => IsType(Context.Alert.Type);
 
         public static void ReadAlert(SerializationWriter Writer, IAlert Alert)
         {

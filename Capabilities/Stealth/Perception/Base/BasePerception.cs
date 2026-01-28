@@ -437,12 +437,22 @@ namespace StealthSystemPrototype.Perceptions
             if (!CanPerceiveAlert(Context.Alert))
                 return false;
 
-            if ()
+            bool madeSave = IPerception.MakeSave(
+                SuccessMargin: out int successMargin,
+                FailureMargin: out int failureMargin,
+                Context: Context,
+                BaseDifficulty: 10);
 
+            if (!madeSave)
+            {
+                // use the failure margin to do something, probably a turns-based cooldown where attempts to perceive are blocked.
+                return false;
+            }
+            RaiseDetection(Context, successMargin);
             return true;
         }
 
-        public virtual IOpinionDetection RaiseDetection(AlertContext Context)
+        public virtual IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -453,8 +463,13 @@ namespace StealthSystemPrototype.Perceptions
                     Debug.Arg(nameof(Context.Hider), Context?.Hider.MiniDebugName()),
                 });
 
+            AwarenessLevel level = AwarenessLevel.Aware;
+            if (SuccessMargin >= 10)
+                level++;
+            if (SuccessMargin >= 20)
+                level = AwarenessLevel.Alert;
 
-            return Owner.Brain.AddOpinionDetection<Curious>(Context, AwarenessLevel.Aware);
+            return Owner.Brain.AddOpinionDetection<Curious>(Context, level);
         }
 
         /*

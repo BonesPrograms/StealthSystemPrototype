@@ -21,22 +21,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [HasModSensitiveStaticCache]
     [HasGameBasedStaticCache]
     [Serializable]
-    public class SneakPerformance : IComposite
+    public class SneakPerformance : Rack<IAlert>
     {
         #region Const & Static
 
-        [ModSensitiveStaticCache]
-        [GameBasedStaticCache(CreateInstance = false)]
-        private static Dictionary<string, AlertRating> _DefaultSneakPerformances;
-        public static Dictionary<string, AlertRating> DefaultSneakPerformances => _DefaultSneakPerformances ??= IAlert.AlertsByName
-            ?.Aggregate(
-                seed: new Dictionary<string, AlertRating>(),
-                func: delegate (Dictionary<string, AlertRating> Accumulator, KeyValuePair<string, IAlert> Next)
-                {
-                    Accumulator[Next.Key] = new AlertRating(Next.Value);
-                    return Accumulator;
-                })
-            ?? new();
+        public static SneakPerformance DefaultSneakPerformance => new(IAlert.Alerts);
 
         public static string MS_MULTI => "MoveSpeed_Multiplier";
         public static string QN_MULTI => "Quickness_Multiplier";
@@ -75,8 +64,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        private Dictionary<string, AlertRating> PerformanceEntries;
-
         public StringMap<List<StatCollectorEntry>> CollectedStats;
         public float MoveSpeedMultiplier => (GetCollectedStats(MS_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
         public float QuicknessMultiplier => (GetCollectedStats(QN_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
@@ -89,34 +76,47 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             set
             {
                 if (value)
-                    Reset();
+                {
+                    Clear();
+                    AddRange(IAlert.Alerts);
+                }
                 _WantsSync = value;
             }
         }
 
         public SneakPerformance()
+            : base()
         {
-            Reset();
+        }
+        public SneakPerformance(IReadOnlyList<IAlert> SourceList)
+            : base(SourceList)
+        {
+        }
+        public SneakPerformance(SneakPerformance Source)
+            : this(Source as IReadOnlyList<IAlert>)
+        {
+            CollectedStats = Source.CollectedStats;
+
         }
 
         #region Serialization
 
-        public void Write(SerializationWriter Writer)
+        public override void Write(SerializationWriter Writer)
         {
-            Writer.WriteComposite(GetEntries().ToList());
+            base.Write(Writer);
+            Writer.WriteOptimized(Variant);
         }
-        public void Read(SerializationReader Reader)
+        public override void Read(SerializationReader Reader)
         {
-            PerformanceEntries = new(DefaultSneakPerformances);
-            foreach (AlertRating entry in Reader.ReadCompositeList<AlertRating>() ?? new())
-                PerformanceEntries[entry.Alert.Name] = entry;
+            base.Read(Reader);
+            Variant = Reader.ReadOptimizedInt32();
         }
 
         #endregion
 
-        public void Reset()
+        public override void Clear()
         {
-            PerformanceEntries = new(DefaultSneakPerformances);
+            base.Clear();
             _WantsSync = false;
             CollectedStats = new()
             {
@@ -125,42 +125,47 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             };
         }
 
-        public AlertRating this[IAlert Alert] => PerformanceEntries[Alert.Name];
-
-        public AlertRating this[string AlertName]
+        public int this[IAlert Alert]
         {
             get
             {
-                if (!PerformanceEntries.ContainsKey(AlertName))
-                {
-                    string thisIndexerName = CallChain(nameof(SneakPerformance), nameof(AlertRating)) + "[string " + AlertName + "]";
+                if (Items != null)
+                    for (int i = 0; i < Count; i++)
+                        if (Items[i] is IAlert alert
+                            && alert.IsType(Alert.Type))
+                            return alert.Intensity;
 
-                    if (!IAlert.AlertsByName.ContainsKey(AlertName))
-                        MetricsManager.LogModWarning(ThisMod, thisIndexerName + " is not a cached " + nameof(IAlert) + " (" + nameof(IAlert.AlertsByName) + ").");
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(Alert),
+                    message: nameof(IAlert) + " (" + Alert.Name + ") " +
+                        "does not exist in Collection (this shouldn't be possible)");
+            }
+            set
+            {
+                if (Items != null)
+                    for (int i = 0; i < Count; i++)
+                        if (Items[i] is IAlert alert
+                            && alert.IsType(Alert.Type))
+                            alert.Intensity = value;
 
-                    if (IAlert.AlertsByName[AlertName] is IAlert alert)
-                    {
-                        if (alert.Copy() is IAlert newAlert)
-                            return PerformanceEntries[AlertName] = new AlertRating(newAlert);
-                        else
-                            MetricsManager.LogModWarning(
-                                mod: ModManager.GetMod(alert.Type.Assembly),
-                                Message: thisIndexerName + " could not create copy of " + nameof(Type) + " " + alert.Name);
-                    }
-                    return null;
-                }
-                return PerformanceEntries[AlertName];
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(Alert),
+                    message: nameof(IAlert) + " (" + Alert.Name + ") " +
+                        "does not exist in Collection (this shouldn't be possible)");
             }
         }
 
-        public string PerformanceEntriesDebugString(out string Contents, string Delimiter = "\n")
+        public int this[string AlertName]
+            => Items?.FirstOrDefault(a => a.Name == AlertName)?.Intensity ?? 0;
+
+        public string EntriesDebugString(out string Contents, string Delimiter = "\n")
         {
             Contents = GetEntries()
                 ?.Aggregate(
                     seed: "",
                     func: (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString());
 
-            return nameof(PerformanceEntries);
+            return "Entries";
         }
 
         public string CollectedStatsEntriesDebugString(out string Contents, string Delimiter = "\n")
@@ -239,19 +244,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IEnumerable<StatCollectorEntry> GetCollectedStats(string Stat)
             => GetCollectedStats(Stat, null);
 
-        public SneakPerformance SetClamp(string SenseName, InclusiveRange Clamp)
+        
+        public SneakPerformance SetRating(string AlertName, int Rating)
         {
-            this[SenseName].SetClamp(Clamp);
-            return this;
-        }
-        public SneakPerformance SetMin(string SenseName, int Min)
-        {
-            this[SenseName].SetMin(Min);
-            return this;
-        }
-        public SneakPerformance SetRating(string SenseName, int Rating)
-        {
-            this[SenseName].SetRating(Rating);
+            this[AlertName].SetRating(Rating);
             return this;
         }
         public SneakPerformance AdjustRating(string SenseName, int Amount)

@@ -23,6 +23,7 @@ using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
+using XRL.Collections;
 
 namespace StealthSystemPrototype
 {
