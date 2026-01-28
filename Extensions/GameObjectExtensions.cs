@@ -5,23 +5,23 @@ using System.Text;
 using System.Reflection;
 
 using XRL;
+using XRL.UI;
 using XRL.World;
 using XRL.World.AI;
-using XRL.World.Anatomy;
 using XRL.World.Parts;
+using XRL.World.Parts.Mutation;
+using XRL.World.Anatomy;
 using XRL.Rules;
 
 using Range = System.Range;
 
+using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Detetections;
 
 using static StealthSystemPrototype.Utils;
-using XRL.UI;
-using StealthSystemPrototype.Senses;
-using XRL.World.Parts.Mutation;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 namespace StealthSystemPrototype
 {
@@ -44,62 +44,82 @@ namespace StealthSystemPrototype
         public static PerceptionRack RequirePerceptions(this GameObject Object)
             => Object.RequirePart<UD_PerceptionHelper>()?.Perceptions;
 
-        public static bool HasPerception<TSense>(this GameObject Object, IPerception<TSense> Item = null)
-            where TSense : ISense<TSense>, new()
-            => Object.RequirePerceptions().Has(Item);
+        public static bool HasPerception<A>(this GameObject Object, IPerception Perception = null)
+            => Object.RequirePerceptions().Has(Perception);
 
-        public static bool HasPerception(this GameObject Object, string Name)
+        public static bool HasPerception(this GameObject Object, string PerceptionName, bool IncludeShort = false)
             => Object
                 ?.RequirePerceptions()
-                ?.Has(Name)
+                ?.Has(PerceptionName, IncludeShort)
             ?? false;
 
-        public static IPerception<TSense> GetPerception<TSense>(this GameObject Object)
-            where TSense : ISense<TSense>, new()
-            => Object.RequirePerceptions()?.Get<IPerception<TSense>, TSense>();
+        public static P GetPerception<P>(this GameObject Object)
+            where P : class, IPerception, new()
+            => Object.RequirePerceptions()?.Get<P>();
 
-        public static IPerception GetPerception(this GameObject Object, string Name)
-            => Object.RequirePerceptions().Get(Name);
+        public static List<IAlertTypedPerception<A, IPurview<A>>> GetPerceptionsForAlert<A>(this GameObject Object)
+            where A : class, IAlert<A>, new()
+            => Object.RequirePerceptions()?.GetForAlert<A>();
 
-        public static IPerception GetFirstPerceptionOfSense<TSense>(this GameObject Object, TSense Sense = null)
-            where TSense : ISense<TSense>, new()
-            => Object.RequirePerceptions().GetFirstOfAlert<TSense>();
+        public static IPerception GetPerception(this GameObject Object, string PerceptionName, bool IncludeShort = false)
+            => Object.RequirePerceptions().Get(PerceptionName, IncludeShort);
 
-        public static bool TryGetPerception<TSense>(this GameObject Object, out IPerception<TSense> Item)
-            where TSense : ISense<TSense>, new()
+        public static IPerception GetFirstPerceptionOfAlert<A>(this GameObject Object, A Alert = null)
+            where A : class, IAlert<A>, new()
+            => Object.RequirePerceptions().GetFirstOfAlert(Alert);
+
+        public static bool TryGetPerception<P>(this GameObject Object, out P Perception)
+            where P : class, IPerception, new()
         {
-            Item = null;
+            Perception = null;
             return Object.GetPerceptions() is PerceptionRack perceptions
-                && perceptions.TryGet(out Item);
+                && perceptions.TryGet(out Perception);
         }
 
-        public static IPerception AddPerception<T, TSense>(
+        public static P AddPerception<P>(
             this GameObject Object,
-            T Perception,
+            P Perception,
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
+            where P : IPerception
         {
             Object.RequirePerceptions()?.Add(Perception, DoRegistration, Initial, Creation);
             return Perception;
         }
 
-        public static IPerception AddPerception<T, TSense>(
+        public static P AddPerception<P>(
+            this GameObject Object,
+            int Level,
+            int PurviewValue,
+            bool DoRegistration = true,
+            bool Initial = false,
+            bool Creation = false)
+            where P : class, IPerception, new()
+            => Object.RequirePerceptions()?.Add<P>(Level, PurviewValue, DoRegistration, Initial, Creation);
+
+        public static P AddPerception<P>(
             this GameObject Object,
             bool DoRegistration = true,
+            bool Initial = false,
             bool Creation = false)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
-            => Object.RequirePerceptions()?.Add<T, TSense>(DoRegistration, Creation);
+            where P : class, IPerception, new()
+            => Object.RequirePerceptions()?.Add<P>(DoRegistration, Initial, Creation);
 
-        public static IPerception RequirePerception<T, TSense>(
+        public static P AddPerception<P>(
+            this GameObject Object,
+            int Level,
+            int PurviewValue,
+            bool DoRegistration = true,
+            bool Creation = false)
+            where P : class, IPerception, new()
+            => Object.RequirePerceptions()?.Add<P>(Level, PurviewValue, DoRegistration, Creation);
+
+        public static P RequirePerception<P>(
             this GameObject Object,
             bool Creation = false)
-            where T : IPerception<TSense>, new()
-            where TSense : ISense<TSense>, new()
-            => Object.RequirePerceptions()?.Require<T, TSense>(Creation);
+            where P : class, IPerception, new()
+            => Object.RequirePerceptions()?.Require<P>(Creation);
 
         public static bool CheckNotOnWorldMap(this GameObject Object, string Verb, bool ShowMessage = false)
         {

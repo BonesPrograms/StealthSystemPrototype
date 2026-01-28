@@ -10,7 +10,7 @@ using XRL.World.Parts.Mutation;
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
@@ -24,7 +24,7 @@ namespace XRL.World.Parts
     public class UD_PerceptionHelper 
         : IScribedPart
         , IPerceptionEventHandler
-        , IAlertEventHandler
+        , IDetectionEventHandler
         , ISneakEventHandler
     {
         [UD_DebugRegistry]
@@ -231,7 +231,7 @@ namespace XRL.World.Parts
                     AdjustTotalPerceptionLevelEvent.ID,
                     AdjustTotalPurviewEvent.ID,
                     TryConcealActionEvent.ID,
-                    AfterAlertEvent.ID,
+                    AfterDetectedEvent.ID,
                     GetDebugInternalsEvent.ID,
                 }))
                 return true;
@@ -398,23 +398,6 @@ namespace XRL.World.Parts
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.SetMinRadius(E.Purview.GetValue() + Math.Min(heightenedSmell.Level, 5));
             */
-
-            if (E.Type.Name.EqualsAny(
-                new string[]
-                {
-                    nameof(SimpleVisualPerception),
-                    nameof(SimpleAuditoryPerception),
-                    nameof(SimpleOlfactoryPerception),
-                })
-                && ParentObject.Body is Body body
-                && body.LoopPart(FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
-            {
-                if (facesList.Count > 1)
-                    E.SetMaxValue(E.GetBaseValue() + 2);
-                else
-                if (facesList.Count < 1)
-                    E.SetMaxValue(0);
-            }
             return base.HandleEvent(E);
         }
         public virtual bool HandleEvent(TryConcealActionEvent E)
@@ -423,14 +406,17 @@ namespace XRL.World.Parts
                 && !E.Hider.InSamePartyAs(ParentObject)
                 && !Perceptions.IsNullOrEmpty())
             {
-                Perceptions.Sense(E.ConcealedAction, E.Hider);
+                Perceptions.TryPerceive(E.ConcealedAction);
             }
             return base.HandleEvent(E);
         }
-        public virtual bool HandleEvent(AfterAlertEvent E)
+        public virtual bool HandleEvent(AfterDetectedEvent E)
         {
-            if (ParentObject.BelongsToFaction(E.Perceiver.GetPrimaryFaction()))
-                ParentObject?.Brain.PushGoal(E.Alert.Copy());
+            if (ParentObject.BelongsToFaction(E.Perceiver.GetPrimaryFaction())
+                && ParentObject != E.Perceiver
+                && ParentObject != E.Hider)
+                ParentObject?.Brain.CascadeOpinionDetection(Detection: E.Detection.DeepCopy(ParentObject));
+
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)

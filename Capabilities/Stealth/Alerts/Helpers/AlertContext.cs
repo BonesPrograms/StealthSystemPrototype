@@ -55,7 +55,7 @@ namespace StealthSystemPrototype.Alerts
         }
 
         private GameObject _Actor;
-        public GameObject Actor
+        public GameObject Hider
         {
             get => _Actor;
             protected set => _Actor = value;
@@ -83,7 +83,7 @@ namespace StealthSystemPrototype.Alerts
             Perception = null;
             Alert = null;
             Intensity = 0;
-            Actor = null;
+            Hider = null;
             AlertObject = null;
             AlertLocation = null;
         }
@@ -101,7 +101,7 @@ namespace StealthSystemPrototype.Alerts
             this.Perception = Perception;
             this.Alert = Alert;
             this.Intensity = Intensity;
-            this.Actor = Actor;
+            this.Hider = Actor;
             this.AlertObject = AlertObject;
             this.AlertLocation = AlertLocation;
         }
@@ -111,7 +111,7 @@ namespace StealthSystemPrototype.Alerts
                   Perception: Source.Perception,
                   Alert: Source.Alert,
                   Intensity: Source.Intensity - 1,
-                  Actor: Source.Actor,
+                  Actor: Source.Hider,
                   AlertObject: Source.AlertObject,
                   AlertLocation:Source.AlertLocation)
         {
@@ -132,7 +132,7 @@ namespace StealthSystemPrototype.Alerts
             Writer.WriteGameObject(Perceiver);
             Writer.Write(Alert);
             Writer.WriteOptimized(Intensity);
-            Writer.WriteGameObject(Actor);
+            Writer.WriteGameObject(Hider);
             Writer.WriteGameObject(AlertObject);
             Writer.Write(AlertLocation);
         }
@@ -143,7 +143,7 @@ namespace StealthSystemPrototype.Alerts
             Perceiver = Reader.ReadGameObject();
             Alert = Reader.ReadComposite() as IAlert;
             Intensity = Reader.ReadOptimizedInt32();
-            Actor = Reader.ReadGameObject();
+            Hider = Reader.ReadGameObject();
             AlertObject = Reader.ReadGameObject();
             AlertLocation = Reader.ReadCell();
         }
@@ -167,7 +167,7 @@ namespace StealthSystemPrototype.Alerts
         }
 
         public bool Validate()
-            => GameObject.Validate(Actor)
+            => GameObject.Validate(Hider)
             && GameObject.Validate(Perceiver)
             && Perception.Validate()
             && Intensity > 0;

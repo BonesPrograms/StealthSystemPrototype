@@ -10,30 +10,33 @@ using XRL.World.AI;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Detetection.Opinions;
 
-namespace StealthSystemPrototype.Detetections
+namespace StealthSystemPrototype.Detetection.ResponseGoals
 {
     [Serializable]
-    public class Investigate : IDetectionResponseGoal
+    public class Investigate : BaseDetectionResponse
     {
-        private ResponseGrammar? _ResponseGrammar;
-        public override ResponseGrammar Grammar => _ResponseGrammar ??= new()
-        {
-            Verb = "investigate",
-            Verbed = "investigated",
-            Verbing = "investigating",
-        };
-
         #region Constructors
 
         public Investigate()
             : base()
         {
-            _ResponseGrammar = null;
+        }
+        public Investigate(IOpinionDetection SourceOpinion)
+            : base(SourceOpinion)
+        {
         }
 
         #endregion
+
+        public override ResponseGrammar GetResponseGrammar()
+            => new()
+            {
+                Verb = "investigate",
+                Verbed = "investigated",
+                Verbing = "investigating",
+            };
 
         public override void Create()
         {

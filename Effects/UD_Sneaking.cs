@@ -17,7 +17,7 @@ using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 using static StealthSystemPrototype.Capabilities.Stealth.SneakPerformance;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 namespace XRL.World.Effects
 {
@@ -32,9 +32,9 @@ namespace XRL.World.Effects
         public static Dictionary<string, ConcealedCommandAction> CommandEventsToConceal => new()
         {
             { Survival_Camp.COMMAND_NAME, new ConcealedCommandAction(false, "making camp") {
-                new StealthSystemPrototype.Senses.Visual(8),
-                new StealthSystemPrototype.Senses.Auditory(3),
-                new StealthSystemPrototype.Senses.Olfactory(5),
+                new Visual(8),
+                new Auditory(3),
+                new Olfactory(5),
             } },
         };
 
@@ -318,9 +318,9 @@ namespace XRL.World.Effects
                     Aggressive: false,
                     Description: !E.Forced ? "sneaking around" : "being knocked around")
                 {
-                    SneakPerformance.GetSense<StealthSystemPrototype.Senses.Visual>(Intensity: 10),
-                    SneakPerformance.GetSense<StealthSystemPrototype.Senses.Auditory>(Intensity: 10),
-                    SneakPerformance.GetSense<StealthSystemPrototype.Senses.Olfactory>(Intensity: 8),
+                    SneakPerformance.GetAlert<Visual>(Intensity: 10),
+                    SneakPerformance.GetAlert<Auditory>(Intensity: 10),
+                    SneakPerformance.GetAlert<Olfactory>(Intensity: 8),
                 });
             return base.HandleEvent(E);
         }

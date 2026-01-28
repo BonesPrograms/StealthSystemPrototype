@@ -5,7 +5,7 @@ using System.Text;
 
 using XRL;
 
-namespace StealthSystemPrototype.Senses
+namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
     public enum AwarenessLevel : int

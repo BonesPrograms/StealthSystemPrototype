@@ -8,20 +8,20 @@ using XRL.World.Parts;
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
-using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Detetections;
-using StealthSystemPrototype.Senses;
+using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public class AfterAlertEvent : IAlertEvent<AfterAlertEvent>
+    public class AfterDetectedEvent : IDetectionEvent<AfterDetectedEvent>
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
-        public AfterAlertEvent()
+        public AfterDetectedEvent()
+            : base()
         {
         }
 
@@ -31,14 +31,12 @@ namespace StealthSystemPrototype.Events
         public override void UpdateFromStringyEvent()
             =>base.UpdateFromStringyEvent();
 
-        public static void Send<TPerception, TAlert>(GameObject Perceiver, GameObject Hider, Detection<TPerception, TAlert> Detection)
-            where TPerception : IPerception, new()
-            where TAlert : IAlert, new()
+        public static void Send(GameObject Perceiver, GameObject Hider, IOpinionDetection Detection)
         {
             if (FromPool(
                     Perceiver: Perceiver,
                     Hider: Hider,
-                    Alert: Detection) is not AfterAlertEvent E)
+                    Detection: Detection) is not AfterDetectedEvent E)
                 return;
 
             Process(E, out bool success);

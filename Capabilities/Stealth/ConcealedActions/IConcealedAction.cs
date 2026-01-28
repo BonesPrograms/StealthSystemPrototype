@@ -24,7 +24,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public string Name { get; set; }
 
+        public string Action { get; set; }
+
         public GameObject Actor { get; set; }
+
+        public GameObject AlertObject { get; set; }
+
+        public Cell AlertLocation { get; set; }
 
         public bool Aggressive { get; set; }
     }

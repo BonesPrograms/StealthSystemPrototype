@@ -7,7 +7,7 @@ using XRL.World;
 
 using StealthSystemPrototype.Perceptions;
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 using XRL.World.AI.Pathfinding;
 using StealthSystemPrototype.Alerts;
 

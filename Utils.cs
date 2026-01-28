@@ -7,17 +7,15 @@ using System.Diagnostics;
 
 using XRL;
 using XRL.World.Anatomy;
+using XRL.World.Parts.Mutation;
 
-using Range = System.Range;
-
-using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Const;
 
 using Debug = StealthSystemPrototype.Logging.Debug;
-using XRL.World.Parts.Mutation;
 
 namespace StealthSystemPrototype
 {
@@ -70,81 +68,6 @@ namespace StealthSystemPrototype
         }
         public static bool TryGetFirstCallingModNot(ModInfo ThisMod, out ModInfo FirstCallingMod)
             => (FirstCallingMod = GetFirstCallingModNot(ThisMod)) != null;
-
-        #endregion
-        #region Senses
-
-        [ModSensitiveStaticCache]
-        private static IEnumerable<Type> _SenseTypesCache = null;
-        public static IEnumerable<Type> SenseTypesCache = _SenseTypesCache ??= GetSenseTypes();
-
-        public static IEnumerable<Type> GetSenseTypes(bool NamespaceLocked = true)
-        {
-            if (_SenseTypesCache != null
-                && NamespaceLocked)
-            {
-                foreach (Type cachedSenseType in SenseTypesCache)
-                    yield return cachedSenseType;
-
-                yield break;
-            }
-
-            if (ModManager.GetTypesAssignableFrom(typeof(ISense)) is List<Type> iSenseTypes)
-            {
-                using Indent indent = new();
-                foreach (Type iSenseType in iSenseTypes)
-                {
-                    if (iSenseType.Namespace is string namespaceName
-                        && !iSenseType.IsAbstract
-                        && !iSenseType.ContainsGenericParameters
-                        && (!NamespaceLocked
-                            || namespaceName == ISense.NAMESPACE))
-                    {
-                        Debug.LogCritical(iSenseType?.ToStringWithGenerics(), namespaceName, Indent: indent);
-                        yield return iSenseType;
-                    }
-                }
-            }
-        }
-
-        public static SortedDictionary<string, ISense> GetSenses()
-        {
-            using Indent indent = new();
-            Debug.LogCritical(nameof(GetSenses), Indent: indent);
-            SortedDictionary<string, ISense> output = new();
-            List<ISense> senseList = new();
-            foreach (Type iSenseType in GetSenseTypes())
-            {
-                try
-                {
-                    if (!iSenseType.IsAbstract
-                        && !iSenseType.ContainsGenericParameters
-                        && ModManager.CreateInstance<ISense>(iSenseType) is ISense sense)
-                    {
-                        Debug.LogCritical(YehNah(true) + " " + iSenseType?.ToStringWithGenerics(), Indent: indent);
-                        senseList.Add(sense);
-                    }
-                    else
-                        Debug.LogCritical(YehNah(false) + " " + iSenseType?.ToStringWithGenerics(), Indent: indent);
-                }
-                catch (Exception x)
-                {
-                    MetricsManager.LogModError(
-                        mod: ModManager.GetMod(iSenseType.Assembly),
-                        Message: CallChain(nameof(Utils), nameof(GetSenses)) + ": " +
-                            iSenseType.ToStringWithGenerics() + " didn't like being constructed.\n" + x);
-                }
-            }
-
-            if (!senseList.IsNullOrEmpty()
-                && senseList.Count > 1)
-                senseList.OrderInPlace((s1, s2) => s2.Order.CompareTo(s1.Order));
-
-            foreach (ISense sense in senseList)
-                output[sense.Name] = sense;
-
-            return output;
-        }
 
         #endregion
         #region Exceptions

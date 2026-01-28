@@ -14,13 +14,14 @@ using XRL.World.Parts;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using System.Reflection;
+using StealthSystemPrototype.Detetection.ResponseGoals;
 
-namespace StealthSystemPrototype.Detetections
+namespace StealthSystemPrototype.Detetection.Opinions
 {
     /// <summary>
     /// Represents the record of an <see cref="IPerception"/> having successfully detected an <see cref="IAlert"/> within an <see cref="IConcealedAction"/>, and handles the pushing of .
@@ -60,15 +61,15 @@ namespace StealthSystemPrototype.Detetections
         public virtual void Initialize(AlertContext AlertContext, AwarenessLevel Level)
         {
             this.AlertContext = AlertContext;
-
             Response.Initialize(this);
+
+            AfterDetectedEvent.Send(AlertContext.Perceiver, AlertContext.Hider, this);
             AlertContext.Perceiver.Brain.PushGoal(Response);
         }
 
-        public virtual D DeepCopy<D>(GameObject Perceiver)
-            where D : IOpinionDetection, new()
+        public virtual IOpinionDetection DeepCopy(GameObject Perceiver)
         {
-            D opinionDetection = Activator.CreateInstance(GetType()) as D;
+            IOpinionDetection opinionDetection = Activator.CreateInstance(GetType()) as IOpinionDetection;
 
             FieldInfo[] fields = GetType().GetFields();
 

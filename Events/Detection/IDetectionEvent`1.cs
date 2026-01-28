@@ -8,16 +8,17 @@ using XRL.World.Parts;
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
-using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Detetections;
+
+using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public abstract class IAlertEvent<T> : ModPooledEvent<T>
-        where T : IAlertEvent<T>, new()
+    public abstract class IDetectionEvent<T> : ModPooledEvent<T>
+        where T : IDetectionEvent<T>, new()
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
@@ -27,16 +28,16 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Hider;
 
-        public IDetectionResponseGoal Alert;
+        public IOpinionDetection Detection;
 
         public Event StringyEvent;
 
-        public IAlertEvent()
+        public IDetectionEvent()
         {
             Perceiver = null;
             Hider = null;
 
-            Alert = null;
+            Detection = null;
 
             StringyEvent = null;
         }
@@ -52,7 +53,7 @@ namespace StealthSystemPrototype.Events
             base.Reset();
             Perceiver = null;
             Hider = null;
-            Alert = null;
+            Detection = null;
             StringyEvent?.Clear();
             StringyEvent = null;
         }
@@ -60,7 +61,7 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(
             GameObject Perceiver,
             GameObject Hider,
-            IDetectionResponseGoal Alert,
+            IOpinionDetection Detection,
             bool StringyEvent = true)
         {
             if ((Perceiver == null
@@ -70,7 +71,7 @@ namespace StealthSystemPrototype.Events
 
             E.Perceiver = Perceiver;
             E.Hider = Hider;
-            E.Alert = Alert;
+            E.Detection = Detection;
             if (StringyEvent)
                 E.GetStringyEvent();
             return E;
@@ -78,10 +79,10 @@ namespace StealthSystemPrototype.Events
 
         public static T HiderFromPool(
             GameObject Hider,
-            IDetectionResponseGoal Alert)
+            IOpinionDetection Detection)
         {
             if (Hider == null
-                || FromPool(null, Hider, Alert, StringyEvent: false) is not T E)
+                || FromPool(null, Hider, Detection, StringyEvent: false) is not T E)
                 return null;
 
             E.GetStringyEvent();
@@ -90,31 +91,31 @@ namespace StealthSystemPrototype.Events
 
         public static T PerceiverFromPool(
             GameObject Perceiver,
-            IDetectionResponseGoal Alert)
+            IOpinionDetection Detection)
         {
             if (Perceiver == null
-                || FromPool(Perceiver, null, Alert, StringyEvent: false) is not T E)
+                || FromPool(Perceiver, null, Detection, StringyEvent: false) is not T E)
                 return null;
 
             E.GetStringyEvent();
             return E;
         }
 
-        public static Event GetStringyEvent(IAlertEvent<T> ForEvent, ref Event ExistingEvent)
+        public static Event GetStringyEvent(IDetectionEvent<T> ForEvent, ref Event ExistingEvent)
             => ForEvent == null
             ? ExistingEvent = Event.New(RegisteredEventID)
             : ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID())
                 .SetParameter(nameof(ForEvent.Perceiver), ForEvent?.Perceiver)
                 .SetParameter(nameof(ForEvent.Hider), ForEvent?.Hider)
-                .SetParameter(nameof(ForEvent.Alert), ForEvent?.Alert);
+                .SetParameter(nameof(ForEvent.Detection), ForEvent?.Detection);
 
         public virtual Event GetStringyEvent()
             => GetStringyEvent(this, ref StringyEvent);
 
         public virtual void UpdateFromStringyEvent()
         {
-            if (StringyEvent?.GetParameter(nameof(Alert)) != null)
-                Alert = StringyEvent?.GetParameter<IDetectionResponseGoal>(nameof(Alert));
+            if (StringyEvent?.GetParameter(nameof(Detection)) != null)
+                Detection = StringyEvent?.GetParameter<IOpinionDetection>(nameof(Detection));
         }
 
         protected static T Process(T E, out bool Success)
@@ -177,15 +178,14 @@ namespace StealthSystemPrototype.Events
 
         protected static T PerceiverProcess(
             GameObject Perceiver,
-            IDetectionResponseGoal Alert,
+            IOpinionDetection Detection,
             out bool Success)
-            => Process(PerceiverFromPool(Perceiver, Alert), out Success);
+            => Process(PerceiverFromPool(Perceiver, Detection), out Success);
 
         protected static T HiderProcess(
             GameObject Hider,
-            IDetectionResponseGoal Alert,
+            IOpinionDetection Detection,
             out bool Success)
-            => Process(HiderFromPool(Hider, Alert), out Success);
+            => Process(HiderFromPool(Hider, Detection), out Success);
     }
 }
-

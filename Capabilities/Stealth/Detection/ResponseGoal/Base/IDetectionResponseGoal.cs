@@ -14,25 +14,32 @@ using XRL.World.Parts;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Detetection.Opinions;
 
-namespace StealthSystemPrototype.Detetections
+namespace StealthSystemPrototype.Detetection.ResponseGoals
 {
     [StealthSystemBaseClass]
     public abstract class IDetectionResponseGoal : GoalHandler
     {
-        public abstract IOpinionDetection SourceOpinion { get; set; }
+        protected IOpinionDetection _SourceOpinion;
+        public virtual IOpinionDetection SourceOpinion
+        {
+            get => _SourceOpinion;
+            protected set => _SourceOpinion = value;
+        }
 
-        public abstract ResponseGrammar Grammar { get; }
+        protected ResponseGrammar? _Grammar;
+        public virtual ResponseGrammar Grammar => _Grammar ??= GetResponseGrammar();
 
         public AlertContext AlertContext;
 
         public GameObject Perciever => AlertContext?.Perceiver;
 
-        public GameObject Actor => AlertContext?.Actor;
+        public GameObject Actor => AlertContext?.Hider;
 
         public GameObject AlertObject => AlertContext?.AlertObject;
 
@@ -57,9 +64,16 @@ namespace StealthSystemPrototype.Detetections
 
         public IDetectionResponseGoal()
         {
+            SourceOpinion = null;
+            _Grammar = null;
             Origin = null;
             Level = AwarenessLevel.None;
             OverridesCombat = false;
+        }
+        public IDetectionResponseGoal(IOpinionDetection SourceOpinion)
+            : this()
+        {
+            this.SourceOpinion = SourceOpinion;
         }
 
         #endregion
@@ -68,6 +82,8 @@ namespace StealthSystemPrototype.Detetections
         {
             this.SourceOpinion = SourceOpinion;
         }
+
+        public abstract ResponseGrammar GetResponseGrammar();
 
         public override void Create()
         {

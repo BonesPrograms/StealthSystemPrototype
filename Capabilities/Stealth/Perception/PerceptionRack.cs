@@ -17,7 +17,7 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Const;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Alerts;
 using static StealthSystemPrototype.Perceptions.BasePerception;
@@ -192,12 +192,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public sealed override void Add(IPerception Item)
             => Add(Item);
 
-        public void Add<T>(
-            T Perception,
+        public void Add<P>(
+            P Perception,
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where T : IPerception
+            where P : IPerception
         {
             if (Items == null)
                 throw new InnerArrayNullException(nameof(Items));
@@ -281,15 +281,20 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             where A : class, IAlert<A>, new()
             => ContainsAlert<A>();
 
-        public bool Has(string Name)
-            => AsEnumerable(
-                p => Name.EqualsAny(new string[]
-                {
-                    p.Name,
-                    p.ShortName,
-                    p.GetType().Name,
-                    p.GetType().ToString(),
-                }))
+        protected static bool IsPerceptionName(IPerception Perception, string PerceptionName)
+            => Perception.Name == PerceptionName;
+
+
+        protected static bool IsPerceptionShortName(IPerception Perception, string PerceptionShortName)
+            => Perception.ShortName == PerceptionShortName;
+
+        protected static bool IsPerceptionName(IPerception Perception, string PerceptionName, bool IncludeShort)
+            => IsPerceptionName(Perception, PerceptionName)
+            || (IncludeShort
+                && IsPerceptionShortName(Perception, PerceptionName));
+
+        public bool Has(string PerceptionName, bool IncludeShort = false)
+            => AsEnumerable(p => IsPerceptionName(p, PerceptionName, IncludeShort))
             ?.FirstOrDefault() != null;
 
         public P Get<P>()
@@ -323,15 +328,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return output;
         }
 
-        public IPerception Get(string Name)
-            => AsEnumerable(
-                p => Name.EqualsAny(new string[]
-                {
-                    p.Name,
-                    p.ShortName,
-                    p.GetType().Name,
-                    p.GetType().ToString(),
-                }))
+        public IPerception Get(string PerceptionName, bool IncludeShort = false)
+            => AsEnumerable(p => IsPerceptionName(p, PerceptionName, IncludeShort))
             ?.FirstOrDefault();
 
         protected static bool IsPerceptionOfAlert<A>(IPerception IPerception)
@@ -355,7 +353,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public bool TryGet(string Name, out IPerception Perception)
             => (Perception = Get(Name)) != null;
 
-        public IPerception Require<P>(
+        public P Require<P>(
             bool Creation = false)
             where P : class, IPerception, new()
         {
@@ -452,7 +450,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         public IEnumerable<IPerception> GetPerceptionsBestFirst(
-            GameObject Entity,
+            Comparison<IPerception> Comparison,
             Predicate<IPerception> Filter,
             bool ClearFirst)
         {
@@ -465,38 +463,56 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (ClearFirst)
                 ClearCaches();
 
-            perceptionsList.Sort(new PerceptionComparer());
+            perceptionsList.Sort(Comparison);
 
             return perceptionsList
                 ?.Where(Filter.ToFunc());
         }
-        public IEnumerable<IPerception> GetPerceptionsBestFirst(
-            GameObject Entity,
-            Predicate<IPerception> Filter)
-            => GetPerceptionsBestFirst(Entity, Filter, true);
+        public IEnumerable<IPerception> GetPerceptionsBestFirst<A>(bool ClearFirst, A Alert = null)
+            where A : class, IAlert, new()
+            => GetPerceptionsBestFirst(
+                Comparison: delegate (IPerception x, IPerception y)
+                {
+                    Alert ??= new A();
+                    int canPerceiveComp = x.CanPerceiveAlert(Alert).CompareTo(y.CanPerceiveAlert(Alert));
+                    if (canPerceiveComp != 0)
+                        return canPerceiveComp;
+                    return x.CompareTo(y);
+                },
+                Filter: p => p.CanPerceiveAlert(Alert ??= new A()),
+                ClearFirst: ClearFirst);
 
-        public IEnumerable<IPerception> GetPerceptionsBestFirst(
-            GameObject Entity,
-            bool ClearFirst)
-            => GetPerceptionsBestFirst(Entity, null, ClearFirst);
+        public IEnumerable<IPerception> GetPerceptionsBestFirst<A>(A Alert = null)
+            where A : class, IAlert, new()
+            => GetPerceptionsBestFirst(true, Alert);
 
-        public IEnumerable<IPerception> GetPerceptionsBestFirst(
-            GameObject Entity)
-            => GetPerceptionsBestFirst(Entity, null);
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(AlertContext Context, bool ClearFirst)
+            => GetPerceptionsBestFirst(
+                Comparison: delegate (IPerception x, IPerception y)
+                {
+                    int canPerceiveComp = x.CanPerceive(Context).CompareTo(y.CanPerceive(Context));
+                    if (canPerceiveComp != 0)
+                        return canPerceiveComp;
+                    return x.CompareTo(y);
+                },
+                Filter: p => p.CanPerceive(Context),
+                ClearFirst: ClearFirst);
 
-        public IPerception GetHighestRatedPerceptionFor(GameObject Entity, bool ClearFirst)
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(AlertContext Context)
+            => GetPerceptionsBestFirst(Context, true);
+
+        public IPerception GetHighestRatedPerceptionFor<A>(A Alert = null)
+            where A : class, IAlert, new()
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(nameof(Owner), Owner?.DebugName ?? "null"),
-                    Debug.Arg(nameof(Entity), Entity?.DebugName ?? "null"),
-                    Debug.Arg(nameof(ClearFirst), ClearFirst),
+                    Debug.Arg(nameof(Alert), Alert.Name ?? typeof(A)?.ToStringWithGenerics()),
                 });
 
-            if (Entity == null
-                || GetPerceptionsBestFirst(Entity, ClearFirst) is not List<IPerception> highestFirstList
+            if (GetPerceptionsBestFirst(Alert) is not List<IPerception> highestFirstList
                 || highestFirstList.Count < 1)
             {
                 Debug.CheckNah("Entity null, or Rack empty or null", Indent: indent[1]);
@@ -506,8 +522,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Debug.CheckYeh("Got", output, Indent: indent[1]);
             return output;
         }
-        public IPerception GetHighestRatedPerceptionFor(GameObject Entity)
-            => GetHighestRatedPerceptionFor(Entity, true);
 
         public virtual bool CanPerceiveAlert(IAlert Alert)
         {
@@ -543,15 +557,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual bool TryPerceive(AlertContext Context)
         {
-            if (Items == null)
-                throw new InnerArrayNullException(nameof(Items));
-
             bool any = false;
-            for (int i = 0; i < Count; i++)
-                any = Items[i].CanPerceive(Context) || any;
-
+            List<IPerception> highestFirst = GetPerceptionsBestFirst(Context)?.ToList() ?? new();
+            foreach (IPerception perception in highestFirst)
+            {
+                if (perception.TryPerceive(Context))
+                {
+                    any = true;
+                    perception.RaiseDetection(Context);
+                }
+            }
             return any;
         }
+
+        public virtual bool TryPerceive(IConcealedAction ConcealedAction)
+            => GetAlertContexts(ConcealedAction).Aggregate(false, (a, n) => TryPerceive(n) || a);
 
         #region Event Dispatch
 
@@ -757,7 +777,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-        public IEnumerable<AlertContext> GetAlertContexts(IConcealedAction ConcealedAction, Cell AlertLocation)
+        public IEnumerable<AlertContext> GetAlertContexts(IConcealedAction ConcealedAction)
         {
             if (ConcealedAction == null)
                 throw new ArgumentNullException(
@@ -777,7 +797,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                         Alert: alert,
                         Intensity: alert.Intensity,
                         Actor: ConcealedAction.Actor,
-                        AlertLocation: AlertLocation ?? ConcealedAction.Actor?.CurrentCell);
+                        AlertObject: ConcealedAction.AlertObject ?? ConcealedAction.Actor,
+                        AlertLocation: ConcealedAction.AlertLocation ?? ConcealedAction.Actor?.CurrentCell);
         }
 
         #endregion

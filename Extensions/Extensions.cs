@@ -13,15 +13,16 @@ using XRL.Rules;
 
 using Range = System.Range;
 
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Detetections;
+using StealthSystemPrototype.Detetection.ResponseGoals;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Senses;
-using StealthSystemPrototype.Capabilities.Stealth.Perception;
-using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype
 {
@@ -592,45 +593,72 @@ namespace StealthSystemPrototype
         #endregion
         #region Brains & Goals
 
-        public static void AddOpinionDetection<D>(
+        public static IOpinionDetection AddOpinionDetection(
+            this Brain Brain,
+            IOpinionDetection Detection,
+            AlertContext Context,
+            AwarenessLevel Level = AwarenessLevel.None,
+            float Magnitude = 1f)
+        {
+            if (!Brain.TryGetOpinions(Context.Hider, out var opinions))
+                return null;
+
+            string message = null;
+            if (!BeforeDetectedEvent.CheckHider(Context.Hider, ref Detection, ref message)
+                || !BeforeDetectedEvent.CheckPerceiver(Brain.ParentObject, ref Detection, ref message))
+            {
+                if (!message.IsNullOrEmpty())
+                    message.StartReplace()
+                        .AddObject(Context.Hider, nameof(Context.Hider).ToLower())
+                        .AddObject(Brain.ParentObject, nameof(Context.Perceiver).ToLower())
+                        .EmitMessage(ColorAsGoodFor: Context.Hider, ColorAsBadFor: Brain.ParentObject);
+                return null;
+            }
+
+            long currentTurn = The.Game?.TimeTicks ?? 0;
+            bool renew = false;
+            for (int v = opinions.Count - 1; v >= 0; v--)
+                if (opinions[v] is IOpinionDetection existingOpinionDetection)
+                {
+                    if (currentTurn - existingOpinionDetection.Time >= existingOpinionDetection.Cooldown)
+                    {
+                        renew = true;
+                        Detection = existingOpinionDetection;
+                        opinions.RemoveAt(v);
+
+                        if (Level < Detection.Level)
+                            Level = Detection.Level;
+                        else
+                            Level.Increment();
+
+                        Magnitude = Math.Min(Detection.Limit, Detection.Magnitude + Magnitude);
+                        break;
+                    }
+                    return null;
+                }
+
+            Detection.Time = currentTurn;
+            Detection.Magnitude = Magnitude;
+            Detection.Initialize(Context, Level);
+            opinions.Add(Detection);
+            Brain.AfterAddOpinionDetection(Detection, Context, renew);
+            return Detection;
+        }
+
+        public static void CascadeOpinionDetection(this Brain Brain, IOpinionDetection Detection)
+            => Brain.AddOpinionDetection(
+                    Detection: Detection.DeepCopy(Brain.ParentObject),
+                    Context: Detection.AlertContext,
+                    Level: Detection.Level,
+                    Magnitude: Detection.Magnitude);
+
+        public static D AddOpinionDetection<D>(
             this Brain Brain,
             AlertContext Context,
             AwarenessLevel Level = AwarenessLevel.None,
             float Magnitude = 1f)
             where D : IOpinionDetection, new()
-        {
-            if (!Brain.TryGetOpinions(Context.Actor, out var opinions))
-                return;
-
-            long currentTurn = The.Game?.TimeTicks ?? 0;
-            D opinionDetection = null;
-            bool renew = false;
-            for (int v = opinions.Count - 1; v >= 0; v--)
-                if (opinions[v] is D existingOpinionDetection)
-                {
-                    if (currentTurn - existingOpinionDetection.Time >= existingOpinionDetection.Cooldown)
-                    {
-                        renew = true;
-                        opinionDetection = existingOpinionDetection;
-                        opinions.RemoveAt(v);
-
-                        if (Level < opinionDetection.Level)
-                            Level = opinionDetection.Level;
-                        else
-                            Level.Increment();
-
-                        Magnitude = Math.Min(opinionDetection.Limit, opinionDetection.Magnitude + Magnitude);
-                        break;
-                    }
-                    return;
-                }
-
-            opinionDetection.Time = currentTurn;
-            opinionDetection.Magnitude = Magnitude;
-            opinionDetection.Initialize(Context, Level);
-            opinions.Add(opinionDetection);
-            Brain.AfterAddOpinionDetection(opinionDetection, Context, renew);
-        }
+            => Brain.AddOpinionDetection(new D(), Context, Level, Magnitude) as D;
 
         public static void AfterAddOpinionDetection(
             this Brain Brain,
@@ -640,12 +668,12 @@ namespace StealthSystemPrototype
         {
             if (!Renew && Opinion.Value < 0)
             {
-                int feeling = Context.Perceiver.Brain.GetFeeling(Context.Actor);
+                int feeling = Context.Perceiver.Brain.GetFeeling(Context.Hider);
                 if (feeling < -10
                     && feeling - Opinion.Value >= -10)
                     Brain.PlayWorldSound("sfx_creature_angered");
             }
-            AfterAddOpinionEvent.Send(Opinion, Context.Perceiver, Context.Actor, Context.AlertObject, Renew);
+            AfterAddOpinionEvent.Send(Opinion, Context.Perceiver, Context.Hider, Context.AlertObject, Renew);
         }
 
         public static GoalHandler FindGoal(this Brain Brain, Type Type)

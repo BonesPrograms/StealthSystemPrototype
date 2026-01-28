@@ -11,18 +11,16 @@ using XRL.World.AI.Pathfinding;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
-
-using StealthSystemPrototype.Senses;
-using StealthSystemPrototype.Detetections;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 
 using SerializeField = UnityEngine.SerializeField;
-using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -34,7 +32,7 @@ namespace StealthSystemPrototype.Perceptions
         , IWitnessEventHandler
         , IPerceptionEventHandler
         , ISneakEventHandler
-        , IAlertEventHandler
+        , IDetectionEventHandler
     {
         #region Helpers
 
@@ -392,10 +390,10 @@ namespace StealthSystemPrototype.Perceptions
         public virtual bool HandleEvent(TryConcealActionEvent E)
             => true;
 
-        public virtual bool HandleEvent(BeforeAlertEvent E)
+        public virtual bool HandleEvent(BeforeDetectedEvent E)
             => true;
 
-        public virtual bool HandleEvent(AfterAlertEvent E)
+        public virtual bool HandleEvent(AfterDetectedEvent E)
             => true;
 
         #endregion
@@ -416,7 +414,7 @@ namespace StealthSystemPrototype.Perceptions
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(nameof(Owner), Owner?.MiniDebugName() ?? "null"),
-                    Debug.Arg(nameof(Context.Actor), Context?.Actor?.MiniDebugName() ?? "null"),
+                    Debug.Arg(nameof(Context.Hider), Context?.Hider?.MiniDebugName() ?? "null"),
                 });
 
             return _Purview is IPurview purview
@@ -439,6 +437,8 @@ namespace StealthSystemPrototype.Perceptions
             if (!CanPerceiveAlert(Context.Alert))
                 return false;
 
+            if ()
+
             return true;
         }
 
@@ -450,9 +450,11 @@ namespace StealthSystemPrototype.Perceptions
                 {
                     Debug.Arg(ToString()),
                     Debug.Arg(nameof(Context.Perceiver), Context?.Perceiver.MiniDebugName()),
-                    Debug.Arg(nameof(Context.Actor), Context?.Actor.MiniDebugName()),
+                    Debug.Arg(nameof(Context.Hider), Context?.Hider.MiniDebugName()),
                 });
-            return null;
+
+
+            return Owner.Brain.AddOpinionDetection<Curious>(Context, AwarenessLevel.Aware);
         }
 
         /*

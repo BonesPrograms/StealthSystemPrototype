@@ -8,7 +8,7 @@ using XRL.World;
 using XRL.World.Parts;
 
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Alerts;
 
 using static StealthSystemPrototype.Utils;

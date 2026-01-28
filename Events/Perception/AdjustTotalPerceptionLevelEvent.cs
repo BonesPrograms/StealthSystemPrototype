@@ -12,7 +12,7 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Perceptions.IPerception;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Events
 {

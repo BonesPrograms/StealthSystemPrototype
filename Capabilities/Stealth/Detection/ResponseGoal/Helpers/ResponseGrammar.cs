@@ -14,10 +14,10 @@ using XRL.World.Parts;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Logging;
 
-namespace StealthSystemPrototype.Detetections
+namespace StealthSystemPrototype.Detetection.ResponseGoals
 {
     [Serializable]
     public struct ResponseGrammar : IComposite

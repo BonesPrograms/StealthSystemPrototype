@@ -2,7 +2,7 @@
 
 using StealthSystemPrototype.Detetections;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 using XRL.Liquids;
 using XRL.World;
@@ -61,7 +61,7 @@ namespace StealthSystemPrototype.Perceptions
                 && Owner.HasEffect<Asleep>())
                 return false;
 
-            GameObject actor = Context?.Actor;
+            GameObject actor = Context?.Hider;
             if (actor == null)
                 return Attunement >= PsionicAttunement.Ambient;
 

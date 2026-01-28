@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 using XRL.Collections;
 using XRL.World;
