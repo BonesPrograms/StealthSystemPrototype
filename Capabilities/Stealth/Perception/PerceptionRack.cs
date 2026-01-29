@@ -242,7 +242,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (perception != null)
             {
                 perception.AssignDefaultPurview(PurviewValue);
-                perception.Purview.SetParentPerception(perception);
+                // perception.Purview.SetParentPerception(perception);
                 Add(
                     Perception: perception,
                     DoRegistration: DoRegistration,

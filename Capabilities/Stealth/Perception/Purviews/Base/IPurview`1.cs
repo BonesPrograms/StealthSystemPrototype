@@ -18,13 +18,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
     public interface IPurview<A> : IPurview
         where A : IAlert
     {
-        public new IAlertTypedPerception<A, IPurview<A>> ParentPerception { get; set; }
+        public new IAlertTypedPerception ParentPerception { get; set; }
 
         #region Contracts
 
-        public IPurview<A> SetParentPerception(IAlertTypedPerception<A, IPurview<A>> ParentPerception);
+        public IPurview<A> SetParentPerception(IAlertTypedPerception ParentPerception);
 
-        public int GetPurviewAdjustment(IAlertTypedPerception<A, IPurview<A>> ParentPerception, int Value = 0);
+        public int GetPurviewAdjustment(IAlertTypedPerception ParentPerception, int Value = 0);
 
         #endregion
     }

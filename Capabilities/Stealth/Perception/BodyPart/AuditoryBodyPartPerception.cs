@@ -68,10 +68,6 @@ namespace StealthSystemPrototype.Perceptions
             : this(null, Source, Level, Purview)
         {
         }
-        public AuditoryBodyPartPerception(GameObject Basis, SerializationReader Reader)
-            : base(Basis, Reader)
-        {
-        }
 
         #endregion
         #region Serialization
@@ -97,7 +93,7 @@ namespace StealthSystemPrototype.Perceptions
             SerializationReader Reader,
             ref AuditoryPurview Purview,
             IAlertTypedPerception<Auditory, AuditoryPurview> ParentPerception = null)
-            => Purview = new AuditoryPurview(Reader, ParentPerception ?? this);
+            => Purview = Reader.ReadComposite<AuditoryPurview>();
 
         public sealed override void ReadPurview(
             SerializationReader Reader,
@@ -131,12 +127,6 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-
-        public override void Construct()
-        {
-            base.Construct();
-            // put default instance values here for the base parameterless constructor
-        }
 
         public override Type GetAlertType()
             => ((IAlertTypedPerception<Auditory, AuditoryPurview>)this).GetAlertType();

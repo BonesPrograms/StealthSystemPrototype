@@ -46,10 +46,6 @@ namespace StealthSystemPrototype.Perceptions
             : base(Source, Level, Purview)
         {
         }
-        public BaseIPartPerception(GameObject Basis, SerializationReader Reader)
-            : base(Basis, Reader)
-        {
-        }
 
         #endregion
         #region Serialization

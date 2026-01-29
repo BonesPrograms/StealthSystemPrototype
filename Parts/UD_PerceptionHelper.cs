@@ -80,11 +80,18 @@ namespace XRL.World.Parts
         {
             get
             {
-                if (_Perceptions == null)
-                    GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
+                if (_Perceptions == null
+                    && !CollectingPerceptions)
+                {
+                    ToggleDuringCall(
+                        Action: () => GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions),
+                        ToggleableBool: ref CollectingPerceptions,
+                        SetAtStart: true);
+                }
                 return _Perceptions;
             }
         }
+        private bool CollectingPerceptions;
 
         public bool WantSync;
 
@@ -93,6 +100,7 @@ namespace XRL.World.Parts
         public UD_PerceptionHelper()
         {
             _Perceptions = null;
+            CollectingPerceptions = false;
             WantSync = false;
         }
 
@@ -232,8 +240,7 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject.DebugName ?? "null"),
                 });
 
-            if (Perceptions?.HasWantEvent(ID, Cascade)
-                ?? false)
+            if (Perceptions?.HasWantEvent(ID, Cascade) ?? false)
                 return true;
 
             return false;

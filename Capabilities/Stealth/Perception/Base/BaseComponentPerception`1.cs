@@ -43,6 +43,7 @@ namespace StealthSystemPrototype.Perceptions
             IPurview Purview)
             : base(Owner, Level, Purview)
         {
+            this.Owner = Owner;
             this.Source = Source;
         }
         public BaseComponentPerception(
@@ -52,10 +53,6 @@ namespace StealthSystemPrototype.Perceptions
             : this(null, Source, Level, Purview)
         {
             Owner ??= GetOwner(Source);
-        }
-        public BaseComponentPerception(GameObject Basis, SerializationReader Reader)
-            : base(Basis, Reader)
-        {
         }
 
         #endregion
@@ -73,13 +70,6 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-
-        public override void Construct()
-        {
-            base.Construct();
-            Owner ??= GetOwner(Source);
-            Source = null;
-        }
 
         public abstract T GetSource();
 

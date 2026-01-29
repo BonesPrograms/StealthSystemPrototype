@@ -444,5 +444,17 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+
+        public static void ToggleDuringCall(Action Action, ref bool ToggleableBool, bool? SetAtStart = null)
+        {
+            if (SetAtStart != null)
+                ToggleableBool = (bool)SetAtStart;
+            else
+                ToggleableBool = !ToggleableBool;
+
+            Action.Invoke();
+
+            ToggleableBool = !ToggleableBool;
+        }
     }
 }

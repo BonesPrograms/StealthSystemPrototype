@@ -85,9 +85,26 @@ namespace StealthSystemPrototype.Perceptions
             set => _Purview = value;
         }
 
-        public virtual bool AffectedByLiquidCovered { get; protected set; }
-        public virtual bool AffectedByLiquidStained { get; protected set; }
-        public virtual string InsensitiveLiquids { get; protected set; }
+        private bool _AffectedByLiquidCovered = false;
+        public virtual bool AffectedByLiquidCovered
+        {
+            get => _AffectedByLiquidCovered;
+            protected set => _AffectedByLiquidCovered = value;
+        }
+
+        private bool _AffectedByLiquidStained = false;
+        public virtual bool AffectedByLiquidStained
+        {
+            get => _AffectedByLiquidStained;
+            protected set => _AffectedByLiquidStained = value;
+        }
+
+        private string _InsensitiveLiquids = null;
+        public virtual string InsensitiveLiquids
+        {
+            get => _InsensitiveLiquids;
+            protected set => _InsensitiveLiquids = value;
+        }
 
         #region Constructors
 
@@ -189,10 +206,6 @@ namespace StealthSystemPrototype.Perceptions
                   Purview: new OlfactoryPurview(Purview))
         {
         }
-        public OlfactoryBodyPartPerception(GameObject Basis, SerializationReader Reader)
-            : base(Basis, Reader)
-        {
-        }
 
         #endregion
         #region Serialization
@@ -218,7 +231,7 @@ namespace StealthSystemPrototype.Perceptions
             SerializationReader Reader,
             ref OlfactoryPurview Purview,
             IAlertTypedPerception<Olfactory, OlfactoryPurview> ParentPerception = null)
-            => Purview = new OlfactoryPurview(Reader, ParentPerception ?? this);
+            => Purview = Reader.ReadComposite<OlfactoryPurview>();
 
         public sealed override void ReadPurview(
             SerializationReader Reader,
@@ -256,14 +269,6 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-
-        public override void Construct()
-        {
-            base.Construct();
-            AffectedByLiquidCovered = false;
-            AffectedByLiquidStained = false;
-            InsensitiveLiquids = null;
-        }
 
         public override Type GetAlertType()
             => ((IAlertTypedPerception<Olfactory, OlfactoryPurview>)this).GetAlertType();

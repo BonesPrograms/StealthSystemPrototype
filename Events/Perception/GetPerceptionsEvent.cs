@@ -91,10 +91,10 @@ namespace StealthSystemPrototype.Events
             return this;
         }
 
-        public GetPerceptionsEvent RequirePerception<T>(
-            T Perception,
+        public GetPerceptionsEvent RequirePerception<P>(
+            P Perception,
             bool Creation = false)
-            where T : class, IPerception, new()
+            where P : class, IPerception, new()
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
@@ -105,7 +105,7 @@ namespace StealthSystemPrototype.Events
 
             Perceptions ??= new PerceptionRack(Perceiver);
 
-            if (!Perceptions.TryGet(out T perception))
+            if (!Perceptions.TryGet(out P perception))
             {
                 perception = Perception;
                 AddPerception(perception, DoRegistration: true, Creation);
@@ -116,49 +116,22 @@ namespace StealthSystemPrototype.Events
             return this;
         }
 
-        public GetPerceptionsEvent AddBodyPartPerception<P, V, A>(
-            BodyPart BodyPart,
-            int Level,
-            V Purview,
-            bool DoRegistration = true,
-            bool Creation = false)
-            where P : class, IBodyPartPerception, IAlertTypedPerception<A, V>, new()
-            where V : class, IPurview<A>, new()
-            where A : class, IAlert, new()
-        {
-            P perception = new()
-            {
-                Source = BodyPart,
-                Level = Level,
-                Purview = Purview,
-            };
-            if (perception != null)
-            {
-                perception.Purview.SetParentPerception(perception);
-                return AddPerception(
-                    Perception: perception,
-                    DoRegistration: DoRegistration,
-                    Creation: Creation);
-            }
-            return this;
-        }
-
         public GetPerceptionsEvent RequireBodyPartPerception<P>(
             BodyPart BodyPart,
             int Level,
             int Purview,
             bool Creation = false)
-            where P : class, IBodyPartPerception, new()
+            where P : class, IBodyPartPerception, IAlertTypedPerception, new()
         {
             P perception = new()
             {
                 Source = BodyPart,
                 Level = Level,
             };
-            perception.AssignDefaultPurview(Purview);
             if (perception != null)
             {
-                perception.Purview.SetParentPerception(perception);
+                perception.AssignDefaultPurview(Purview);
+                // perception.Purview.SetParentPerception(perception);
                 return RequirePerception(
                     Perception: perception,
                     Creation: Creation);

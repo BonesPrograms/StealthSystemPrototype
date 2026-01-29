@@ -12,13 +12,12 @@ using XRL.World.AI;
 using XRL.World.Parts;
 
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Alerts;
-using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Alerts;
-using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Detetection.Opinions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Detetection.ResponseGoals
 {

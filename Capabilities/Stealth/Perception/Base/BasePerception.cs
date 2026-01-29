@@ -205,12 +205,6 @@ namespace StealthSystemPrototype.Perceptions
 
         public BasePerception()
         {
-            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
-            {
-                using Indent indent = new(1);
-                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
-            }
-
             _Name = null;
             _ShortName = null;
 
@@ -220,18 +214,10 @@ namespace StealthSystemPrototype.Perceptions
             _Purview = null;
 
             _Cooldown = 0;
-
-            Construct();
         }
         public BasePerception(GameObject Owner)
             : this()
         {
-            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
-            {
-                using Indent indent = new(1);
-                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
-            }
-
             this.Owner = Owner;
         }
         public BasePerception(
@@ -240,25 +226,8 @@ namespace StealthSystemPrototype.Perceptions
             IPurview Purview)
             : this(Owner)
         {
-            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
-            {
-                using Indent indent = new(1);
-                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
-            }
-
             this.Level = Level;
             _Purview = Purview;
-        }
-        public BasePerception(GameObject Basis, SerializationReader Reader)
-            : this()
-        {
-            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
-            {
-                using Indent indent = new(1);
-                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
-            }
-
-            Read(Basis, Reader);
         }
 
         #endregion
@@ -293,21 +262,6 @@ namespace StealthSystemPrototype.Perceptions
             => Owner;
 
         #region Base Methods
-
-        /// <summary>
-        /// Called once inside the <see cref="IPerception"/>'s default constructor.
-        /// </summary>
-        /// <remarks>
-        /// Override only to make common initialization assignments for derived types.
-        /// </remarks>
-        public virtual void Construct()
-        {
-            if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
-            {
-                using Indent indent = new(1);
-                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
-            }
-        }
 
         /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as initial.

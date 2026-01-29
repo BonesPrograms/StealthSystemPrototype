@@ -32,7 +32,12 @@ namespace StealthSystemPrototype.Perceptions
             set => _Purview = value;
         }
 
-        public virtual LightLevel MinimumLightLevel { get; protected set; }
+        private LightLevel _MinimumLightLevel = IVisualPerception.DefaultMinimumLightLevel;
+        public virtual LightLevel MinimumLightLevel
+        {
+            get => _MinimumLightLevel;
+            protected set => _MinimumLightLevel = value;
+        }
 
         #region Constructors
 
@@ -105,10 +110,6 @@ namespace StealthSystemPrototype.Perceptions
             : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
         {
         }
-        public VisualBodyPartPerception(GameObject Basis, SerializationReader Reader)
-            : base(Basis, Reader)
-        {
-        }
 
         #endregion
         #region Serialization
@@ -134,7 +135,7 @@ namespace StealthSystemPrototype.Perceptions
             SerializationReader Reader,
             ref VisualPurview Purview,
             IAlertTypedPerception<Visual, VisualPurview> ParentPerception = null)
-            => Purview = new VisualPurview(Reader, ParentPerception ?? this);
+            => Purview = Reader.ReadComposite<VisualPurview>();
 
         public sealed override void ReadPurview(
             SerializationReader Reader,
@@ -159,21 +160,15 @@ namespace StealthSystemPrototype.Perceptions
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
-            Writer.WriteOptimized((byte)MinimumLightLevel);
+            Writer.WriteOptimized((byte)_MinimumLightLevel);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
-            MinimumLightLevel = (LightLevel)(byte)Reader.ReadOptimizedInt16();
+            _MinimumLightLevel = (LightLevel)(byte)Reader.ReadOptimizedInt16();
         }
 
         #endregion
-
-        public override void Construct()
-        {
-            base.Construct();
-            MinimumLightLevel = ((IVisualPerception)this).MinimumLightLevel;
-        }
 
         public override Type GetAlertType()
             => ((IAlertTypedPerception<Visual, VisualPurview>)this).GetAlertType();

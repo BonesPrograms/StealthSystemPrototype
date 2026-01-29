@@ -26,14 +26,14 @@ namespace StealthSystemPrototype.Perceptions
         : BasePerception
         , IBodyPartPerception
     {
-        protected string _SourceType;
+        protected string _SourceType = null;
         public virtual string SourceType
         {
             get => _SourceType;
             protected set => _SourceType = value;
         }
 
-        protected BodyPart _Source;
+        protected BodyPart _Source = null;
         public virtual BodyPart Source
         {
             get => _Source ??= GetSource();
@@ -53,6 +53,8 @@ namespace StealthSystemPrototype.Perceptions
             IPurview Purview)
             : base(Owner, Level, Purview)
         {
+            this.Owner = Owner;
+            _Source = Source;
             SourceType = Source.Type;
         }
         public BaseBodyPartPerception(
@@ -61,10 +63,7 @@ namespace StealthSystemPrototype.Perceptions
             IPurview Purview)
             : this(null, Source, Level, Purview)
         {
-        }
-        public BaseBodyPartPerception(GameObject Basis, SerializationReader Reader)
-            : base(Basis, Reader)
-        {
+            Owner ??= GetOwner(_Source);
         }
 
         #endregion
@@ -82,13 +81,6 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-
-        public override void Construct()
-        {
-            base.Construct();
-            SourceType = null;
-            Owner ??= GetOwner(Source);
-        }
 
         public virtual BodyPart GetSource()
             => ((IBodyPartPerception)this).GetSource();

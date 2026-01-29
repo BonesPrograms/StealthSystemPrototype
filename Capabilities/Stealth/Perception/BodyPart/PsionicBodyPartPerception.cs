@@ -33,9 +33,26 @@ namespace StealthSystemPrototype.Perceptions
             set => _Purview = value;
         }
 
-        public virtual bool RequiresConsciousness { get; protected set; }
-        public virtual bool IgnoreMentalShield { get; protected set; }
-        public virtual PsionicAttunement Attunement { get; protected set; }
+        private bool _RequiresConsciousness = true;
+        public virtual bool RequiresConsciousness
+        {
+            get => _RequiresConsciousness;
+            protected set => _RequiresConsciousness = value;
+        }
+
+        private bool _IgnoreMentalShield = false;
+        public virtual bool IgnoreMentalShield
+        {
+            get => _IgnoreMentalShield;
+            protected set => _IgnoreMentalShield = value;
+        }
+
+        private PsionicAttunement _Attunement = DefaultAttunement;
+        public virtual PsionicAttunement Attunement
+        {
+            get => _Attunement;
+            protected set => _Attunement = value;
+        }
 
         #region Constructors
 
@@ -85,10 +102,6 @@ namespace StealthSystemPrototype.Perceptions
                   Purview: Purview)
         {
         }
-        public PsionicBodyPartPerception(GameObject Basis, SerializationReader Reader)
-            : base(Basis, Reader)
-        {
-        }
 
         #endregion
         #region Serialization
@@ -114,7 +127,7 @@ namespace StealthSystemPrototype.Perceptions
             SerializationReader Reader,
             ref PsionicPurview Purview,
             IAlertTypedPerception<Psionic, PsionicPurview> ParentPerception = null)
-            => Purview = new PsionicPurview(Reader, ParentPerception ?? this);
+            => Purview = Reader.ReadComposite<PsionicPurview>();
 
         public sealed override void ReadPurview(
             SerializationReader Reader,
@@ -152,14 +165,6 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-
-        public override void Construct()
-        {
-            base.Construct();
-            RequiresConsciousness = ((IPsionicPerception)this).RequiresConsciousness;
-            IgnoreMentalShield = ((IPsionicPerception)this).IgnoreMentalShield;
-            Attunement = ((IPsionicPerception)this).Attunement;
-        }
 
         public override Type GetAlertType()
             => ((IAlertTypedPerception<Psionic, PsionicPurview>)this).GetAlertType();

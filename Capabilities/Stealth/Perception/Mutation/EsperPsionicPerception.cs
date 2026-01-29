@@ -85,10 +85,6 @@ namespace StealthSystemPrototype.Perceptions
                   Purview: Purview)
         {
         }
-        public EsperPsionicPerception(GameObject Basis, SerializationReader Reader)
-            : base(Basis, Reader)
-        {
-        }
 
         #endregion
         #region Serialization
@@ -100,7 +96,7 @@ namespace StealthSystemPrototype.Perceptions
             SerializationReader Reader,
             ref PsionicPurview Purview,
             IAlertTypedPerception<Psionic, PsionicPurview> ParentPerception = null)
-            => Purview = new PsionicPurview(Reader, ParentPerception ?? this);
+            => Purview = Reader.ReadComposite<PsionicPurview>();
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
@@ -112,9 +108,6 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-
-        public override void Construct()
-            => base.Construct();
 
         public override IPurview GetDefaultPurview(int Value)
             => GetDefaultPurview(

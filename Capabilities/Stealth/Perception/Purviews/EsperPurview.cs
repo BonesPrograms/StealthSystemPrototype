@@ -39,12 +39,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         {
         }
         public EsperPurview(EsperPurview Source)
-            : base(Source.ParentPerception, Source.Value, Source.Diffuser)
+            : base(null, Source.Value, Source.Diffuser)
         {
-        }
-        public EsperPurview(SerializationReader Reader, IAlertTypedPerception<Psionic, EsperPurview> ParentPerception)
-            : base(Reader, ParentPerception as IAlertTypedPerception<Psionic, PsionicPurview>)
-        {
+            ParentPerception = Source.ParentPerception;
         }
 
         #endregion
@@ -68,7 +65,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             => base.GetEffectiveValue();
 
         public override int GetPurviewAdjustment(
-            IAlertTypedPerception<Psionic, IPurview<Psionic>> ParentPerception,
+            IAlertTypedPerception ParentPerception,
             int Value = 0)
             => base.GetPurviewAdjustment(ParentPerception, Value) + (ParentPerception?.Owner?.Level ?? 0);
 

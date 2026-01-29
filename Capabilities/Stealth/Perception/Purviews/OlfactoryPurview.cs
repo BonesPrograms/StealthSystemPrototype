@@ -69,12 +69,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         {
         }
         public OlfactoryPurview(OlfactoryPurview Source)
-            : this(Source.ParentPerception, Source.Value, Source.Diffuser)
+            : this(null, Source.Value, Source.Diffuser)
         {
-        }
-        public OlfactoryPurview(SerializationReader Reader, IAlertTypedPerception<Olfactory, OlfactoryPurview> ParentPerception)
-            : base(Reader, ParentPerception as IAlertTypedPerception<Olfactory, IPurview<Olfactory>>)
-        {
+            ParentPerception = Source.ParentPerception;
         }
 
         #endregion
@@ -107,7 +104,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override int GetEffectiveValue()
             => base.GetEffectiveValue();
 
-        public override int GetPurviewAdjustment(IAlertTypedPerception<Olfactory, IPurview<Olfactory>> ParentPerception, int Value = 0)
+        public override int GetPurviewAdjustment(IAlertTypedPerception ParentPerception, int Value = 0)
             => base.GetPurviewAdjustment(ParentPerception, Value);
 
         public void AssignDefaultDiffuser()

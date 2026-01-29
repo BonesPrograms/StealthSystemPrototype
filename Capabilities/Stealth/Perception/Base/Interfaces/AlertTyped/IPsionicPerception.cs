@@ -40,11 +40,14 @@ namespace StealthSystemPrototype.Perceptions
             /// <summary>Any an all <see cref="Psionic"/> activity is detectable, whatever that might look like.</summary>
             Total,
         }
+
+        public static PsionicAttunement DefaultAttunement => PsionicAttunement.Sentient;
+
         public bool RequiresConsciousness => true;
 
         public bool IgnoreMentalShield => false;
 
-        public PsionicAttunement Attunement => PsionicAttunement.Sentient;
+        public PsionicAttunement Attunement => DefaultAttunement;
 
         public new bool CanPerceive(AlertContext Context)
         {

@@ -23,8 +23,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         , IComposite
         where A : IAlert, new()
     {
-        protected IAlertTypedPerception<A, IPurview<A>> _ParentPerception;
-        public virtual IAlertTypedPerception<A, IPurview<A>> ParentPerception
+        protected IAlertTypedPerception _ParentPerception;
+        public virtual IAlertTypedPerception ParentPerception
         {
             get => _ParentPerception;
             set => _ParentPerception = value;
@@ -57,13 +57,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             this.Value = Value;
         }
         public BasePurview(BasePurview<A> Source)
-            : this(Source.ParentPerception, Source.Value)
+            : this(null, Source.Value)
         {
-        }
-        public BasePurview(SerializationReader Reader, IAlertTypedPerception<A, IPurview<A>> ParentPerception)
-        {
-            _ParentPerception = ParentPerception;
-            Read(Reader);
+            ParentPerception = Source.ParentPerception;
         }
 
         #endregion
@@ -89,23 +85,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         {
         }
 
-        public virtual IPurview<A> SetParentPerception(IAlertTypedPerception<A, IPurview<A>> ParentPerception)
+        public virtual IPurview<A> SetParentPerception(IAlertTypedPerception ParentPerception)
         {
             _ParentPerception = ParentPerception;
             return this;
         }
 
         IPurview IPurview.SetParentPerception(IPerception ParentPerception)
-            => SetParentPerception((IAlertTypedPerception<A, IPurview<A>>)ParentPerception);
+        {
+            if (ParentPerception is IAlertTypedPerception typedPerception)
+                SetParentPerception(typedPerception);
+            return this;
+        }
 
         public virtual int GetEffectiveValue()
             => Value + GetPurviewAdjustment(ParentPerception, Value);
 
-        public virtual int GetPurviewAdjustment(IAlertTypedPerception<A, IPurview<A>> ParentPerception, int Value = 0)
+        public virtual int GetPurviewAdjustment(IAlertTypedPerception ParentPerception, int Value = 0)
             => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.Owner, ParentPerception, Value);
 
         int IPurview.GetPurviewAdjustment(IPerception ParentPerception, int Value)
-            => GetPurviewAdjustment(ParentPerception as IAlertTypedPerception<A, IPurview<A>>, Value);
+            => GetPurviewAdjustment(ParentPerception as IAlertTypedPerception, Value);
 
         public BasePurview<A> SetValue(int Value)
         {

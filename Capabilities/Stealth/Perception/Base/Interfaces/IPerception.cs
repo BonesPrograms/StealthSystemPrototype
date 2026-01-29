@@ -323,14 +323,6 @@ namespace StealthSystemPrototype.Perceptions
         public bool FireEvent(Event E);
 
         /// <summary>
-        /// Called once inside the <see cref="IPerception"/>'s default constructor.
-        /// </summary>
-        /// <remarks>
-        /// Override only to make common initialization assignments for derived types.
-        /// </remarks>
-        public void Construct();
-
-        /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as initial.
         /// </summary>
         public void Initialize();

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 
 using Genkit;
 
@@ -12,14 +13,12 @@ using XRL.World.AI;
 using XRL.World.Parts;
 
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Alerts;
-using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Alerts;
-using StealthSystemPrototype.Capabilities.Stealth.Perception;
-using System.Reflection;
 using StealthSystemPrototype.Detetection.ResponseGoals;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Detetection.Opinions
 {
