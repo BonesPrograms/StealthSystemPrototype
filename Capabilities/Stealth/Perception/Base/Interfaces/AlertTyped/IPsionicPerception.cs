@@ -1,17 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
-using StealthSystemPrototype.Detetections;
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Alerts;
-
-using XRL.Liquids;
 using XRL.World;
 using XRL.World.Effects;
 using XRL.World.Parts;
 using XRL.World.Parts.Mutation;
+
 using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
-using System;
 
 namespace StealthSystemPrototype.Perceptions
 {

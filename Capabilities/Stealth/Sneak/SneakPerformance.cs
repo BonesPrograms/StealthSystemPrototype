@@ -15,6 +15,8 @@ using StealthSystemPrototype.Perceptions;
 using static StealthSystemPrototype.Utils;
 
 using SerializeField = UnityEngine.SerializeField;
+using System.Diagnostics;
+using XRL.Language;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -127,40 +129,45 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public int this[IAlert Alert]
         {
-            get
-            {
-                if (Items != null)
-                    for (int i = 0; i < Count; i++)
-                        if (Items[i] is IAlert alert
-                            && alert.IsType(Alert.Type))
-                            return alert.Intensity;
-
-                throw new ArgumentOutOfRangeException(
-                    paramName: nameof(Alert),
-                    message: nameof(IAlert) + " (" + Alert.Name + ") " +
-                        "does not exist in Collection (this shouldn't be possible)");
-            }
-            set
-            {
-                if (Items != null)
-                    for (int i = 0; i < Count; i++)
-                        if (Items[i] is IAlert alert
-                            && alert.IsType(Alert.Type))
-                            alert.Intensity = value;
-
-                throw new ArgumentOutOfRangeException(
-                    paramName: nameof(Alert),
-                    message: nameof(IAlert) + " (" + Alert.Name + ") " +
-                        "does not exist in Collection (this shouldn't be possible)");
-            }
+            get => GetByType(Alert.Type).Intensity;
+            set => GetByType(Alert.Type).Intensity = value;
         }
 
         public int this[string AlertName]
-            => Items?.FirstOrDefault(a => a.Name == AlertName)?.Intensity ?? 0;
+        {
+            get => Items?.FirstOrDefault(a => a.Name == AlertName)?.Intensity ?? 0;
+            set
+            {
+                if (Items?.FirstOrDefault(a => a.Name == AlertName) is IAlert alert)
+                    alert.Intensity = value;
+                else
+                {
+                    ModInfo callingMod = ThisMod;
+
+                    StackTrace trace = new(1);
+                    StackFrame frame = null;
+                    for (int i = 0; i < 8; i++)
+                    {
+                        frame = trace?.GetFrame(i);
+                        if (frame.GetMethod()?.DeclaringType is Type declaringType
+                            && declaringType != typeof(SneakPerformance))
+                        {
+                            callingMod = ModManager.GetMod(declaringType.Assembly);
+                            break;
+                        }
+                    }
+                    MetricsManager.LogModWarning(
+                        mod: callingMod,
+                        Message: "Attempted to adjust " + nameof(alert.Intensity) + " of non-existent " + nameof(IAlert) + ": " + AlertName + ". " +
+                            "Did you mean " + IAlert.Alerts?.Aggregate("NO_MATCHING_ALERT", (a, n) => GetCloserMatch(AlertName, a, n.Name)) + "?\n" +
+                            frame);
+                }
+            }
+        }
 
         public string EntriesDebugString(out string Contents, string Delimiter = "\n")
         {
-            Contents = GetEntries()
+            Contents = Items
                 ?.Aggregate(
                     seed: "",
                     func: (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString());
@@ -235,7 +242,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             if ((CollectedStats[Stat] ??= new()) is List<StatCollectorEntry> statList)
                 for (int i = 0; i < statList.Count; i++)
-                    if (statList[i] is StatCollectorEntry entry 
+                    if (statList[i] is StatCollectorEntry entry
                         && (Filter == null
                             || Filter(entry)))
                         yield return entry;
@@ -244,77 +251,61 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IEnumerable<StatCollectorEntry> GetCollectedStats(string Stat)
             => GetCollectedStats(Stat, null);
 
-        
         public SneakPerformance SetRating(string AlertName, int Rating)
         {
-            this[AlertName].SetRating(Rating);
+            this[AlertName] = Rating;
             return this;
         }
-        public SneakPerformance AdjustRating(string SenseName, int Amount)
+        public SneakPerformance AdjustRating(string AlertName, int Amount)
         {
-            this[SenseName].AdjustRating(Amount);
+            this[AlertName] += Amount;
             return this;
         }
-        public SneakPerformance SetMax(string SenseName, int Max)
+        public SneakPerformance SetMax(string AlertName, int Max)
         {
-            this[SenseName].SetMax(Max);
+            this[AlertName] =  Math.Min(this[AlertName], Max);
             return this;
         }
-
-        public A GetAlert<A>(int Intensity)
-            where A : class, IAlert, new()
+        public SneakPerformance SetMin(string AlertName, int Min)
         {
-            A alert = new()
-            {
-                Intensity = Intensity
-            };
-            alert.AdjustIntensity(-GetEntry<A>().Rating);
-            return alert;
+            this[AlertName] =  Math.Max(Min, this[AlertName]);
+            return this;
+        }
+        public SneakPerformance SetClamp(string AlertName, InclusiveRange Clamp)
+            => SetMin(AlertName, Clamp.Min)
+                .SetMax(AlertName, Clamp.Max);
+
+        public IAlert GetByType(Type AlertType)
+        {
+            if (Items != null)
+                for (int i = 0; i < Count; i++)
+                    if (Items[i] is IAlert alert
+                        && alert.IsType(AlertType))
+                        return alert;
+
+            throw new ArgumentOutOfRangeException(
+                paramName: nameof(AlertType),
+                message: nameof(AlertType) + " (" + AlertType.ToStringWithGenerics() + ") " +
+                    "does not exist in Collection (this should be impossible).");
         }
 
-        public IEnumerable<AlertRating> GetEntries(Predicate<AlertRating> Filter)
-        {
-            foreach ((string _, AlertRating entry) in PerformanceEntries ?? new())
-                if (Filter == null
-                    || Filter(entry))
-                    yield return entry;
-        }
+        public IAlert GetMatchingAlert(IAlert Alert)
+            => GetByType(Alert.Type);
 
-        public AlertRating GetEntry<A>()
-            where A : class, IAlert, new()
-            => this[new A()];
+        public bool Contains<A>(A Alert)
+            where A : IAlert
+            => Items?.Any(a => a.IsType(Alert.Type)) ?? false;
 
-        public IEnumerable<AlertRating> GetEntries()
-            => GetEntries((Predicate<AlertRating>)null);
-
-        public IEnumerable<AlertRating> GetEntries(Predicate<IAlert> Filter)
-            => GetEntries((AlertRating e) => Filter == null || Filter(e.Alert));
-
-        public IEnumerable<AlertRating> GetEntries(Predicate<int> Filter)
-            => GetEntries((AlertRating e) => Filter == null || Filter(e.Rating));
-
-        public static AlertRating HigherRated(AlertRating First, AlertRating Second)
+        public static IAlert HigherRated(IAlert First, IAlert Second)
             => First == null
-                || Second.CompareTo(First) > 0 
-            ? Second 
+                || Second.Intensity.CompareTo(First.Intensity) > 0
+            ? Second
             : First;
 
-        public static AlertRating HigherPotential(AlertRating First, AlertRating Second)
-            => First == null
-                || Second.Clamp.CompareTo(First.Clamp) > 0 
-            ? Second 
-            : First;
-
-        public AlertRating GetHighestRatedEntry()
-            => GetEntries()
+        public IAlert GetHighestRatedEntry()
+            => Items
                 ?.Aggregate(
-                    seed: (AlertRating)null,
+                    seed: (IAlert)null,
                     func: HigherRated);
-
-        public AlertRating GetHighestPotentialEntry()
-            => GetEntries()
-                ?.Aggregate(
-                    seed: (AlertRating)null,
-                    func: HigherPotential);
     }
 }

@@ -7,35 +7,85 @@ using StealthSystemPrototype.Alerts;
 
 using XRL.Collections;
 using XRL.World;
+using System.Linq;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public abstract class BaseConcealedAction : Rack<IAlert>, IConcealedAction
     {
-        private GameObject _Actor;
+        protected string _ID;
+        public string ID
+        {
+            get => _ID;
+            protected set => _ID = value;
+        }
+
+        protected string _Name;
+        public string Name
+        {
+            get => _Name;
+            protected set => _Name = value;
+        }
+
+        protected string _Action;
+        public virtual string Action
+        {
+            get => _Action;
+            protected set => _Action = value;
+        }
+
+        protected GameObject _Actor;
         public GameObject Actor
         {
             get => _Actor;
             protected set => _Actor = value;
         }
 
+        protected GameObject _AlertObject;
+        public virtual GameObject AlertObject
+        {
+            get => _AlertObject;
+            protected set => _AlertObject = value;
+        }
+
+        protected Cell _AlertLocation;
+        public virtual Cell AlertLocation
+        {
+            get => _AlertLocation;
+            protected set => _AlertLocation = value;
+        }
+
+        protected SneakPerformance _SneakPerformance;
+        public virtual SneakPerformance SneakPerformance
+        {
+            get => _SneakPerformance;
+            protected set => _SneakPerformance = value;
+        }
+
+        protected bool _Aggressive;
+        public virtual bool Aggressive
+        {
+            get => _Aggressive;
+            protected set => _Aggressive = value;
+        }
+
         public int MinID;
-        public string ID;
-        public string Name;
 
         protected IEvent SourceEvent;
-
-        public bool Aggressive;
 
         public string Description;
 
         protected BaseConcealedAction()
         {
-            Actor = null;
 
             MinID = 0;
             ID = null;
             Name = null;
+            Action = null;
+
+            Actor = null;
+            AlertObject = null;
+            AlertLocation = null;
 
             SourceEvent = null;
 
@@ -68,11 +118,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
         }
 
+        /*
         public BaseConcealedAction AdjustSenseIntensities(SneakPerformance Performance)
         {
-            foreach (ISense sense in this)
-                sense.AdjustIntensity(-Performance[sense].Rating);
+            foreach (IAlert alert in this)
+                alert.AdjustIntensity(-Performance[alert]);
             return this;
         }
+        */
     }
 }

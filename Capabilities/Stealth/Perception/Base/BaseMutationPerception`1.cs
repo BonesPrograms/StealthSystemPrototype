@@ -5,6 +5,7 @@ using System.Text;
 
 using XRL.Rules;
 using XRL.World;
+using XRL.World.Parts;
 using XRL.World.Parts.Mutation;
 
 using StealthSystemPrototype;
@@ -14,7 +15,6 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
-using XRL.World.Parts;
 
 namespace StealthSystemPrototype.Perceptions
 {

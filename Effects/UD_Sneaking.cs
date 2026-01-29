@@ -303,8 +303,7 @@ namespace XRL.World.Effects
                     Hider: E.Actor,
                     Performance: SneakPerformance,
                     ConcealedAction: CommandEventsToConceal[E.Command]
-                        ?.SetEvent(E)
-                        ?.AdjustSenseIntensities(SneakPerformance));
+                        ?.SetEvent(E));
             }
             return base.HandleEvent(E);
         }

@@ -32,10 +32,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public Cell AlertLocation { get; }
 
-        public bool Aggressive { get; }
-
         public SneakPerformance SneakPerformance { get; }
 
-        public int this[IAlert Alert] { get; }
+        public bool Aggressive { get; }
     }
 }

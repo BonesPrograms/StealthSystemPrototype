@@ -61,12 +61,6 @@ namespace StealthSystemPrototype.Perceptions
             IPurview Purview)
             : this(null, Source, Level, Purview)
         {
-            using Indent indent = new(1);
-            if (Owner == null)
-            {
-                Debug.LogCritical("Assigned " + nameof(Owner), Debug.CallingTypeAndMethodNames(), Indent: indent);
-                Owner ??= GetOwner(Source);
-            }
         }
         public BaseBodyPartPerception(GameObject Basis, SerializationReader Reader)
             : base(Basis, Reader)
@@ -93,12 +87,7 @@ namespace StealthSystemPrototype.Perceptions
         {
             base.Construct();
             SourceType = null;
-            using Indent indent = new(1);
-            if (Owner == null)
-            {
-                Debug.LogCritical("Assigned " + nameof(Owner), Debug.CallingTypeAndMethodNames(), Indent: indent);
-                Owner ??= GetOwner(Source);
-            }
+            Owner ??= GetOwner(Source);
         }
 
         public virtual BodyPart GetSource()

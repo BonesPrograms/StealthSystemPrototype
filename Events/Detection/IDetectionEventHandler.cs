@@ -3,7 +3,8 @@
 namespace StealthSystemPrototype.Events
 {
     public interface IDetectionEventHandler
-        : IModEventHandler<BeforeDetectedEvent>
+        : IModEventHandler<GetDetectionOpinionEvent>
+        , IModEventHandler<BeforeDetectedEvent>
         , IModEventHandler<AfterDetectedEvent>
     {
     }

@@ -13,13 +13,13 @@ using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Detetections;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Perceptions.IPsionicPerception;
+using StealthSystemPrototype.Detetection.Opinions;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -142,11 +142,11 @@ namespace StealthSystemPrototype.Perceptions
         public override bool CanPerceiveAlert(IAlert Alert)
             => ((IAlertTypedPerception<Visual, IPurview<Visual>>)this).CanPerceiveAlert(Alert);
 
-        public override bool TryPerceive(AlertContext Context)
-            => base.TryPerceive(Context);
+        public override bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
+            => base.TryPerceive(Context, out SuccessMargin, out FailureMargin);
 
-        public override IOpinionDetection RaiseDetection(AlertContext Context)
-            => base.RaiseDetection(Context);
+        public override IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin)
+            => base.RaiseDetection(Context, SuccessMargin);
 
         public override Esper GetSource()
             => base.GetSource();

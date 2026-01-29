@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using XRL.Collections;
 
 using XRL.World;
 
 using StealthSystemPrototype.Perceptions;
-using XRL.Collections;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {

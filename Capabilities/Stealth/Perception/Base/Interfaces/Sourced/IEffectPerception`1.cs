@@ -1,5 +1,5 @@
 ﻿using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Detetections;
+
 using XRL.World;
 
 namespace StealthSystemPrototype.Perceptions

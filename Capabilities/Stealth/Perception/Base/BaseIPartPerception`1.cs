@@ -5,7 +5,6 @@ using System.Text;
 
 using XRL.Rules;
 using XRL.World;
-using XRL.World.Parts.Mutation;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;

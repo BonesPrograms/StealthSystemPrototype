@@ -12,11 +12,11 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Const;
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 namespace XRL.World.Parts
 {
@@ -214,6 +214,7 @@ namespace XRL.World.Parts
             if (ID.EqualsAny(
                 args: new int[]
                 {
+                    EndTurnEvent.ID,
                     GetPerceptionsEvent.ID,
                     AdjustTotalPerceptionLevelEvent.ID,
                     AdjustTotalPurviewEvent.ID,
@@ -249,6 +250,11 @@ namespace XRL.World.Parts
             return base.HandleEvent(E)
                 && (Perceptions?.DelegateHandleEvent(E)
                     ?? true);
+        }
+        public override bool HandleEvent(EndTurnEvent E)
+        {
+            Perceptions?.TickCooldowns();
+            return base.HandleEvent(E);
         }
         public override bool HandleEvent(RegenerateDefaultEquipmentEvent E)
         {

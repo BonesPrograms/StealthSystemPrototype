@@ -47,17 +47,20 @@ namespace StealthSystemPrototype.Perceptions
             GameObject hider = Context.Hider;
             GameObject alertObject = Context.AlertObject;
 
-            string perceptionName = Context.Perception.Name;
-            string alertName = Context.Alert.Name;
+            IPerception perception = Context.Perception;
+            IAlert alert = Context.Alert;
+
+            string perceptionName = perception.Name;
+            string alertName = alert.Name;
 
             string action = Context.ParentAction.Action;
 
             NaturalRoll = Stat.Random(1, 20);
             Roll = NaturalRoll;
 
-            Difficulty = BaseDifficulty + (Context.Alert.Intensity - Context.AlertConcealment);
+            Difficulty = BaseDifficulty + (alert.Intensity - Context.AlertConcealment);
 
-            Roll += Context.Perception.Level;
+            Roll += perception.Level;
 
             ModifyAttackingSaveEvent.Process(
                 Attacker: hider,
@@ -103,19 +106,29 @@ namespace StealthSystemPrototype.Perceptions
                     IgnoreNatural1: ref IgnoreNatural1,
                     IgnoreNatural20: ref IgnoreNatural20,
                     Actual: true);
+
             if (perceiver.IsPlayer())
             {
-                switch (perceptionName)
-                {
-                    case "Intelligence":
-                    case "Ego":
-                    case "Willpower":
-                        perceiver.PlayWorldSound("sfx_ability_mutation_mental_generic_save");
-                        break;
-                    default:
-                        perceiver.PlayWorldSound("sfx_ability_mutation_physical_generic_save");
-                        break;
-                }
+                if (alert.Type.EqualsAny(
+                    args: new Type[]
+                    {
+                        typeof(Psionic),
+                        typeof(Visual),
+                        typeof(Auditory),
+                    }))
+                    perceiver.PlayWorldSound("sfx_ability_mutation_mental_generic_save");
+                else
+                if (alert.Type.EqualsAny(
+                    args: new Type[]
+                    {
+                        typeof(Olfactory),
+                        typeof(Thermal),
+                        typeof(Kinesthetic),
+                    }))
+                    perceiver.PlayWorldSound("sfx_ability_mutation_physical_generic_save");
+                else
+                    perceiver.PlayWorldSound("Sounds/Abilities/sfx_ability_mutation_physicalDefect_generic_activate");
+
             }
 
             if (!LogRoll
@@ -267,6 +280,10 @@ namespace StealthSystemPrototype.Perceptions
 
         public int EffectiveLevel { get; }
 
+        public int Cooldown { get; set; }
+
+        public int MaxCooldown { get; }
+
         #region Serialization
 
         public void FinalizeRead(SerializationReader Reader);
@@ -358,6 +375,21 @@ namespace StealthSystemPrototype.Perceptions
 
         public bool SameAs(IPerception Other);
 
+        public bool IsOnCooldown()
+            => Cooldown > 0;
+
+        public void TickCooldown()
+            => (--Cooldown).Clamp(0, MaxCooldown);
+
+        public void GoOnCooldown(int Cooldown)
+            => this.Cooldown = Cooldown.Clamp(0, MaxCooldown);
+
+        public void GoOnCooldown()
+            => Cooldown = MaxCooldown;
+
+        public void GoOffCooldown()
+            => Cooldown = 0;
+
         public bool CheckInPurview(AlertContext Context);
 
         public bool CanPerceiveAlert(IAlert Alert);
@@ -366,7 +398,7 @@ namespace StealthSystemPrototype.Perceptions
             => Context?.Alert is IAlert alert
             && CanPerceiveAlert(alert);
 
-        public bool TryPerceive(AlertContext Context);
+        public bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin);
 
         public IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin);
 

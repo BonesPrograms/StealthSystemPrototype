@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Detetections;
 using XRL.World;
+
+using StealthSystemPrototype.Capabilities.Stealth;
 
 namespace StealthSystemPrototype.Perceptions
 {

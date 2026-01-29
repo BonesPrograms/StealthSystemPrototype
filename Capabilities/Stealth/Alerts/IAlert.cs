@@ -4,11 +4,12 @@ using System.Linq;
 
 using XRL;
 using XRL.World;
+
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -98,7 +99,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     {
                         MetricsManager.LogModError(
                             mod: ModManager.GetMod(alertType.Assembly),
-                            Message: CallChain(nameof(Utils), nameof(GetSenses)) + ": " +
+                            Message: CallChain(nameof(Utils), nameof(CacheAlerts)) + ": " +
                                 alertType.ToStringWithGenerics() + " didn't like being constructed.\n" + x);
 
                         indent.SetIndent(0);
@@ -147,7 +148,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     {
                         MetricsManager.LogModError(
                             mod: ModManager.GetMod(alertType.Assembly),
-                            Message: CallChain(nameof(Utils), nameof(GetSenses)) + ": " +
+                            Message: CallChain(nameof(Utils), nameof(CacheAlertsByName)) + ": " +
                                 alertType.ToStringWithGenerics() + " didn't like being constructed.\n" + x);
 
                         indent.SetIndent(0);
@@ -202,7 +203,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     {
                         MetricsManager.LogModError(
                             mod: ModManager.GetMod(alertType.Assembly),
-                            Message: CallChain(nameof(Utils), nameof(GetSenses)) + ": " +
+                            Message: CallChain(nameof(Utils), nameof(CacheAlertTypesByName)) + ": " +
                                 alertType.ToStringWithGenerics() + " didn't like being constructed.\n" + x);
 
                         indent.SetIndent(0);

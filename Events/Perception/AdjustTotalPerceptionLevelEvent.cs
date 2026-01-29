@@ -6,13 +6,12 @@ using XRL.World;
 using XRL.World.Parts;
 using XRL.Rules;
 
-using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Perceptions.IPerception;
-using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Events
 {

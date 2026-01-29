@@ -5,10 +5,11 @@ using System.Text;
 
 using XRL.World;
 
-using StealthSystemPrototype.Perceptions;
-using static StealthSystemPrototype.Utils;
 using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Perceptions;
+
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
+using static StealthSystemPrototype.Utils;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {

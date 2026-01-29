@@ -485,8 +485,13 @@ namespace StealthSystemPrototype.Logging
                     ? "NULL_METHOD"
                     : null;
 
+            string genericsString = null;
+            if (!MethodBase.IsConstructor
+                && MethodBase.IsGenericMethod)
+                genericsString = MethodBase.GetGenericArguments().GenericsString();
+
             return MethodBase.Name +
-                MethodBase.GetGenericArguments().GenericsString() +
+                genericsString +
                 MethodBase.GetParameters().ParamsString();
         }
 

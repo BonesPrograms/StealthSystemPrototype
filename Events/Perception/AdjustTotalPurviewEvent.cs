@@ -5,15 +5,13 @@ using System.Text;
 using XRL.World;
 using XRL.World.Parts;
 
-using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-
-using static StealthSystemPrototype.Perceptions.IPerception;
 using static StealthSystemPrototype.Capabilities.Stealth.Perception.IPurview;
-using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 namespace StealthSystemPrototype.Events
 {

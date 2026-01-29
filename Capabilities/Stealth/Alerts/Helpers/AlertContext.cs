@@ -1,17 +1,18 @@
 ﻿using System;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Text;
-
-using StealthSystemPrototype.Capabilities.Stealth;
-using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
-using StealthSystemPrototype.Perceptions;
 
 using XRL.World;
 using XRL.World.AI.Pathfinding;
 using XRL.World.Effects;
 using XRL.World.Parts;
+
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
-using System.Reflection;
+
+using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 namespace StealthSystemPrototype.Alerts
 {

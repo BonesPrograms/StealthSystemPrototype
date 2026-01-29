@@ -5,11 +5,10 @@ using System.Text;
 
 using XRL.World;
 
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Alerts;
-using XRL.World.AI.Pathfinding;
-using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {

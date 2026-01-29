@@ -1,9 +1,9 @@
-﻿using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Detetections;
+﻿using System.Collections.Generic;
+
 using XRL.World;
-using XRL.World.Parts.Skill;
 using XRL.World.Parts.Mutation;
-using System.Collections.Generic;
+
+using StealthSystemPrototype.Capabilities.Stealth;
 
 namespace StealthSystemPrototype.Perceptions
 {

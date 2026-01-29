@@ -8,11 +8,11 @@ using XRL.World.Parts;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Events
 {

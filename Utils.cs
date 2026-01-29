@@ -16,6 +16,7 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Const;
 
 using Debug = StealthSystemPrototype.Logging.Debug;
+using XRL.Language;
 
 namespace StealthSystemPrototype
 {
@@ -260,6 +261,11 @@ namespace StealthSystemPrototype
                 ? CompareCeilingThenFloor(x, y)
                 : 0;
         }
+
+        public static string GetCloserMatch(string Search, string Current, string Next)
+            => Grammar.LevenshteinDistance(Search, Current).CompareTo(Grammar.LevenshteinDistance(Search, Next)) < 0
+            ? Current
+            : Next;
 
         #endregion
         #region Strings

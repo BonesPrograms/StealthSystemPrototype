@@ -8,9 +8,10 @@ using XRL.World;
 using XRL.World.AI;
 
 using StealthSystemPrototype.Events;
-using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.Opinions;
+using StealthSystemPrototype.Capabilities.Stealth;
 
 namespace StealthSystemPrototype.Detetection.ResponseGoals
 {

@@ -11,16 +11,15 @@ using XRL.World.Parts;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
+using static StealthSystemPrototype.Perceptions.BasePerception;
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Const;
-using StealthSystemPrototype.Alerts;
-using StealthSystemPrototype.Capabilities.Stealth.Perception;
-using StealthSystemPrototype.Alerts;
-using static StealthSystemPrototype.Perceptions.BasePerception;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -142,7 +141,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             GameObject Entity)
             => Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next.ToString(Short: Short);
 
-        private string AggregatePerceptionSense(
+        private string AggregatePerceptionAlert(
             string Accumulator,
             IPerception Next,
             string Delimiter,
@@ -173,7 +172,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             IPerception[] items = new IPerception[Count];
             Array.Copy(Items, items, Count);
-            return items?.Aggregate("", (a, n) => AggregatePerceptionSense(a, n, Delimiter, Short, Entity, Alert));
+            return items?.Aggregate("", (a, n) => AggregatePerceptionAlert(a, n, Delimiter, Short, Entity, Alert));
         }
 
         public virtual string ToString(
@@ -523,6 +522,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return output;
         }
 
+        public virtual void TickCooldowns()
+        {
+            foreach (IPerception perception in this)
+                perception.TickCooldown();
+        }
+        public void PutAllOnCooldown(int Cooldown)
+        {
+            foreach (IPerception perception in this)
+                perception.GoOnCooldown(Cooldown);
+        }
+        public void PutAllOnCooldown()
+        {
+            foreach (IPerception perception in this)
+                perception.GoOnCooldown();
+        }
+        public void TakeAllOffCooldown()
+        {
+            foreach (IPerception perception in this)
+                perception.GoOffCooldown();
+        }
+
         public virtual bool CanPerceiveAlert(IAlert Alert)
         {
             if (Alert == null)
@@ -560,13 +580,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             bool any = false;
             List<IPerception> highestFirst = GetPerceptionsBestFirst(Context)?.ToList() ?? new();
             foreach (IPerception perception in highestFirst)
-            {
-                if (perception.TryPerceive(Context))
-                {
-                    any = true;
-                    perception.RaiseDetection(Context);
-                }
-            }
+                any = perception.TryPerceive(Context, out _, out _) || any;
+
             return any;
         }
 
@@ -628,6 +643,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
         public bool HasWantEvent(int ID, int Cascade)
         {
+            if (Items.IsNullOrEmpty())
+                return false;
+
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
@@ -790,7 +808,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             foreach (IAlert alert in ConcealedAction)
                 for (int i = 0; i < Count; i++)
                     if (Items[i] is IAlertTypedPerception typedPerception
-                        && typedPerception.AlertType == alert.Type)
+                        && alert.IsType(typedPerception.AlertType))
                     yield return new AlertContext(
                         ParentAction: ConcealedAction,
                         Perception: typedPerception,

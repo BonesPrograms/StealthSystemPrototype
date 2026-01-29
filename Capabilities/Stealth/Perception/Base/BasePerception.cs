@@ -21,9 +21,11 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 
 using SerializeField = UnityEngine.SerializeField;
+using XRL.Collections;
 
 namespace StealthSystemPrototype.Perceptions
 {
+    [HasModSensitiveStaticCache]
     [StealthSystemBaseClass]
     [Serializable]
     public abstract class BasePerception
@@ -94,6 +96,61 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Const & Static Values
 
+        [ModSensitiveStaticCache]
+        public static Dictionary<Type, int[]> PerceptionEvents;
+
+        [ModSensitiveCacheInit]
+        public static void InitializeCache()
+        {
+            PerceptionEvents = new();
+
+            Type[] renderMethodArgType = new Type[1] { typeof(RenderEvent) };
+            Type[] turnTickArgTypes = new Type[2]
+            {
+                typeof(long),
+                typeof(int)
+            };
+
+            List<Type> baseTypes = new()
+            {
+                typeof(IComponent<GameObject>),
+            };
+
+            if (ModManager.GetTypesWithAttribute(typeof(StealthSystemBaseClassAttribute)) is List<Type> stealthSystemBaseTypes
+                && stealthSystemBaseTypes.Count > 0)
+                baseTypes.AddRange(stealthSystemBaseTypes);
+
+            IEnumerable<Type> perceptionTypes = ModManager.ActiveTypes
+                .Where(t => typeof(IComponent<GameObject>).IsAssignableFrom(t))
+                .Where(t => typeof(IPerception).IsAssignableFrom(t))
+                .Where(t => !t.IsAbstract)
+                ;
+
+            Type[] baseTypesArray = baseTypes.ToArray();
+
+            Rack<int> eventIDRack = new();
+            foreach (Type perceptionType in perceptionTypes)
+            {
+                if (!perceptionType.GetMethod(nameof(Render), renderMethodArgType).DeclaringType.EqualsAny(baseTypesArray))
+                    eventIDRack.Add(RenderEvent.ID);
+
+                if (!perceptionType.GetMethod(nameof(OverlayRender), renderMethodArgType).DeclaringType.EqualsAny(baseTypesArray))
+                    eventIDRack.Add(RenderEvent.OverlayID);
+
+                if (!perceptionType.GetMethod(nameof(FinalRender), renderMethodArgType).DeclaringType.EqualsAny(baseTypesArray))
+                    eventIDRack.Add(RenderEvent.FinalID);
+
+                if (!perceptionType.GetMethod(nameof(TurnTick), turnTickArgTypes).DeclaringType.EqualsAny(baseTypesArray))
+                    eventIDRack.Add(TurnTickID);
+
+                if (eventIDRack.Count > 0)
+                {
+                    PerceptionEvents[perceptionType] = eventIDRack.ToArray();
+                    eventIDRack.Clear();
+                }
+            }
+        }
+
         #endregion
         #region Instance Fields & Properties
 
@@ -134,6 +191,15 @@ namespace StealthSystemPrototype.Perceptions
             set => _Purview = value;
         }
 
+        protected int _Cooldown;
+        public virtual int Cooldown
+        {
+            get => _Cooldown;
+            set => _Cooldown = value.Clamp(0, MaxCooldown);
+        }
+
+        public virtual int MaxCooldown => 10;
+
         #endregion
         #region Constructors
 
@@ -142,7 +208,7 @@ namespace StealthSystemPrototype.Perceptions
             if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
             {
                 using Indent indent = new(1);
-                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
             }
 
             _Name = null;
@@ -153,6 +219,8 @@ namespace StealthSystemPrototype.Perceptions
             _Level = 0;
             _Purview = null;
 
+            _Cooldown = 0;
+
             Construct();
         }
         public BasePerception(GameObject Owner)
@@ -161,7 +229,7 @@ namespace StealthSystemPrototype.Perceptions
             if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
             {
                 using Indent indent = new(1);
-                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
             }
 
             this.Owner = Owner;
@@ -175,7 +243,7 @@ namespace StealthSystemPrototype.Perceptions
             if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
             {
                 using Indent indent = new(1);
-                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
             }
 
             this.Level = Level;
@@ -187,7 +255,7 @@ namespace StealthSystemPrototype.Perceptions
             if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
             {
                 using Indent indent = new(1);
-                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
             }
 
             Read(Basis, Reader);
@@ -237,7 +305,7 @@ namespace StealthSystemPrototype.Perceptions
             if (Debug.TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod))
             {
                 using Indent indent = new(1);
-                Debug.LogCritical(callingMethod.MethodSignature(true), Indent: indent);
+                Debug.LogCritical(CallChain(GetType().Name, callingMethod.MethodSignature(true)), Indent: indent);
             }
         }
 
@@ -318,14 +386,14 @@ namespace StealthSystemPrototype.Perceptions
                 return;
             }
             Register(Object, EventRegistrar.Get(Object, this));
-            /* This is base game code which should be investigated and possibly emulated 
-            if (ComponentReflection.EffectEvents.TryGetValue(GetType(), out var value))
+
+            if (PerceptionEvents.TryGetValue(GetType(), out int[] cachedEventIDs))
             {
                 Object.CurrentCell?.FlushRenderCache();
-                for (int i = 0; i < value.Length; i++)
-                    Object.RegisterEvent(this, value[i]);
+                for (int i = 0; i < cachedEventIDs.Length; i++)
+                    Object.RegisterEvent(this, cachedEventIDs[i]);
             }
-            */
+
             if (WantEvent(EndTurnEvent.ID, EndTurnEvent.CascadeLevel))
                 Object.RegisterEvent(this, EndTurnEvent.ID);
         }
@@ -336,11 +404,11 @@ namespace StealthSystemPrototype.Perceptions
             if (!Active)
             {
                 Register(Object, registrar);
-                /* This is base game code which should be investigated and possibly emulated 
-                if (ComponentReflection.PartEvents.TryGetValue(GetType(), out var value))
-                    for (int i = 0; i < value.Length; i++)
-                        Object.UnregisterEvent(this, value[i]);
-                */
+
+                if (PerceptionEvents.TryGetValue(GetType(), out int[] cachedEventIDs))
+                    for (int i = 0; i < cachedEventIDs.Length; i++)
+                        Object.UnregisterEvent(this, cachedEventIDs[i]);
+
                 if (WantEvent(EndTurnEvent.ID, EndTurnEvent.CascadeLevel))
                     Object.UnregisterEvent(this, EndTurnEvent.ID);
             }
@@ -367,8 +435,6 @@ namespace StealthSystemPrototype.Perceptions
         public virtual bool HandleEvent(GetWitnessesEvent E)
             => true;
 
-        // this currently unlikely to ever be called, based on how collection and dispatch happens,
-        // but it is a goal to get it working.
         public virtual bool HandleEvent(GetPerceptionsEvent E)
             => true;
 
@@ -407,6 +473,21 @@ namespace StealthSystemPrototype.Perceptions
         public virtual string GetName(bool Short = false)
             => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
 
+        public virtual bool IsOnCooldown()
+            => Cooldown > 0;
+
+        public virtual void TickCooldown()
+            => (--Cooldown).Clamp(0, MaxCooldown);
+
+        public virtual void GoOnCooldown(int Cooldown)
+            => this.Cooldown = Cooldown.Clamp(0, MaxCooldown);
+
+        public virtual void GoOnCooldown()
+            => Cooldown = MaxCooldown;
+
+        public virtual void GoOffCooldown()
+            => Cooldown = 0;
+
         public virtual bool CheckInPurview(AlertContext Context)
         {
             using Indent indent = new(1);
@@ -426,8 +507,11 @@ namespace StealthSystemPrototype.Perceptions
         public virtual bool CanPerceive(AlertContext Context)
             => ((IPerception)this).CanPerceive(Context);
 
-        public virtual bool TryPerceive(AlertContext Context)
+        public virtual bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
         {
+            SuccessMargin = 0;
+            FailureMargin = 0;
+
             if (Context == null)
                 return false;
 
@@ -437,18 +521,21 @@ namespace StealthSystemPrototype.Perceptions
             if (!CanPerceiveAlert(Context.Alert))
                 return false;
 
+            if (IsOnCooldown())
+                return false;
+
             bool madeSave = IPerception.MakeSave(
-                SuccessMargin: out int successMargin,
-                FailureMargin: out int failureMargin,
+                SuccessMargin: out SuccessMargin,
+                FailureMargin: out FailureMargin,
                 Context: Context,
                 BaseDifficulty: 10);
 
             if (!madeSave)
             {
-                // use the failure margin to do something, probably a turns-based cooldown where attempts to perceive are blocked.
+                GoOnCooldown(SuccessMargin);
                 return false;
             }
-            RaiseDetection(Context, successMargin);
+            RaiseDetection(Context, FailureMargin);
             return true;
         }
 
@@ -464,42 +551,21 @@ namespace StealthSystemPrototype.Perceptions
                 });
 
             AwarenessLevel level = AwarenessLevel.Aware;
+
             if (SuccessMargin >= 10)
                 level++;
             if (SuccessMargin >= 20)
                 level = AwarenessLevel.Alert;
 
-            return Owner.Brain.AddOpinionDetection<Curious>(Context, level);
+            return Owner.Brain.AddOpinionDetection(
+                Detection: GetDetectionOpinionEvent.GetFor(
+                    Perceiver: Owner,
+                    Hider: Context.Hider,
+                    Detection: new Curious(),
+                    Level: ref level),
+                Context: Context,
+                Level: level);
         }
-
-        /*
-        public bool RaiseAlert<TSense, TAlert>(AlertContext<TSense> Context, ISense<TSense> Sense, AwarenessLevel Level, bool? OverridesCombat = null)
-            where TSense : ISense<TSense>, new()
-            where TAlert : Detection<IPerception<TSense>, TSense>, new()
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Owner), Owner.MiniDebugName()),
-                    Debug.Arg(nameof(Sense), Sense?.Name ?? "NO_SENSE"),
-                    Debug.Arg(nameof(Level), Level.ToStringWithNum()),
-                    Debug.Arg(YehNah(OverridesCombat), nameof(OverridesCombat)),
-                });
-
-            if ((Context?.Perceiver?.Brain?.FindAlert(Context?.TypedPerception)?.Level ?? AwarenessLevel.None) > Level)
-                return false;
-
-            if (Detection<IPerception<TSense>, TSense>.NewFromContext(Context, Sense, Level, OverridesCombat) is Detection<IPerception<TSense>, TSense> alert
-                && BeforeAlertEvent.CheckHider(Context.Hider, ref alert)
-                && BeforeAlertEvent.CheckPerceiver(Context.Perceiver, ref alert))
-            {
-                Context.Perceiver?.Brain.PushGoal(alert);
-                return true;
-            }
-            return false;
-        }
-        */
 
         public virtual void ClearCaches()
             => _Purview?.ClearCaches();
