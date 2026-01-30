@@ -79,11 +79,7 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public virtual OlfactoryPurview Purview
-        {
-            get => _Purview as OlfactoryPurview;
-            set => _Purview = value;
-        }
+        public override IPurview Purview => GetTypedPurview();
 
         private bool _AffectedByLiquidCovered = false;
         public virtual bool AffectedByLiquidCovered
@@ -210,7 +206,7 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Serialization
 
-        public virtual void WritePurview(SerializationWriter Writer, OlfactoryPurview Purview)
+        public virtual void WritePurview(SerializationWriter Writer, IPurview<Olfactory> Purview)
             => Writer.Write(Purview);
 
         public sealed override void WritePurview(SerializationWriter Writer, IPurview Purview)
@@ -229,8 +225,8 @@ namespace StealthSystemPrototype.Perceptions
 
         public virtual void ReadPurview(
             SerializationReader Reader,
-            ref OlfactoryPurview Purview,
-            IAlertTypedPerception<Olfactory, OlfactoryPurview> ParentPerception = null)
+            ref IPurview<Olfactory> Purview,
+            IAlertTypedPerception<Olfactory> ParentPerception = null)
             => Purview = Reader.ReadComposite<OlfactoryPurview>();
 
         public sealed override void ReadPurview(
@@ -238,12 +234,12 @@ namespace StealthSystemPrototype.Perceptions
             ref IPurview Purview,
             IPerception ParentPerception = null)
         {
-            if (Purview is not OlfactoryPurview typedPurview)
-                typedPurview = _Purview as OlfactoryPurview;
+            if (Purview is not IPurview<Olfactory> typedPurview)
+                typedPurview = _Purview as IPurview<Olfactory>;
 
             if (typedPurview != null)
             {
-                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Olfactory, OlfactoryPurview> ?? this);
+                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Olfactory> ?? this);
                 _Purview = typedPurview;
             }
             else
@@ -271,33 +267,24 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public override Type GetAlertType()
-            => ((IAlertTypedPerception<Olfactory, OlfactoryPurview>)this).GetAlertType();
+            => typeof(Olfactory);
 
-        public override void AssignDefaultPurview(int Value)
-            => Purview = GetDefaultPurview(Value);
+        public virtual IPurview<Olfactory> GetTypedPurview()
+            => (_Purview ??= new OlfactoryPurview(this)) as OlfactoryPurview;
 
-        public override IPurview GetDefaultPurview(int Value)
-            => GetDefaultPurview(
-                Value: Value,
-                purviewArgs: new object[]
-                {
-                    OlfactoryPurview.DefaultDiffuser.SetSteps(Value),
-                });
+        public override IPurview GetPurview()
+            => Purview;
 
-        public virtual OlfactoryPurview GetDefaultPurview(int Value, params object[] purviewArgs)
+        public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
-            var purview = new OlfactoryPurview(this as IAlertTypedPerception<Olfactory, IPurview<Olfactory>>, Value);
-            if (!purviewArgs.IsNullOrEmpty())
-                foreach (object arg in purviewArgs)
-                {
-                    if (arg is BaseDoubleDiffuser diffuserArg)
-                        purview.Diffuser = diffuserArg;
-                }
-            return purview;
+            args ??= new();
+            args[nameof(IPurview.Value)] = Value;
+            args[nameof(IDiffusingPurview.ConfigureDiffuser)] = new Dictionary<string, object>()
+            {
+                { nameof(IDiffusingPurview.Diffuser.SetSteps), Value },
+            };
+            base.ConfigurePurview(Value, args);
         }
-
-        public override bool CanPerceiveAlert(IAlert Alert)
-            => ((IAlertTypedPerception<Visual, IPurview<Visual>>)this).CanPerceiveAlert(Alert);
 
         public override bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
             => base.TryPerceive(Context, out SuccessMargin, out FailureMargin);

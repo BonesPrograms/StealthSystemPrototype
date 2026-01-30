@@ -30,12 +30,24 @@ namespace StealthSystemPrototype.Perceptions
     [Serializable]
     public abstract class BasePerception
         : IComponent<GameObject>
-        , IAlertTypedPerception
+        , IPerception
         , IWitnessEventHandler
         , IPerceptionEventHandler
         , ISneakEventHandler
         , IDetectionEventHandler
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Perceptions.BasePerception),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(ToString), false },
+                });
+        }
+        #endregion
         #region Helpers
 
         public class EventBinder : IEventBinder
@@ -181,15 +193,31 @@ namespace StealthSystemPrototype.Perceptions
             set => _Level = value;
         }
 
-        public int EffectiveLevel => Level + GetLevelAdjustment(Level);
+        [NonSerialized]
+        protected int? _EffectiveLevel;
+        public int EffectiveLevel
+        {
+            get
+            {
+                if (_EffectiveLevel == null
+                    && !GettingLevelAdjustment)
+                {
+                    GettingLevelAdjustment.Toggle();
+
+                    _EffectiveLevel = Level + GetLevelAdjustment(Level);
+
+                    GettingLevelAdjustment.Toggle();
+                }
+                return _EffectiveLevel ?? Level;
+            }
+        }
+        private bool GettingLevelAdjustment = false;
+
+        public Type AlertType => GetAlertType();
 
         [NonSerialized]
         protected IPurview _Purview;
-        IPurview IPerception.Purview
-        {
-            get => _Purview;
-            set => _Purview = value;
-        }
+        public virtual IPurview Purview => GetPurview();
 
         protected int _Cooldown;
         public virtual int Cooldown
@@ -211,6 +239,8 @@ namespace StealthSystemPrototype.Perceptions
             Owner = null;
 
             _Level = 0;
+            _EffectiveLevel = null;
+
             _Purview = null;
 
             _Cooldown = 0;
@@ -316,18 +346,43 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         public virtual bool SameAs(IPerception Other)
-            => Other is IAlertTypedPerception typedOther
-            && SameAlertAs(typedOther);
+            => SameAlertAs(Other);
 
-        public virtual bool SameAlertAs(IAlertTypedPerception Other)
-            => ((IAlertTypedPerception)this).SameAlertAs(Other);
+        public virtual bool SameAlertAs(IPerception Other)
+            => AlertType == Other.AlertType;
 
         public abstract Type GetAlertType();
+        
+        public bool IsCompatibleWith<A>(IPurview<A> Purview)
+            where A : IAlert
+            => AlertType == typeof(A);
 
-        public virtual void AssignDefaultPurview(int Value)
-            => ((IPerception)this).Purview = GetDefaultPurview(Value);
+        public abstract IPurview GetPurview();
 
-        public abstract IPurview GetDefaultPurview(int Value);
+        public virtual void ConfigurePurview(int Value, Dictionary<string, object> args = null)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(nameof(Value), Value),
+                    Debug.Arg(nameof(args), args?.Count ?? 0),
+                });
+
+            args ??= new();
+            args[nameof(IPurview.Value)] = Value;
+
+            if(GetPurview() is IPurview purview)
+            {
+                Debug.CheckYeh(nameof(purview), Indent: indent[1]);
+                purview.Configure(args);
+            }
+            else
+            {
+                Debug.CheckYeh(nameof(purview), Indent: indent[1]);
+            }
+        }
 
         #endregion
         #region Virtual Event Registration
@@ -419,7 +474,21 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public virtual string ToString(bool Short)
-            => GetName(Short) + "[" + EffectiveLevel + ":@P:" + ((IPerception)this).Purview.EffectiveValue + "]";
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(nameof(Short), Short),
+                });
+
+            Debug.CheckYeh(nameof(ShortName), ShortName, Indent: indent[1]);
+            Debug.CheckYeh(nameof(EffectiveLevel), EffectiveLevel, Indent: indent[1]);
+            Debug.CheckYeh(nameof(IPurview.EffectiveValue), _Purview?.EffectiveValue ?? -0, Indent: indent[1]);
+
+            return ShortName + "(" + Level + "/" + EffectiveLevel + "):@P:" + (_Purview?.ToString() ?? "NO_PURVIEW[-0]");
+        }
 
         public override string ToString()
             => ToString(false);
@@ -456,10 +525,11 @@ namespace StealthSystemPrototype.Perceptions
                 && purview.IsWithin(Context);
         }
 
-        public abstract bool CanPerceiveAlert(IAlert Alert);
+        public virtual bool CanPerceiveAlert(IAlert Alert)
+            => Alert?.IsType(AlertType) ?? false;
 
         public virtual bool CanPerceive(AlertContext Context)
-            => ((IPerception)this).CanPerceive(Context);
+            => CanPerceiveAlert(Context?.Alert);
 
         public virtual bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
         {
@@ -522,7 +592,10 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         public virtual void ClearCaches()
-            => _Purview?.ClearCaches();
+        {
+            _EffectiveLevel = null;
+            _Purview?.ClearCaches();
+        }
 
         public virtual bool Validate()
             => ((IPerception)this).Validate();

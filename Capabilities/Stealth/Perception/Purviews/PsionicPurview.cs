@@ -34,12 +34,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             set => _AreaCells = value;
         }
 
-        private BaseDoubleDiffuser _Diffuser;
-        public virtual BaseDoubleDiffuser Diffuser
-        {
-            get => _Diffuser;
-            set => _Diffuser = value;
-        }
+        private BaseDoubleDiffuser _Diffuser = DefaultDiffuser;
+        public virtual BaseDoubleDiffuser Diffuser => _Diffuser;
 
         #region Constructors
 
@@ -48,22 +44,29 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         {
         }
         public PsionicPurview(
-            IAlertTypedPerception<Psionic, IPurview<Psionic>> ParentPerception,
+            IAlertTypedPerception<Psionic> ParentPerception,
+            BaseDoubleDiffuser Diffuser = null)
+            : base(ParentPerception, IPurview.DEFAULT_VALUE)
+        {
+            _Diffuser = Diffuser;
+        }
+        public PsionicPurview(
+            IAlertTypedPerception<Psionic> ParentPerception,
             int Value,
             BaseDoubleDiffuser Diffuser = null)
             : base(ParentPerception, Value)
         {
-            this.Diffuser = Diffuser ?? DefaultDiffuser;
-            this.Diffuser.SetSteps(Value);
+            _Diffuser = Diffuser;
         }
         public PsionicPurview(int Value, BaseDoubleDiffuser Diffuser = null)
-            : this(null, Value, Diffuser)
+            : this(null, Value)
         {
+            _Diffuser = Diffuser;
         }
         public PsionicPurview(PsionicPurview Source)
-            : this(null, Source.Value, Source.Diffuser)
+            : base(Source)
         {
-            ParentPerception = Source.ParentPerception;
+            _Diffuser = Source.Diffuser;
         }
 
         #endregion
@@ -79,34 +82,36 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         {
             base.Read(Reader);
             AreaCells = Reader.ReadList<Cell>();
-            Diffuser = Reader.ReadComposite() as BaseDoubleDiffuser;
+            _Diffuser = Reader.ReadComposite() as BaseDoubleDiffuser;
         }
 
         #endregion
 
-        public static PsionicPurview GetDefaultPerview(IAlertTypedPerception<Psionic, IPurview<Psionic>> ParentPerception = null)
-            => new(ParentPerception, 4);
-
-        public override void Construct()
-        {
-            base.Construct();
-            Diffuser ??= GetDefaultDiffuser();
-        }
-
         public override string ToString()
             => base.ToString();
 
-        public override int GetEffectiveValue()
-            => base.GetEffectiveValue();
+        public override void Configure(Dictionary<string, object> args = null)
+        {
+            if (!args.IsNullOrEmpty())
+            {
+                if (args.ContainsKey(nameof(ConfigureDiffuser))
+                    && args[nameof(ConfigureDiffuser)] is Dictionary<string, object> difuserArgs)
+                {
+                    ConfigureDiffuser(difuserArgs);
+                }
+                if (args.ContainsKey(nameof(Value))
+                    && args[nameof(Value)] is int valueArg)
+                {
+                    SetValue(valueArg);
+                }
+            }
+        }
 
-        public override int GetPurviewAdjustment(IAlertTypedPerception ParentPerception, int Value = 0)
+        public virtual void ConfigureDiffuser(Dictionary<string, object> args = null)
+            => ((IDiffusingPurview)this).ConfigureDiffuser(args);
+
+        public override int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0)
             => base.GetPurviewAdjustment(ParentPerception, Value);
-
-        public void AssignDefaultDiffuser()
-            => Diffuser = GetDefaultDiffuser();
-
-        public virtual BaseDoubleDiffuser GetDefaultDiffuser()
-            => DefaultDiffuser.SetSteps(Value) as BaseDoubleDiffuser;
 
         public virtual double Diffuse(int Value)
         {

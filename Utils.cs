@@ -17,6 +17,7 @@ using static StealthSystemPrototype.Const;
 
 using Debug = StealthSystemPrototype.Logging.Debug;
 using XRL.Language;
+using XRL.World;
 
 namespace StealthSystemPrototype
 {
@@ -445,16 +446,8 @@ namespace StealthSystemPrototype
 
         #endregion
 
-        public static void ToggleDuringCall(Action Action, ref bool ToggleableBool, bool? SetAtStart = null)
-        {
-            if (SetAtStart != null)
-                ToggleableBool = (bool)SetAtStart;
-            else
-                ToggleableBool = !ToggleableBool;
+        public static Type GetMinEventType(int ID)
+            => MinEvent.EventTypes[ID];
 
-            Action.Invoke();
-
-            ToggleableBool = !ToggleableBool;
-        }
     }
 }

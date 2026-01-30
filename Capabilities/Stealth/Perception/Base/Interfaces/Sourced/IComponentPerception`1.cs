@@ -1,6 +1,7 @@
 ﻿using XRL.World;
 
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -11,5 +12,16 @@ namespace StealthSystemPrototype.Perceptions
     public interface IComponentPerception<T> : ISourcedPerception<T>
         where T : IComponent<GameObject>
     {
+        public static GameObject GetOwner(T Source)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Source?.ToString()),
+                });
+
+            return Source?.GetComponentBasis();
+        }
     }
 }

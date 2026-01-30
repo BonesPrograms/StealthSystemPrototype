@@ -57,7 +57,7 @@ namespace StealthSystemPrototype
             where P : class, IPerception, new()
             => Object.RequirePerceptions()?.Get<P>();
 
-        public static List<IAlertTypedPerception<A, IPurview<A>>> GetPerceptionsForAlert<A>(this GameObject Object)
+        public static List<IAlertTypedPerception<A>> GetPerceptionsForAlert<A>(this GameObject Object)
             where A : class, IAlert<A>, new()
             => Object.RequirePerceptions()?.GetForAlert<A>();
 

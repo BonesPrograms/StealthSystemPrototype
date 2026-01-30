@@ -27,6 +27,7 @@ namespace XRL.World.Parts
         , IDetectionEventHandler
         , ISneakEventHandler
     {
+        #region Debug
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
         {
@@ -44,7 +45,7 @@ namespace XRL.World.Parts
                     { typeof(MinEvent), false },
                 });
         }
-
+        #endregion
         #region Static & Const
 
         public const string ANIMAL_BLUEPRINT = "Animal";
@@ -80,13 +81,16 @@ namespace XRL.World.Parts
         {
             get
             {
+                using Indent indent = new(1);
+
                 if (_Perceptions == null
                     && !CollectingPerceptions)
                 {
-                    ToggleDuringCall(
-                        Action: () => GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions),
-                        ToggleableBool: ref CollectingPerceptions,
-                        SetAtStart: true);
+                    CollectingPerceptions.Toggle();
+
+                    GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
+
+                    CollectingPerceptions.Toggle();
                 }
                 return _Perceptions;
             }
@@ -149,33 +153,38 @@ namespace XRL.World.Parts
             => !ValidatePerceptionsStringyEvents.IsNullOrEmpty()
             && ValidatePerceptionsStringyEvents.Contains(ID);
 
-        private bool ProcessPerceptionAlteringEvent(MinEvent E)
+        public bool ProcessPerceptionAlteringEvent(IEvent E)
         {
-            using Indent indent = new(1);
+            MinEvent mE = null;
+            Event sE =null;
+
+            Debug.ArgPair eDebugPair = default;
+            if (E is MinEvent)
+            {
+                mE = E as MinEvent;
+                eDebugPair = Debug.Arg(mE?.TypeStringWithGenerics());
+            }
+            else
+            if (E is Event)
+            {
+                sE = E as Event;
+                eDebugPair = Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), sE?.ID);
+            }
+
+                using Indent indent = new(1);
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(E?.TypeStringWithGenerics()),
+                    eDebugPair,
                     Debug.Arg(ParentObject.DebugName ?? "null"),
                 });
 
-            if (!IsClearPerceptionsMinEvent(E.ID))
+            if (mE != null
+                && IsClearPerceptionsMinEvent(mE.ID))
                 return false;
 
-            WantSync = true;
-            return true;
-        }
-        private bool ProcessPerceptionAlteringEvent(Event E)
-        {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), E?.ID),
-                    Debug.Arg(ParentObject.DebugName ?? "null"),
-                });
-
-            if (!IsClearPerceptionsStringyEvent(E.ID))
+            if (sE != null
+                && !IsClearPerceptionsStringyEvent(sE.ID))
                 return false;
 
             WantSync = true;
@@ -205,8 +214,7 @@ namespace XRL.World.Parts
 
             ProcessPerceptionAlteringEvent(E);
 
-            if (Perceptions != null
-                && !Perceptions.FireEvent(E))
+            if (!(Perceptions?.FireEvent(E) ?? true))
                 return false;
 
             return base.FireEvent(E);
@@ -290,11 +298,10 @@ namespace XRL.World.Parts
 
             if (ParentObject.GetFirstBodyPart("Face") is BodyPart facePart)
             {
-                E.RequireBodyPartPerception<VisualBodyPartPerception>(facePart, Level: 3, Purview: 5);
-                E.RequireBodyPartPerception<AuditoryBodyPartPerception>(facePart, Level: 3, Purview: 4);
-                E.RequireBodyPartPerception<OlfactoryBodyPartPerception>(facePart, Level: 3, Purview: 3);
+                E.RequireBodyPartPerception<VisualBodyPartPerception>(facePart, Level: 3, PurviewValue: 5);
+                E.RequireBodyPartPerception<AuditoryBodyPartPerception>(facePart, Level: 3, PurviewValue: 4);
+                E.RequireBodyPartPerception<OlfactoryBodyPartPerception>(facePart, Level: 3, PurviewValue: 3);
             }
-
 
             if (ParentObject.TryGetPart(out Esper esper))
                 E.RequirePerception(new EsperPsionicPerception(esper, 1, new EsperPurview(4)));

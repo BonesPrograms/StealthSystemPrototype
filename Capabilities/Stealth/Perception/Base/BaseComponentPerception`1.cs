@@ -50,9 +50,8 @@ namespace StealthSystemPrototype.Perceptions
             T Source,
             int Level,
             IPurview Purview)
-            : this(null, Source, Level, Purview)
+            : this(GetOwner(Source), Source, Level, Purview)
         {
-            Owner ??= GetOwner(Source);
         }
 
         #endregion
@@ -73,6 +72,10 @@ namespace StealthSystemPrototype.Perceptions
 
         public abstract T GetSource();
 
-        public abstract GameObject GetOwner(T Source = null);
+        public virtual GameObject GetOwner()
+            => IComponentPerception<T>.GetOwner(Source);
+
+        public static GameObject GetOwner(T Source)
+            => IComponentPerception<T>.GetOwner(Source);
     }
 }

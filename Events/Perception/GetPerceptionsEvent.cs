@@ -26,7 +26,8 @@ namespace StealthSystemPrototype.Events
                 Type: typeof(StealthSystemPrototype.Events.GetPerceptionsEvent),
                 Methods: new string[]
                 {
-                    nameof(AddPerception),
+                    // nameof(AddPerception),
+                    nameof(doDebugRegistry),
                 });
         #endregion
 
@@ -48,24 +49,36 @@ namespace StealthSystemPrototype.Events
 
             Perceptions ??= new PerceptionRack(Perceiver);
 
-            if (!GameObject.Validate(ref Perceiver)
-                || FromPool(Perceiver, Perceptions) is not GetPerceptionsEvent E)
+            if (FromPool(Perceiver, Perceptions) is not GetPerceptionsEvent E)
                 return;
+
+            Debug.CheckYeh("Got Event", Indent: indent[1]);
 
             bool proceed = true;
             if (proceed
                 && Perceiver.HasRegisteredEvent(E.GetRegisteredEventID()))
+            {
                 proceed = Perceiver.FireEvent(E.StringyEvent);
+                Debug.YehNah(nameof(Perceiver.HasRegisteredEvent), proceed, Indent: indent[1]);
+            }
 
             if (proceed)
+            {
                 E.UpdateFromStringyEvent();
+                Debug.YehNah(nameof(UpdateFromStringyEvent), proceed, Indent: indent[1]);
+            }
 
             if (proceed
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
+            {
                 proceed = Perceiver.HandleEvent(E);
+                Debug.YehNah(nameof(Perceiver.WantEvent), proceed, Indent: indent[1]);
+            }
 
             if (!proceed)
                 Perceptions.Clear();
+
+            Debug.YehNah(Utils.CallChain(nameof(GetPerceptionsEvent), nameof(GetFor)), proceed, Indent: indent[0]);
         }
 
         public GetPerceptionsEvent AddPerception(
@@ -119,10 +132,19 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionsEvent RequireBodyPartPerception<P>(
             BodyPart BodyPart,
             int Level,
-            int Purview,
+            int PurviewValue,
             bool Creation = false)
-            where P : class, IBodyPartPerception, IAlertTypedPerception, new()
+            where P : class, IBodyPartPerception, new()
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(BodyPart?.ToString()),
+                    Debug.Arg(nameof(Level), Level),
+                    Debug.Arg(nameof(PurviewValue), PurviewValue),
+                });
+
             P perception = new()
             {
                 Source = BodyPart,
@@ -130,8 +152,12 @@ namespace StealthSystemPrototype.Events
             };
             if (perception != null)
             {
-                perception.AssignDefaultPurview(Purview);
-                // perception.Purview.SetParentPerception(perception);
+                Debug.CheckYeh(perception?.ToString(), Indent: indent[1]);
+
+                perception.ConfigurePurview(PurviewValue);
+
+                Debug.CheckYeh("Configured.", Indent: indent[1]);
+
                 return RequirePerception(
                     Perception: perception,
                     Creation: Creation);

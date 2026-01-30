@@ -6,6 +6,7 @@ using XRL.World.Anatomy;
 using StealthSystemPrototype.Capabilities.Stealth;
 
 using static StealthSystemPrototype.Utils;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -28,6 +29,18 @@ namespace StealthSystemPrototype.Perceptions
                 bodyParts.Sort(ClosestBodyPart);
 
             return bodyParts[0];
+        }
+
+        public static GameObject GetOwner(BodyPart Source)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Source?.ToString()),
+                });
+
+            return Source?.ParentBody?.ParentObject;
         }
     }
 }

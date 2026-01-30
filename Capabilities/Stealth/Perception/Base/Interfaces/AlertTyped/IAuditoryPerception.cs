@@ -11,7 +11,7 @@ namespace StealthSystemPrototype.Perceptions
     /// <summary>
     /// Contracts a class as capable of detecting <see cref="Auditory"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/> by way of an <see cref="AuditoryPurview"/>.
     /// </summary>
-    public interface IAuditoryPerception : IAlertTypedPerception<Auditory, AuditoryPurview>
+    public interface IAuditoryPerception : IAlertTypedPerception<Auditory>
     {
         /*
          * These are copied from IOlfactoryPerception.

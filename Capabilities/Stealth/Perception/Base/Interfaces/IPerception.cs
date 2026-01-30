@@ -262,6 +262,7 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
+
         public static int MIN_LEVEL => 0;
 
         public static int MAX_LEVEL => 999;
@@ -274,7 +275,9 @@ namespace StealthSystemPrototype.Perceptions
 
         public PerceptionRack Rack { get; }
 
-        public IPurview Purview { get; set; }
+        public Type AlertType { get; }
+
+        public IPurview Purview { get; }
 
         public int Level { get; set; }
 
@@ -352,9 +355,22 @@ namespace StealthSystemPrototype.Perceptions
         /// <returns>A new <see cref="IPerception"/> with values matching the original, and reassigned reference members.</returns>
         public IPerception DeepCopy(GameObject Owner);
 
-        public void AssignDefaultPurview(int Value);
+        public Type GetAlertType();
 
-        public IPurview GetDefaultPurview(int Value);
+        public bool SameAlertAs(IPerception Other)
+            => AlertType == Other.AlertType;
+
+        public static bool IsPerceptionOfAlert<A>(IPerception IPerception)
+            where A : class, IAlert, new()
+            => IPerception is IAlertTypedPerception<A>;
+
+        public bool IsCompatibleWith<A>(IPurview<A> Purview)
+            where A : IAlert
+            => AlertType == typeof(A);
+
+        public IPurview GetPurview();
+
+        public void ConfigurePurview(int Value, Dictionary<string, object> args = null);
 
         public string ToString(bool Short);
 
@@ -384,11 +400,11 @@ namespace StealthSystemPrototype.Perceptions
 
         public bool CheckInPurview(AlertContext Context);
 
-        public bool CanPerceiveAlert(IAlert Alert);
+        public bool CanPerceiveAlert(IAlert Alert)
+            => Alert?.IsType(AlertType) ?? false;
 
         public bool CanPerceive(AlertContext Context)
-            => Context?.Alert is IAlert alert
-            && CanPerceiveAlert(alert);
+            => CanPerceiveAlert(Context?.Alert);
 
         public bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin);
 

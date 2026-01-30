@@ -61,9 +61,8 @@ namespace StealthSystemPrototype.Perceptions
             BodyPart Source,
             int Level,
             IPurview Purview)
-            : this(null, Source, Level, Purview)
+            : this(GetOwner(Source), Source, Level, Purview)
         {
-            Owner ??= GetOwner(_Source);
         }
 
         #endregion
@@ -83,10 +82,22 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public virtual BodyPart GetSource()
-            => ((IBodyPartPerception)this).GetSource();
+        {
+            if (Owner == null
+                || Owner.Body?.LoopPart(SourceType, ExcludeDismembered: true) is not List<BodyPart> bodyParts)
+                return null;
 
-        public virtual GameObject GetOwner(BodyPart Source = null)
-            => Source?.ParentBody?.ParentObject;
+            if (bodyParts.Count > 1)
+                bodyParts.Sort(ClosestBodyPart);
+
+            return bodyParts[0];
+        }
+
+        public virtual GameObject GetOwner()
+            => GetOwner(Source);
+
+        public static GameObject GetOwner(BodyPart Source)
+            => IBodyPartPerception.GetOwner(Source);
 
         public override bool Validate()
             => base.Validate()

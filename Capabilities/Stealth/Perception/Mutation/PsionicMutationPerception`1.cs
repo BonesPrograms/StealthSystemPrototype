@@ -19,6 +19,8 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Perceptions.IPsionicPerception;
 using StealthSystemPrototype.Detetection.Opinions;
+using XRL.World.Effects;
+using XRL.World.Parts;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -28,12 +30,6 @@ namespace StealthSystemPrototype.Perceptions
         , IPsionicPerception
         where T : BaseMutation
     {
-        public PsionicPurview Purview
-        {
-            get => _Purview as PsionicPurview;
-            set => _Purview = value;
-        }
-
         private bool _RequiresConsciousness = true;
         public virtual bool RequiresConsciousness
         {
@@ -119,13 +115,13 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Serialization
 
-        public virtual void WritePurview(SerializationWriter Writer, PsionicPurview Purview)
+        public virtual void WritePurview(SerializationWriter Writer, IPurview<Psionic> Purview)
             => Writer.Write(Purview);
 
         public sealed override void WritePurview(SerializationWriter Writer, IPurview Purview)
         {
-            if (Purview is not PsionicPurview typedPurview)
-                typedPurview = _Purview as PsionicPurview;
+            if (Purview is not IPurview<Psionic> typedPurview)
+                typedPurview = _Purview as IPurview<Psionic>;
 
             WritePurview(Writer, typedPurview);
 
@@ -138,8 +134,8 @@ namespace StealthSystemPrototype.Perceptions
 
         public virtual void ReadPurview(
             SerializationReader Reader,
-            ref PsionicPurview Purview,
-            IAlertTypedPerception<Psionic, PsionicPurview> ParentPerception = null)
+            ref IPurview<Psionic> Purview,
+            IAlertTypedPerception<Psionic> ParentPerception = null)
             => Purview = Reader.ReadComposite<PsionicPurview>();
 
         public sealed override void ReadPurview(
@@ -147,12 +143,12 @@ namespace StealthSystemPrototype.Perceptions
             ref IPurview Purview,
             IPerception ParentPerception = null)
         {
-            if (Purview is not PsionicPurview typedPurview)
-                typedPurview = _Purview as PsionicPurview;
+            if (Purview is not IPurview<Psionic> typedPurview)
+                typedPurview = _Purview as IPurview<Psionic>;
 
             if (typedPurview != null)
             {
-                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Psionic, PsionicPurview> ?? this);
+                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Psionic> ?? this);
                 _Purview = typedPurview;
             }
             else
@@ -180,33 +176,67 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public override Type GetAlertType()
-            => ((IAlertTypedPerception<Psionic, PsionicPurview>)this).GetAlertType();
+            => typeof(Psionic);
 
-        public override void AssignDefaultPurview(int Value)
-            => Purview = GetDefaultPurview(Value);
+        public virtual IPurview<Psionic> GetTypedPurview()
+            => (_Purview ??= new PsionicPurview(this)) as PsionicPurview;
 
-        public override IPurview GetDefaultPurview(int Value)
-            => GetDefaultPurview(
-                Value: Value,
-                purviewArgs: new object[]
-                {
-                    PsionicPurview.DefaultDiffuser.SetSteps(Value),
-                });
+        public override IPurview GetPurview()
+            => Purview;
 
-        public virtual PsionicPurview GetDefaultPurview(int Value, params object[] purviewArgs)
+        public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
-            var purview = new PsionicPurview(this as IAlertTypedPerception<Psionic, IPurview<Psionic>>, Value);
-            if (!purviewArgs.IsNullOrEmpty())
-                foreach (object arg in purviewArgs)
-                {
-                    if (arg is BaseDoubleDiffuser diffuserArg)
-                        purview.Diffuser = diffuserArg;
-                }
-            return purview;
+            args ??= new();
+            args[nameof(IPurview.Value)] = Value;
+            args[nameof(IDiffusingPurview.ConfigureDiffuser)] = new Dictionary<string, object>()
+            {
+                { nameof(IDiffusingPurview.Diffuser.SetSteps), Value },
+            };
+            base.ConfigurePurview(Value, args);
         }
 
-        public override bool CanPerceiveAlert(IAlert Alert)
-            => ((IAlertTypedPerception<Visual, IPurview<Visual>>)this).CanPerceiveAlert(Alert);
+        public override bool CanPerceive(AlertContext Context)
+        {
+            if (Attunement == PsionicAttunement.None)
+                return false;
+
+            if (!base.CanPerceive(Context))
+                return false;
+
+            if (RequiresConsciousness
+                && Owner.HasEffect<Asleep>())
+                return false;
+
+            GameObject actor = Context?.Hider;
+            if (actor == null)
+                return Attunement >= PsionicAttunement.Ambient;
+
+            if (!IgnoreMentalShield
+                && actor.HasPart<MentalShield>())
+                return false;
+
+            if (Attunement >= PsionicAttunement.Living
+                && actor.IsAlive)
+                return true;
+
+            if (Attunement >= PsionicAttunement.Sentient
+                && actor.Brain != null)
+                return true;
+
+            if (Attunement >= PsionicAttunement.MentalMutations
+                && actor.HasMentalMutations())
+                return true;
+
+            if (Attunement >= PsionicAttunement.NonChimera
+                && actor.EligibleForMentalMutations())
+                return true;
+
+            if (Attunement >= PsionicAttunement.Espers
+                && actor.HasPart<Esper>())
+                return true;
+
+            return false;
+        }
 
         public override bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
             => base.TryPerceive(Context, out SuccessMargin, out FailureMargin);

@@ -241,7 +241,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             };
             if (perception != null)
             {
-                perception.AssignDefaultPurview(PurviewValue);
+                perception.ConfigurePurview(PurviewValue);
                 // perception.Purview.SetParentPerception(perception);
                 Add(
                     Perception: perception,
@@ -313,15 +313,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return null;
         }
 
-        public List<IAlertTypedPerception<A, IPurview<A>>> GetForAlert<A>(A Alert = null)
+        public List<IAlertTypedPerception<A>> GetForAlert<A>(A Alert = null)
             where A : class, IAlert, new()
         {
             if (Items == null)
                 throw new InnerArrayNullException(nameof(Items));
 
-            List<IAlertTypedPerception<A, IPurview<A>>> output = new();
+            List<IAlertTypedPerception<A>> output = new();
             for (int i = 0; i < Count; i++)
-                if (Items[i] is IAlertTypedPerception<A, IPurview<A>> typedPerception)
+                if (Items[i] is IAlertTypedPerception<A> typedPerception)
                     output.Add(typedPerception);
 
             return output;
@@ -333,14 +333,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         protected static bool IsPerceptionOfAlert<A>(IPerception IPerception)
             where A : class, IAlert, new()
-            => IPerception is IAlertTypedPerception<A, IPurview<A>>;
+            => IPerception is IAlertTypedPerception<A>;
 
         public IPerception GetFirstOfAlert<A>(A Alert)
             where A : class, IAlert, new()
             => AsEnumerable<A>()
                 ?.FirstOrDefault();
 
-        public IAlertTypedPerception<A, IPurview<A>> GetFirstTypedOfAlert<A>(A Alert)
+        public IAlertTypedPerception<A> GetFirstTypedOfAlert<A>(A Alert)
             where A : class, IAlert, new()
             => AsEnumerable<A>()
                 ?.FirstOrDefault();
@@ -738,7 +738,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             where A : class, IAlert<A>, new()
         {
             for (int i = 0; i < Length; i++)
-                if (Items[i] is IAlertTypedPerception<A,IPurview<A>>)
+                if (Items[i] is IAlertTypedPerception<A>)
                     return true;
 
             return false;
@@ -770,13 +770,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         protected static bool IsAlertTypedPerception<A>(IPerception Perception)
             where A : class, IAlert, new()
-            => Perception is IAlertTypedPerception<A, IPurview<A>>;
+            => Perception is IAlertTypedPerception<A>;
 
-        protected static IAlertTypedPerception<A, IPurview<A>> AsAlertTypedPerception<A>(IPerception Perception)
+        protected static IAlertTypedPerception<A> AsAlertTypedPerception<A>(IPerception Perception)
             where A : class, IAlert, new()
-            => Perception as IAlertTypedPerception<A, IPurview<A>>;
+            => Perception as IAlertTypedPerception<A>;
 
-        public IEnumerable<IAlertTypedPerception<A, IPurview<A>>> AsEnumerable<A>(Predicate<IAlertTypedPerception<A, IPurview<A>>> Filter = null)
+        public IEnumerable<IAlertTypedPerception<A>> AsEnumerable<A>(Predicate<IAlertTypedPerception<A>> Filter = null)
             where A : class, IAlert, new()
         {
             try
@@ -791,7 +791,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
             catch (InnerArrayNullException)
             {
-                return new IAlertTypedPerception<A, IPurview<A>>[0];
+                return new IAlertTypedPerception<A>[0];
             }
         }
 
@@ -807,11 +807,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             foreach (IAlert alert in ConcealedAction)
                 for (int i = 0; i < Count; i++)
-                    if (Items[i] is IAlertTypedPerception typedPerception
-                        && alert.IsType(typedPerception.AlertType))
+                    if (Items[i] is IPerception perception
+                        && alert.IsType(perception.AlertType))
                     yield return new AlertContext(
                         ParentAction: ConcealedAction,
-                        Perception: typedPerception,
+                        Perception: perception,
                         Alert: alert,
                         AlertConcealment: ConcealedAction.SneakPerformance[alert],
                         Hider: ConcealedAction.Actor,

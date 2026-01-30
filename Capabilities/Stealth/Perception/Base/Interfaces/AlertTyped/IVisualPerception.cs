@@ -10,7 +10,7 @@ namespace StealthSystemPrototype.Perceptions
     /// <summary>
     /// Contracts a class as capable of detecting <see cref="Visual"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/> by way of an <see cref="VisualPurview"/>.
     /// </summary>
-    public interface IVisualPerception : IAlertTypedPerception<Visual, VisualPurview>
+    public interface IVisualPerception : IAlertTypedPerception<Visual>
     {
         public static LightLevel DefaultMinimumLightLevel => LightLevel.Light;
 

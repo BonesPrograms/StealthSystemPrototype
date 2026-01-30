@@ -26,22 +26,25 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         {
         }
         public EsperPurview(
-            IAlertTypedPerception<Psionic, IPurview<Psionic>> ParentPerception,
+            EsperPsionicPerception ParentPerception,
+            BaseDoubleDiffuser Diffuser = null)
+            : base(ParentPerception, Diffuser)
+        {
+        }
+        public EsperPurview(
+            EsperPsionicPerception ParentPerception,
             int Value,
             BaseDoubleDiffuser Diffuser = null)
-            : base(ParentPerception, Value)
+            : base(ParentPerception, Value, Diffuser)
         {
-            this.Diffuser = Diffuser ?? DefaultDiffuser;
-            this.Diffuser.SetSteps(Value);
         }
         public EsperPurview(int Value, BaseDoubleDiffuser Diffuser = null)
             : base(Value, Diffuser)
         {
         }
         public EsperPurview(EsperPurview Source)
-            : base(null, Source.Value, Source.Diffuser)
+            : base(Source)
         {
-            ParentPerception = Source.ParentPerception;
         }
 
         #endregion
@@ -61,11 +64,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override string ToString()
             => base.ToString();
 
-        public override int GetEffectiveValue()
-            => base.GetEffectiveValue();
-
         public override int GetPurviewAdjustment(
-            IAlertTypedPerception ParentPerception,
+            IPerception ParentPerception,
             int Value = 0)
             => base.GetPurviewAdjustment(ParentPerception, Value) + (ParentPerception?.Owner?.Level ?? 0);
 

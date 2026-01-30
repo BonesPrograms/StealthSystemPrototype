@@ -20,14 +20,25 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
     {
         public static BaseDoubleDiffuser DefaultDiffuser => new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
 
-        public BaseDoubleDiffuser Diffuser { get; set; }
+        public BaseDoubleDiffuser Diffuser { get; }
 
         #region Serialization
 
         #endregion
         #region Contracts
 
-        public BaseDoubleDiffuser GetDefaultDiffuser();
+        public void ConfigureDiffuser(Dictionary<string, object> args = null)
+        {
+            Diffuser.SetSteps(Value);
+            if (!args.IsNullOrEmpty())
+            {
+                if (args.ContainsKey(nameof(Diffuser.SetSteps))
+                    && args[nameof(Diffuser.SetSteps)] is int valueArg)
+                {
+                    Diffuser.SetSteps(valueArg);
+                }
+            }
+        }
 
         public double Diffuse(int Value)
         {

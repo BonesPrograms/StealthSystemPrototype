@@ -86,13 +86,22 @@ namespace StealthSystemPrototype.Perceptions
             : null;
 
         public override T GetBestSource()
-            => GetPotentialSources()
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(typeof(BaseMutationPerception<T>).ToStringWithGenerics()),
+                });
+
+            return GetPotentialSources()
                 ?.Where(bm => bm.Level > 0)
                 ?.OrderBy(keySelector: bm => -bm.Level)
                 ?.FirstOrDefault();
+        }
 
-        public override GameObject GetOwner(T Source = null)
-            => base.GetOwner(Source);
+        public override GameObject GetOwner()
+            => base.GetOwner();
 
         #region Explicit Implementations
 

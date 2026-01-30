@@ -104,7 +104,7 @@ namespace StealthSystemPrototype.Events
         public static Event GetStringyEvent(IDetectionEvent<T> ForEvent, ref Event ExistingEvent)
             => ForEvent == null
             ? ExistingEvent = Event.New(RegisteredEventID)
-            : ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID())
+            : (ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID()))
                 .SetParameter(nameof(ForEvent.Perceiver), ForEvent?.Perceiver)
                 .SetParameter(nameof(ForEvent.Hider), ForEvent?.Hider)
                 .SetParameter(nameof(ForEvent.Detection), ForEvent?.Detection);

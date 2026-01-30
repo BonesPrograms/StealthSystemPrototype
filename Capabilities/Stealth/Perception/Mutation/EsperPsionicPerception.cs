@@ -89,14 +89,14 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Serialization
 
-        public override void WritePurview(SerializationWriter Writer, PsionicPurview Purview)
-            => Writer.Write(Purview);
+        public override void WritePurview(SerializationWriter Writer, IPurview<Psionic> Purview)
+            => base.WritePurview(Writer, Purview);
 
         public override void ReadPurview(
             SerializationReader Reader,
-            ref PsionicPurview Purview,
-            IAlertTypedPerception<Psionic, PsionicPurview> ParentPerception = null)
-            => Purview = Reader.ReadComposite<PsionicPurview>();
+            ref IPurview<Psionic> Purview,
+            IAlertTypedPerception<Psionic> ParentPerception = null)
+            => Purview = Reader.ReadComposite<EsperPurview>();
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
@@ -109,31 +109,16 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public override IPurview GetDefaultPurview(int Value)
-            => GetDefaultPurview(
-                Value: Value,
-                purviewArgs: new object[]
-                {
-                    EsperPurview.DefaultDiffuser.SetSteps(Value),
-                });
+        public override IPurview<Psionic> GetTypedPurview()
+            => (_Purview ??= new EsperPurview(this)) as PsionicPurview;
 
-        public override PsionicPurview GetDefaultPurview(int Value, params object[] purviewArgs)
+        public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
-            var purview = new EsperPurview(this as IAlertTypedPerception<Psionic, IPurview<Psionic>>, Value);
-            if (!purviewArgs.IsNullOrEmpty())
-                foreach (object arg in purviewArgs)
-                {
-                    if (arg is BaseDoubleDiffuser diffuserArg)
-                        purview.Diffuser = diffuserArg;
-                }
-            return purview;
+            base.ConfigurePurview(Value, args);
         }
 
         public override int GetLevelAdjustment(int Level = 0)
             => base.GetLevelAdjustment(Level) + (Owner?.StatMod("Ego") ?? 0);
-
-        public override bool CanPerceiveAlert(IAlert Alert)
-            => ((IAlertTypedPerception<Visual, IPurview<Visual>>)this).CanPerceiveAlert(Alert);
 
         public override bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
             => base.TryPerceive(Context, out SuccessMargin, out FailureMargin);

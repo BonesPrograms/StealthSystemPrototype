@@ -43,7 +43,7 @@ namespace StealthSystemPrototype.Perceptions
             T Source,
             int Level,
             IPurview Purview)
-            : base(Source, Level, Purview)
+            : this(GetOwner(Source), Source, Level, Purview)
         {
         }
 
@@ -64,7 +64,16 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public override T GetSource()
-            => GetBestSource() ?? ((ISourcedPerception<T>)this).GetSource();
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(typeof(BaseIPartPerception<T>).ToStringWithGenerics()),
+                });
+
+            return GetBestSource() ?? ((ISourcedPerception<T>)this).GetSource();
+        }
 
         public override bool Validate()
         {
@@ -86,8 +95,11 @@ namespace StealthSystemPrototype.Perceptions
 
         public abstract T GetBestSource();
 
-        public override GameObject GetOwner(T Source = null)
-            => (this.Source ??= Source ?? this.Source)?.ParentObject;
+        public override GameObject GetOwner()
+            => IPartPerception<T>.GetOwner(Source);
+
+        public new static GameObject GetOwner(T Source)
+            => IPartPerception<T>.GetOwner(Source);
 
         #region Explicit Implementations
 

@@ -15,7 +15,7 @@ namespace StealthSystemPrototype.Perceptions
     /// <summary>
     /// Contracts a class as capable of detecting <see cref="Psionic"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/> by way of an <see cref="PsionicPurview"/>.
     /// </summary>
-    public interface IPsionicPerception : IAlertTypedPerception<Psionic, PsionicPurview>
+    public interface IPsionicPerception : IAlertTypedPerception<Psionic>
     {
         /// <summary>
         /// Represents the minimum requirements of the <see cref="IConcealedAction.Actor"/> for the <see cref="IPsionicPerception.Owner"/> to be able to detect them.

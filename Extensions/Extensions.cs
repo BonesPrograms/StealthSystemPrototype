@@ -985,5 +985,11 @@ namespace StealthSystemPrototype
             && constructorInfo.IsPublic;
 
         #endregion
+        #region Boolean
+
+        public static bool Toggle(this ref bool Boolean)
+            => Boolean = !Boolean;
+
+        #endregion
     }
 }

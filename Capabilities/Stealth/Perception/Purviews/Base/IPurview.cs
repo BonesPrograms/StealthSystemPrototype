@@ -28,7 +28,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public static int DEFAULT_VALUE => 4;
 
-        public IPerception ParentPerception { get; }
+        public IPerception ParentPerception { get; set; }
 
         public int Value { get; }
 
@@ -41,19 +41,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         #region Contracts
 
-        /// <summary>
-        /// Called once inside the <see cref="IPurview"/>'s default constructor.
-        /// </summary>
-        /// <remarks>
-        /// Override only to make common initialization assignments for derived types.
-        /// </remarks>
-        public void Construct();
-
         public IPurview SetParentPerception(IPerception ParentPerception);
 
-        public int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0);
+        public void Configure(Dictionary<string, object> args = null);
 
-        public int GetEffectiveValue();
+        public bool IsForAlert(IAlert Alert);
+
+        public int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0);
 
         public bool IsWithin(AlertContext Context);
 

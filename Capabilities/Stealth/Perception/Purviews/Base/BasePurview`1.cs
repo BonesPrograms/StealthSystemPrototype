@@ -23,13 +23,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         , IComposite
         where A : IAlert, new()
     {
-        protected IAlertTypedPerception _ParentPerception;
-        public virtual IAlertTypedPerception ParentPerception
+        private IPerception _ParentPerception;
+        public IPerception ParentPerception
         {
             get => _ParentPerception;
-            set => _ParentPerception = value;
+            set => SetParentPerception(value);
         }
-        IPerception IPurview.ParentPerception => ParentPerception;
 
         private int _Value;
         public int Value
@@ -38,7 +37,24 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             protected set => _Value = value;
         }
 
-        public int EffectiveValue => GetEffectiveValue();
+        private int? _EffectiveValue;
+        public int EffectiveValue
+        {
+            get
+            {
+                if (_EffectiveValue == null
+                    && !GettingValueAdjustment)
+                {
+                    GettingValueAdjustment.Toggle();
+
+                    _EffectiveValue = Value + GetPurviewAdjustment(ParentPerception, Value);
+
+                    GettingValueAdjustment.Toggle();
+                }
+                return _EffectiveValue ?? Value;
+            }
+        }
+        private bool GettingValueAdjustment = false;
 
         public abstract bool Occludes { get; }
 
@@ -46,20 +62,32 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public BasePurview()
         {
-            _ParentPerception = null;
+            this.ParentPerception = null;
             Value = 0;
-            Construct();
+            _EffectiveValue = null;
         }
-        protected BasePurview(IAlertTypedPerception<A, IPurview<A>> ParentPerception, int Value)
+        protected BasePurview(IPerception ParentPerception)
             : this()
         {
             this.ParentPerception = ParentPerception;
+        }
+        protected BasePurview(IPerception ParentPerception, int Value)
+            : this(ParentPerception)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
+                    Debug.Arg(nameof(Value), Value),
+                });
+
             this.Value = Value;
         }
         public BasePurview(BasePurview<A> Source)
-            : this(null, Source.Value)
+            : this(Source.ParentPerception, Source.Value)
         {
-            ParentPerception = Source.ParentPerception;
         }
 
         #endregion
@@ -72,7 +100,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         }
         public virtual void Read(SerializationReader Reader)
         {
-            ParentPerception = Reader.ReadComposite() as IAlertTypedPerception<A, IPurview<A>>;
+            ParentPerception = Reader.ReadComposite() as IPerception;
             Value = Reader.ReadOptimizedInt32();
         }
 
@@ -81,31 +109,59 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override string ToString()
             => Value + "(E:" + EffectiveValue + ")" + (Occludes ? "[" + nameof(Occludes) + "]" : null);
 
-        public virtual void Construct()
+        public virtual void Configure(Dictionary<string, object> args = null)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(nameof(args), args?.Count ?? 0),
+                });
+
+            if (!args.IsNullOrEmpty())
+            {
+                args.ForEach(kvp => Debug.Log(kvp.Key, kvp.Value, Indent: indent[1]));
+
+                if (args.ContainsKey(nameof(ParentPerception))
+                    && args[nameof(ParentPerception)] is IPerception parentPerceptionArg)
+                {
+                    _ParentPerception = parentPerceptionArg;
+                }
+                if (args.ContainsKey(nameof(Value))
+                    && args[nameof(Value)] is int valueArg)
+                {
+                    Value = valueArg;
+                }
+            }
         }
 
-        public virtual IPurview<A> SetParentPerception(IAlertTypedPerception ParentPerception)
+        public IPurview SetParentPerception(IPerception ParentPerception)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(ParentPerception),
+                });
+
+            if (!ParentPerception.IsCompatibleWith(this))
+                throw new ArgumentException(
+                    message: GetType().ToStringWithGenerics() + " requires a " + nameof(ParentPerception) + 
+                        " compatible with " + nameof(IAlert) + " of type " + typeof(A) + ". " +
+                        ParentPerception.Name + " uses " + ParentPerception.AlertType.ToStringWithGenerics(), 
+                    paramName: nameof(ParentPerception));
+
             _ParentPerception = ParentPerception;
             return this;
         }
 
-        IPurview IPurview.SetParentPerception(IPerception ParentPerception)
-        {
-            if (ParentPerception is IAlertTypedPerception typedPerception)
-                SetParentPerception(typedPerception);
-            return this;
-        }
+        public virtual bool IsForAlert(IAlert Alert)
+            => Alert.IsType(typeof(A));
 
-        public virtual int GetEffectiveValue()
-            => Value + GetPurviewAdjustment(ParentPerception, Value);
-
-        public virtual int GetPurviewAdjustment(IAlertTypedPerception ParentPerception, int Value = 0)
+        public virtual int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0)
             => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.Owner, ParentPerception, Value);
-
-        int IPurview.GetPurviewAdjustment(IPerception ParentPerception, int Value)
-            => GetPurviewAdjustment(ParentPerception as IAlertTypedPerception, Value);
 
         public BasePurview<A> SetValue(int Value)
         {
@@ -123,6 +179,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public virtual void ClearCaches()
         {
+            _EffectiveValue = null;
         }
 
         #endregion
