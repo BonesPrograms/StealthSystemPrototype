@@ -27,7 +27,19 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public IPerception ParentPerception
         {
             get => _ParentPerception;
-            set => SetParentPerception(value);
+            set
+            {
+                using Indent indent = new(1);
+                Debug.LogCaller(indent,
+                    ArgPairs: new Debug.ArgPair[]
+                    {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
+                    Debug.Arg(nameof(Value), Value),
+                    });
+
+                SetParentPerception(value);
+            }
         }
 
         private int _Value;
@@ -62,13 +74,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public BasePurview()
         {
-            this.ParentPerception = null;
+            ParentPerception = null;
             Value = 0;
             _EffectiveValue = null;
         }
         protected BasePurview(IPerception ParentPerception)
             : this()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
+                });
+
             this.ParentPerception = ParentPerception;
         }
         protected BasePurview(IPerception ParentPerception, int Value)
@@ -88,6 +108,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public BasePurview(BasePurview<A> Source)
             : this(Source.ParentPerception, Source.Value)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(nameof(Source)),
+                });
         }
 
         #endregion
@@ -143,10 +170,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception),
+                    Debug.Arg(ParentPerception?.ToString() ?? "NO_PERCEPTION"),
                 });
 
-            if (!ParentPerception.IsCompatibleWith(this))
+            if (!(ParentPerception?.IsCompatibleWith(this) ?? true))
                 throw new ArgumentException(
                     message: GetType().ToStringWithGenerics() + " requires a " + nameof(ParentPerception) + 
                         " compatible with " + nameof(IAlert) + " of type " + typeof(A) + ". " +

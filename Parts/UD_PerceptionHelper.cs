@@ -9,8 +9,8 @@ using XRL.World.Parts.Mutation;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
-using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;

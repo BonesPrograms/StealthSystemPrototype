@@ -178,8 +178,9 @@ namespace StealthSystemPrototype.Perceptions
                     Debug.Arg(GetType().ToStringWithGenerics()),
                 });
 
-            VisualPurview typedPurview = new VisualPurview();
-            typedPurview.SetParentPerception(this);
+            VisualPurview typedPurview = new(this);
+
+            // typedPurview.SetParentPerception(this);
 
             Debug.CheckYeh(nameof(typedPurview) + " got", Indent: indent[1]);
 
