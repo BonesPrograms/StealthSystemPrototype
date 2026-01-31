@@ -26,6 +26,12 @@ namespace StealthSystemPrototype.Perceptions
         : BasePerception
         , IBodyPartPerception
     {
+        public override GameObject Owner
+        {
+            get => base.Owner ??= GetOwner(Source);
+            set => base.Owner = value;
+        }
+
         protected string _SourceType = null;
         public virtual string SourceType
         {
@@ -36,7 +42,20 @@ namespace StealthSystemPrototype.Perceptions
         protected BodyPart _Source = null;
         public virtual BodyPart Source
         {
-            get => _Source ??= GetSource();
+            get
+            {
+                if (_Source == null)
+                {
+                    if (Owner?.Body?.LoopPart(SourceType, ExcludeDismembered: true) is List<BodyPart> bodyParts)
+                    {
+                        if (bodyParts.Count > 1)
+                            bodyParts.Sort(ClosestBodyPart);
+
+                        _Source ??= bodyParts[0];
+                    }
+                }
+                return _Source;
+            }
             set => _Source = value;
         }
 
@@ -50,18 +69,19 @@ namespace StealthSystemPrototype.Perceptions
             GameObject Owner,
             BodyPart Source,
             int Level,
-            IPurview Purview)
-            : base(Owner, Level, Purview)
+            int? PurviewValue = null)
+            : base(Owner, Level)
         {
             this.Owner = Owner;
             _Source = Source;
             SourceType = Source.Type;
+            Purview?.MaybeSetValue(PurviewValue);
         }
         public BaseBodyPartPerception(
             BodyPart Source,
             int Level,
-            IPurview Purview)
-            : this(GetOwner(Source), Source, Level, Purview)
+            int? PurviewValue = null)
+            : this(GetOwner(Source), Source, Level, PurviewValue)
         {
         }
 
@@ -82,19 +102,7 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public virtual BodyPart GetSource()
-        {
-            if (Owner == null
-                || Owner.Body?.LoopPart(SourceType, ExcludeDismembered: true) is not List<BodyPart> bodyParts)
-                return null;
-
-            if (bodyParts.Count > 1)
-                bodyParts.Sort(ClosestBodyPart);
-
-            return bodyParts[0];
-        }
-
-        public virtual GameObject GetOwner()
-            => GetOwner(Source);
+            => Source;
 
         public static GameObject GetOwner(BodyPart Source)
             => IBodyPartPerception.GetOwner(Source);

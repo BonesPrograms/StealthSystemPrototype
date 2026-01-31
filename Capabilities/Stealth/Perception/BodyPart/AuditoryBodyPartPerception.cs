@@ -26,7 +26,9 @@ namespace StealthSystemPrototype.Perceptions
         : BaseBodyPartPerception
         , IAuditoryPerception
     {
-        public override IPurview Purview => GetTypedPurview();
+        public override BasePurview Purview => new AuditoryPurview(this);
+
+        public virtual Type AlertType => typeof(Auditory);
 
         #region Constructors
 
@@ -38,78 +40,20 @@ namespace StealthSystemPrototype.Perceptions
             GameObject Owner,
             BodyPart Source,
             int Level,
-            AuditoryPurview Purview)
-            : base(Owner, Source, Level, Purview)
+            int? PurviewValue = null)
+            : base(Owner, Source, Level, PurviewValue)
         {
         }
         public AuditoryBodyPartPerception(
             BodyPart Source,
             int Level,
-            AuditoryPurview Purview)
-            : this(null, Source, Level, Purview)
-        {
-        }
-        public AuditoryBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            int Purview)
-            : this(Owner, Source, Level, new AuditoryPurview(Purview))
-        {
-        }
-        public AuditoryBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            int Purview)
-            : this(null, Source, Level, Purview)
+            int? PurviewValue = null)
+            : this(null, Source, Level, PurviewValue)
         {
         }
 
         #endregion
         #region Serialization
-
-        public virtual void WritePurview(SerializationWriter Writer, IPurview<Auditory> Purview)
-            => Writer.Write(Purview);
-
-        public sealed override void WritePurview(SerializationWriter Writer, IPurview Purview)
-        {
-            if (Purview is not AuditoryPurview typedPurview)
-                typedPurview = _Purview as AuditoryPurview;
-
-            WritePurview(Writer, typedPurview);
-
-            if (typedPurview == null)
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: GetType().ToStringWithGenerics() + " Failed to Serialize Write " +
-                        Purview.TypeStringWithGenerics() + " from untyped " + nameof(WritePurview) + " override.");
-        }
-
-        public virtual void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview<Auditory> Purview,
-            IAlertTypedPerception<Auditory> ParentPerception = null)
-            => Purview = Reader.ReadComposite<AuditoryPurview>();
-
-        public sealed override void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview Purview,
-            IPerception ParentPerception = null)
-        {
-            if (Purview is not IPurview<Auditory> typedPurview)
-                typedPurview = _Purview as IPurview<Auditory>;
-
-            if (typedPurview != null)
-            {
-                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Auditory> ?? this);
-                _Purview = typedPurview;
-            }
-            else
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: GetType().ToStringWithGenerics() + " Failed to Read Serialzed " +
-                        Purview.TypeStringWithGenerics() + " from untyped " + nameof(ReadPurview) + " override.");
-        }
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
@@ -125,22 +69,34 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public override Type GetAlertType()
-            => typeof(Auditory);
+            => AlertType;
 
-        public virtual IPurview<Auditory> GetTypedPurview()
-            => (_Purview ??= new AuditoryPurview(this)) as AuditoryPurview;
+        public V GetTypedPurview<V>()
+            where V : BasePurview<Auditory>
+            => Purview as V;
 
-        public override IPurview GetPurview()
+        public override BasePurview GetPurview()
             => Purview;
 
         public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                });
+
             args ??= new();
-            args[nameof(IPurview.Value)] = Value;
+            args[nameof(Value)] = Value;
             args[nameof(IDiffusingPurview.ConfigureDiffuser)] = new Dictionary<string, object>()
             {
+                { nameof(BasePurview.ParentPerception), this },
                 { nameof(IDiffusingPurview.Diffuser.SetSteps), Value },
             };
+
+            args.ForEach(kvp => Debug.Log(kvp.Key, kvp.Value, Indent: indent[1]));
+
             base.ConfigurePurview(Value, args);
         }
 

@@ -37,7 +37,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             List<int> weights = findPath.Weights;
 
             int stepsCount = steps.Count;
-            int effectiveRangeCents = EffectiveValue * 100;
+            int effectiveRangeCents = GetEffectiveValue() * 100;
             for (int i = 0; i < stepsCount; i++)
             {
                 if (effectiveRangeCents < 0)

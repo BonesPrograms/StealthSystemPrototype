@@ -26,6 +26,8 @@ namespace StealthSystemPrototype.Perceptions
     [Serializable]
     public class EsperPsionicPerception : PsionicMutationPerception<Esper>
     {
+        public override BasePurview Purview => new EsperPurview(this);
+
         public override bool RequiresConsciousness => true;
         public override bool IgnoreMentalShield => false;
         public override PsionicAttunement Attunement
@@ -89,15 +91,6 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Serialization
 
-        public override void WritePurview(SerializationWriter Writer, IPurview<Psionic> Purview)
-            => base.WritePurview(Writer, Purview);
-
-        public override void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview<Psionic> Purview,
-            IAlertTypedPerception<Psionic> ParentPerception = null)
-            => Purview = Reader.ReadComposite<EsperPurview>();
-
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
@@ -108,9 +101,6 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-
-        public override IPurview<Psionic> GetTypedPurview()
-            => (_Purview ??= new EsperPurview(this)) as PsionicPurview;
 
         public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {

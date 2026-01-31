@@ -59,30 +59,35 @@ namespace StealthSystemPrototype.Events
                 && Perceiver.HasRegisteredEvent(E.GetRegisteredEventID()))
             {
                 proceed = Perceiver.FireEvent(E.StringyEvent);
-                Debug.YehNah(nameof(Perceiver.HasRegisteredEvent), proceed, Indent: indent[1]);
+                Perceptions = E.Perceptions;
+                Debug.YehNah(nameof(Perceiver.HasRegisteredEvent), Perceptions.Count, proceed, Indent: indent[1]);
             }
 
             if (proceed)
             {
                 E.UpdateFromStringyEvent();
-                Debug.YehNah(nameof(UpdateFromStringyEvent), proceed, Indent: indent[1]);
+                Perceptions = E.Perceptions;
+                Debug.YehNah(nameof(UpdateFromStringyEvent), Perceptions.Count, proceed, Indent: indent[1]);
             }
 
             if (proceed
                 && Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
             {
                 proceed = Perceiver.HandleEvent(E);
-                Debug.YehNah(nameof(Perceiver.WantEvent), proceed, Indent: indent[1]);
+                Perceptions = E.Perceptions;
+                Debug.YehNah(nameof(Perceiver.WantEvent), Perceptions.Count, proceed, Indent: indent[1]);
             }
 
             if (!proceed)
+            {
                 Perceptions.Clear();
+            }
 
             Debug.YehNah(Utils.CallChain(nameof(GetPerceptionsEvent), nameof(GetFor)), proceed, Indent: indent[0]);
         }
 
         public GetPerceptionsEvent AddPerception(
-            IPerception Perception,
+            BasePerception Perception,
             bool DoRegistration = true,
             bool Creation = false)
         {
@@ -107,7 +112,7 @@ namespace StealthSystemPrototype.Events
         public GetPerceptionsEvent RequirePerception<P>(
             P Perception,
             bool Creation = false)
-            where P : class, IPerception, new()
+            where P : BasePerception, new()
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,
@@ -134,7 +139,7 @@ namespace StealthSystemPrototype.Events
             int Level,
             int PurviewValue,
             bool Creation = false)
-            where P : class, IBodyPartPerception, new()
+            where P : BaseBodyPartPerception, new()
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,

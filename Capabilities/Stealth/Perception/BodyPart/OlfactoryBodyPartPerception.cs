@@ -79,7 +79,9 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public override IPurview Purview => GetTypedPurview();
+        public override BasePurview Purview => new OlfactoryPurview(this);
+
+        public virtual Type AlertType => typeof(Olfactory);
 
         private bool _AffectedByLiquidCovered = false;
         public virtual bool AffectedByLiquidCovered
@@ -115,12 +117,12 @@ namespace StealthSystemPrototype.Perceptions
             bool AffectedByLiquidCovered,
             bool AffectedByLiquidStained,
             string InsensitiveLiquids,
-            OlfactoryPurview Purview)
+            int? PurviewValue = null)
             : base(
                   Owner: Owner,
                   Source: Source,
                   Level: Level,
-                  Purview: Purview)
+                  PurviewValue: PurviewValue)
         {
             this.AffectedByLiquidCovered = AffectedByLiquidCovered;
             this.AffectedByLiquidStained = AffectedByLiquidStained;
@@ -132,7 +134,7 @@ namespace StealthSystemPrototype.Perceptions
             bool AffectedByLiquidCovered,
             bool AffectedByLiquidStained,
             string InsensitiveLiquids,
-            OlfactoryPurview Purview)
+            int? PurviewValue = null)
             : this(
                   null,
                   Source: Source,
@@ -140,13 +142,13 @@ namespace StealthSystemPrototype.Perceptions
                   AffectedByLiquidCovered: AffectedByLiquidCovered,
                   AffectedByLiquidStained: AffectedByLiquidStained,
                   InsensitiveLiquids: InsensitiveLiquids,
-                  Purview: Purview)
+                  PurviewValue: PurviewValue)
         {
         }
         public OlfactoryBodyPartPerception(
             BodyPart Source,
             int Level,
-            OlfactoryPurview Purview)
+            int? PurviewValue = null)
             : this(
                   Owner: null,
                   Source: Source,
@@ -154,100 +156,12 @@ namespace StealthSystemPrototype.Perceptions
                   AffectedByLiquidCovered: true,
                   AffectedByLiquidStained: false,
                   InsensitiveLiquids: DefaultInsensitiveLiquids,
-                  Purview: Purview)
-        {
-        }
-        public OlfactoryBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            bool AffectedByLiquidCovered,
-            bool AffectedByLiquidStained,
-            string InsensitiveLiquids,
-            int Purview)
-            : this(
-                  Owner: Owner,
-                  Source: Source,
-                  Level: Level,
-                  AffectedByLiquidCovered: AffectedByLiquidCovered,
-                  AffectedByLiquidStained: AffectedByLiquidStained,
-                  InsensitiveLiquids: InsensitiveLiquids,
-                  Purview: new OlfactoryPurview(Purview))
-        {
-        }
-        public OlfactoryBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            bool AffectedByLiquidCovered,
-            bool AffectedByLiquidStained,
-            string InsensitiveLiquids,
-            int Purview)
-            : this(
-                  null,
-                  Source: Source,
-                  Level: Level,
-                  AffectedByLiquidCovered: AffectedByLiquidCovered,
-                  AffectedByLiquidStained: AffectedByLiquidStained,
-                  InsensitiveLiquids: InsensitiveLiquids,
-                  Purview: Purview)
-        {
-        }
-        public OlfactoryBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            int Purview)
-            : this(
-                  Source: Source,
-                  Level: Level,
-                  Purview: new OlfactoryPurview(Purview))
+                  PurviewValue: PurviewValue)
         {
         }
 
         #endregion
         #region Serialization
-
-        public virtual void WritePurview(SerializationWriter Writer, IPurview<Olfactory> Purview)
-            => Writer.Write(Purview);
-
-        public sealed override void WritePurview(SerializationWriter Writer, IPurview Purview)
-        {
-            if (Purview is not OlfactoryPurview typedPurview)
-                typedPurview = _Purview as OlfactoryPurview;
-
-            WritePurview(Writer, typedPurview);
-
-            if (typedPurview == null)
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: GetType().ToStringWithGenerics() + " Failed to Serialize Write " +
-                        Purview.TypeStringWithGenerics() + " from untyped " + nameof(WritePurview) + " override.");
-        }
-
-        public virtual void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview<Olfactory> Purview,
-            IAlertTypedPerception<Olfactory> ParentPerception = null)
-            => Purview = Reader.ReadComposite<OlfactoryPurview>();
-
-        public sealed override void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview Purview,
-            IPerception ParentPerception = null)
-        {
-            if (Purview is not IPurview<Olfactory> typedPurview)
-                typedPurview = _Purview as IPurview<Olfactory>;
-
-            if (typedPurview != null)
-            {
-                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Olfactory> ?? this);
-                _Purview = typedPurview;
-            }
-            else
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: GetType().ToStringWithGenerics() + " Failed to Read Serialzed " +
-                        Purview.TypeStringWithGenerics() + " from untyped " + nameof(ReadPurview) + " override.");
-        }
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
@@ -267,22 +181,34 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public override Type GetAlertType()
-            => typeof(Olfactory);
+            => AlertType;
 
-        public virtual IPurview<Olfactory> GetTypedPurview()
-            => (_Purview ??= new OlfactoryPurview(this)) as OlfactoryPurview;
+        public V GetTypedPurview<V>()
+            where V : BasePurview<Olfactory>
+            => Purview as V;
 
-        public override IPurview GetPurview()
+        public override BasePurview GetPurview()
             => Purview;
 
         public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                });
+
             args ??= new();
-            args[nameof(IPurview.Value)] = Value;
+            args[nameof(Value)] = Value;
             args[nameof(IDiffusingPurview.ConfigureDiffuser)] = new Dictionary<string, object>()
             {
+                { nameof(BasePurview.ParentPerception), this },
                 { nameof(IDiffusingPurview.Diffuser.SetSteps), Value },
             };
+
+            args.ForEach(kvp => Debug.Log(kvp.Key, kvp.Value, Indent: indent[1]));
+
             base.ConfigurePurview(Value, args);
         }
 

@@ -21,8 +21,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public bool IsWithinLine(AlertContext Context)
             => Context?.Perceiver?.CurrentCell is Cell { InActiveZone: true } origin
             && Context?.AlertLocation is Cell { InActiveZone: true } destination
-            && origin.CosmeticDistanceToCell(destination) <= EffectiveValue
-            && (!Occludes
+            && origin.CosmeticDistanceToCell(destination) <= GetEffectiveValue()
+            && (!GetOccludes()
                 || origin.HasLOSTo(destination));
     }
 }

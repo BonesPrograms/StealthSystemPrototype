@@ -58,35 +58,36 @@ namespace StealthSystemPrototype.Perceptions
                 return false;
 
             if (RequiresConsciousness
-                && Owner.HasEffect<Asleep>())
+                && GetOwner() != null 
+                && GetOwner().HasEffect<Asleep>())
                 return false;
 
-            GameObject actor = Context?.Hider;
-            if (actor == null)
+            GameObject hider = Context?.Hider;
+            if (hider == null)
                 return Attunement >= PsionicAttunement.Ambient;
 
             if (!IgnoreMentalShield
-                && actor.HasPart<MentalShield>())
+                && hider.HasPart<MentalShield>())
                 return false;
 
             if (Attunement >= PsionicAttunement.Living
-                && actor.IsAlive)
+                && hider.IsAlive)
                 return true;
 
             if (Attunement >= PsionicAttunement.Sentient
-                && actor.Brain != null)
+                && hider.Brain != null)
                 return true;
 
             if (Attunement >= PsionicAttunement.MentalMutations
-                && actor.HasMentalMutations())
+                && hider.HasMentalMutations())
                 return true;
 
             if (Attunement >= PsionicAttunement.NonChimera
-                && actor.EligibleForMentalMutations())
+                && hider.EligibleForMentalMutations())
                 return true;
 
             if (Attunement >= PsionicAttunement.Espers
-                && actor.HasPart<Esper>())
+                && hider.HasPart<Esper>())
                 return true;
 
             return false;

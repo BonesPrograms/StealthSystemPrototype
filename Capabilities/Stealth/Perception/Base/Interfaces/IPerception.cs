@@ -31,16 +31,24 @@ namespace StealthSystemPrototype.Perceptions
         , IComparable<IPerception>
         , IEventHandler
     {
-        #region Static Methods
+        #region Static & Const
+
+        public static int MIN_LEVEL => 0;
+
+        public static int MAX_LEVEL => 999;
+
+        public static bool IsPerceptionOfAlert<A>(IPerception IPerception)
+            where A : class, IAlert, new()
+            => IPerception is IAlertTypedPerception<A>;
 
         public static void RollSave(
             out int NaturalRoll,
             out int Roll,
             out int Difficulty,
+            out int BaseDifficulty,
             ref bool IgnoreNatural1,
             ref bool IgnoreNatural20,
             AlertContext Context,
-            int BaseDifficulty,
             bool LogRoll = false)
         {
             GameObject perceiver = Context.Perceiver;
@@ -48,19 +56,21 @@ namespace StealthSystemPrototype.Perceptions
             GameObject alertObject = Context.AlertObject;
 
             IPerception perception = Context.Perception;
-            IAlert alert = Context.Alert;
+            IAlert actonAlert = Context.ActionAlert;
+            IAlert sneakAlert = Context.SneakAlert;
 
-            string perceptionName = perception.Name;
-            string alertName = alert.Name;
+            string perceptionName = perception.GetName();
+            string alertName = actonAlert.Name;
 
             string action = Context.ParentAction.Action;
 
             NaturalRoll = Stat.Random(1, 20);
             Roll = NaturalRoll;
 
-            Difficulty = BaseDifficulty + (alert.Intensity - Context.AlertConcealment);
+            BaseDifficulty = sneakAlert.Intensity;
+            Difficulty = BaseDifficulty - actonAlert.Intensity;
 
-            Roll += perception.Level;
+            Roll += perception.GetEffectiveLevel();
 
             ModifyAttackingSaveEvent.Process(
                 Attacker: hider,
@@ -93,23 +103,23 @@ namespace StealthSystemPrototype.Perceptions
                 Actual: true);
 
             ModifyDefendingSaveEvent.Process(
-                    Attacker: hider,
-                    Defender: perceiver,
-                    Source: alertObject,
-                    Stat: perceptionName,
-                    AttackerStat: alertName,
-                    Vs: action,
-                    NaturalRoll: NaturalRoll,
-                    Roll: ref Roll,
-                    BaseDifficulty: BaseDifficulty,
-                    Difficulty: ref Difficulty,
-                    IgnoreNatural1: ref IgnoreNatural1,
-                    IgnoreNatural20: ref IgnoreNatural20,
-                    Actual: true);
+                Attacker: hider,
+                Defender: perceiver,
+                Source: alertObject,
+                Stat: perceptionName,
+                AttackerStat: alertName,
+                Vs: action,
+                NaturalRoll: NaturalRoll,
+                Roll: ref Roll,
+                BaseDifficulty: BaseDifficulty,
+                Difficulty: ref Difficulty,
+                IgnoreNatural1: ref IgnoreNatural1,
+                IgnoreNatural20: ref IgnoreNatural20,
+                Actual: true);
 
             if (perceiver.IsPlayer())
             {
-                if (alert.Type.EqualsAny(
+                if (actonAlert.Type.EqualsAny(
                     args: new Type[]
                     {
                         typeof(Psionic),
@@ -118,7 +128,7 @@ namespace StealthSystemPrototype.Perceptions
                     }))
                     perceiver.PlayWorldSound("sfx_ability_mutation_mental_generic_save");
                 else
-                if (alert.Type.EqualsAny(
+                if (actonAlert.Type.EqualsAny(
                     args: new Type[]
                     {
                         typeof(Olfactory),
@@ -165,8 +175,8 @@ namespace StealthSystemPrototype.Perceptions
         public static bool MakeSave(
             out int SuccessMargin,
             out int FailureMargin,
+            BasePerception Perception,
             AlertContext Context,
-            int BaseDifficulty,
             bool IgnoreNaturals = false,
             bool IgnoreNatural1 = false,
             bool IgnoreNatural20 = false,
@@ -176,8 +186,8 @@ namespace StealthSystemPrototype.Perceptions
             GameObject hider = Context.Hider;
             GameObject alertObject = Context.AlertObject;
 
-            string perceptionName = Context.Perception.Name;
-            string alertName = Context.Alert.Name;
+            string perceptionName = Perception.GetName();
+            string alertName = Context.ActionAlert.Name;
 
             string action = Context.ParentAction.Action;
 
@@ -193,20 +203,36 @@ namespace StealthSystemPrototype.Perceptions
                 out int NaturalRoll,
                 out int Roll,
                 out int Difficulty,
+                out int BaseDifficulty,
                 ref IgnoreNatural1,
                 ref IgnoreNatural20,
                 Context,
-                BaseDifficulty,
                 LogRoll: false);
 
-            bool made =
-                (perceiver.IsPlayer() 
-                    && The.Core.IDKFA && !IgnoreGodmode)
-                || (NaturalRoll == 20 
-                    && !IgnoreNatural20)
-                || ((NaturalRoll != 1 
-                        || IgnoreNatural1)
-                    && Roll >= Difficulty);
+            bool godMode = perceiver.IsPlayer()
+                && The.Core.IDKFA
+                && !IgnoreGodmode;
+
+            bool validNat20 = NaturalRoll == 20
+                && !IgnoreNatural20;
+
+            bool validNat1 = NaturalRoll == 1
+                && !IgnoreNatural1;
+
+            bool rollSuccess = Roll >= Difficulty;
+
+            bool made;
+
+            if (godMode)
+                made = true;
+            else
+            if (validNat20)
+                made = true;
+            else
+            if (validNat1)
+                made = false;
+            else
+                made = rollSuccess;
 
             if (made)
             {
@@ -262,58 +288,14 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-
-        public static int MIN_LEVEL => 0;
-
-        public static int MAX_LEVEL => 999;
-
-        public string Name => GetName();
-
-        public string ShortName => GetName(true);
-
-        public GameObject Owner { get; set; }
-
-        public PerceptionRack Rack { get; }
-
-        public Type AlertType { get; }
-
-        public IPurview Purview { get; }
-
-        public int Level { get; set; }
-
-        public int EffectiveLevel { get; }
-
-        public int Cooldown { get; set; }
-
-        public int MaxCooldown { get; }
-
         #region Serialization
 
         public void FinalizeRead(SerializationReader Reader);
 
-        /// <summary>
-        /// Writes the <see cref="IPurview"/> member of an <see cref="IPerception"/> during its serialization. 
-        /// </summary>
-        /// <remarks>
-        /// Assume this will be called during the <see cref="IPerception"/>'s call to <see cref="IComposite.Write"/>.
-        /// </remarks>
-        /// <param name="Writer">The writer that will do the serialization.</param>
-        /// <param name="Purview">The <see cref="IPerception.Purview"/> to be written.</param>
-        public void WritePurview(SerializationWriter Writer, IPurview Purview);
-
-        /// <summary>
-        /// Reads the <see cref="IPurview"/> member of an <see cref="IPerception"/> during its deserialization. 
-        /// </summary>
-        /// <remarks>
-        /// Assume this will be called during the <see cref="IPerception"/>'s call to <see cref="IComposite.Read"/>.
-        /// </remarks>
-        /// <param name="Reader">The reader that will do the deserialization.</param>
-        /// <param name="Purview">An assignable field or variable from which <see cref="IPerception.Purview"/> can be assigned.</param>
-        /// <param name="ParentPerception">The <see cref="IPerception"/> whose <see cref="IPerception.Purview"/> is being read, which should be assigned to its <see cref="IPurview.ParentPerception"/> field.</param>
-        public void ReadPurview(SerializationReader Reader, ref IPurview Purview, IPerception ParentPerception = null);
-
         #endregion
         #region Contracts
+
+        #region Event Registration
 
         public void ApplyRegistrar(GameObject Object, bool Active = false);
 
@@ -324,6 +306,9 @@ namespace StealthSystemPrototype.Perceptions
         public void Register(GameObject Object, IEventRegistrar Registrar);
 
         public bool FireEvent(Event E);
+
+        #endregion
+        #region Object Life-cycle
 
         /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as initial.
@@ -355,84 +340,105 @@ namespace StealthSystemPrototype.Perceptions
         /// <returns>A new <see cref="IPerception"/> with values matching the original, and reassigned reference members.</returns>
         public IPerception DeepCopy(GameObject Owner);
 
+        #endregion
+        #region Field Accessors
+
+        /// <summary>
+        /// Produces an ID-like name for the <see cref="IPerception"/>.
+        /// </summary>
+        /// <param name="Short">Indicates an alternate shorter version of the output.<br/><br/>A good option is to use <see cref="Extensions.Acronymize(string)"/> to get an acronym.</param>
+        /// <returns>The ID-like name of the <see cref="IPerception"/>.</returns>
+        public string GetName(bool Short = false);
+
+        public GameObject GetOwner();
+
+        /// <summary>
+        /// Get the <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.
+        /// </summary>
+        /// <returns>The <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.</returns>
         public Type GetAlertType();
 
-        public bool SameAlertAs(IPerception Other)
-            => AlertType == Other.AlertType;
-
-        public static bool IsPerceptionOfAlert<A>(IPerception IPerception)
-            where A : class, IAlert, new()
-            => IPerception is IAlertTypedPerception<A>;
-
-        public bool IsCompatibleWith<A>(IPurview<A> Purview)
-            where A : IAlert
-            => AlertType == typeof(A);
-
+        /// <summary>
+        /// Get the <see cref="IPurview"/> used by this <see cref="IPerception"/> to determine whether an <see cref="IConcealedAction"/> is in proximity enough to be detected.
+        /// </summary>
+        /// <returns>The <see cref="IPurview"/> used by this <see cref="IPerception"/> to determine whether an <see cref="IConcealedAction"/> is in proximity enough to be detected.</returns>
         public IPurview GetPurview();
 
-        public void ConfigurePurview(int Value, Dictionary<string, object> args = null);
+        public int GetLevel();
+
+        public int GetLevelAdjustment(int Level = 0);
+
+        public int GetEffectiveLevel();
+
+        public int GetCooldown();
+
+        public int GetMaxCoolDown();
+
+        #endregion
 
         public string ToString(bool Short);
 
-        /// <summary>
-        /// Produces an ID-like name for the <see cref="IPerception"/>
-        /// </summary>
-        /// <param name="Short"></param>
-        /// <returns></returns>
-        public string GetName(bool Short = false);
+        #region Compatibility
 
         public bool SameAs(IPerception Other);
 
-        public bool IsOnCooldown()
-            => Cooldown > 0;
+        public bool SameAlertAs(IPerception Other);
 
-        public void TickCooldown()
-            => (--Cooldown).Clamp(0, MaxCooldown);
+        public bool IsCompatibleWith(IPurview Purview);
 
-        public void GoOnCooldown(int Cooldown)
-            => this.Cooldown = Cooldown.Clamp(0, MaxCooldown);
+        #endregion
+        #region Purview
 
-        public void GoOnCooldown()
-            => Cooldown = MaxCooldown;
-
-        public void GoOffCooldown()
-            => Cooldown = 0;
+        /// <summary>
+        /// Used to configure the <see cref="IPurview"/> used by this <see cref="IPerception"/> without having to pass arguments to a constructor.
+        /// </summary>
+        /// <param name="Value">The value to which the <see cref="IPurview.Value"/> should be set.</param>
+        /// <param name="args">An optional set of string &amp; object pairs that represent named values to pass on to <see cref="IPurview.Configure(Dictionary{string, object})"/>.</param>
+        public void ConfigurePurview(int Value, Dictionary<string, object> args = null);
 
         public bool CheckInPurview(AlertContext Context);
 
-        public bool CanPerceiveAlert(IAlert Alert)
-            => Alert?.IsType(AlertType) ?? false;
+        #endregion
+        #region Cooldown
 
-        public bool CanPerceive(AlertContext Context)
-            => CanPerceiveAlert(Context?.Alert);
+        public bool IsOnCooldown();
+
+        public void TickCooldown();
+
+        public void GoOnCooldown(int Cooldown);
+
+        public void GoOnCooldown();
+
+        public void GoOffCooldown();
+
+        #endregion
+        #region Perceive
+
+        public bool CanPerceiveAlert(IAlert Alert);
+
+        public bool CanPerceive(AlertContext Context);
 
         public bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin);
 
         public IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin);
 
-        public int GetLevelAdjustment(int Level = 0);
+        #endregion
 
         public void ClearCaches();
 
-        public bool Validate()
-        {
-            if (Owner == null)
-                return false;
-
-            return true;
-        }
+        public bool Validate();
 
         #endregion
         #region Comparison
 
         public int CompareLevelTo(IPerception Other)
-            => Level - Other.Level;
+            => GetLevel() - Other.GetLevel();
 
         public int CompareEffectiveLevelTo(IPerception Other)
-            => EffectiveLevel - Other.EffectiveLevel;
+            => GetEffectiveLevel() - Other.GetEffectiveLevel();
 
         public int ComparePurviewTo(IPerception Other)
-            => Purview.CompareTo(Other.Purview);
+            => GetPurview().CompareTo(Other.GetPurview());
 
         public new int CompareTo(IPerception Other)
         {

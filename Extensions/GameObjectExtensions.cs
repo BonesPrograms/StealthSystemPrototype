@@ -44,7 +44,7 @@ namespace StealthSystemPrototype
         public static PerceptionRack RequirePerceptions(this GameObject Object)
             => Object.RequirePart<UD_PerceptionHelper>()?.Perceptions;
 
-        public static bool HasPerception<A>(this GameObject Object, IPerception Perception = null)
+        public static bool HasPerception<A>(this GameObject Object, BasePerception Perception = null)
             => Object.RequirePerceptions().Has(Perception);
 
         public static bool HasPerception(this GameObject Object, string PerceptionName, bool IncludeShort = false)
@@ -54,22 +54,22 @@ namespace StealthSystemPrototype
             ?? false;
 
         public static P GetPerception<P>(this GameObject Object)
-            where P : class, IPerception, new()
+            where P : BasePerception, new()
             => Object.RequirePerceptions()?.Get<P>();
 
         public static List<IAlertTypedPerception<A>> GetPerceptionsForAlert<A>(this GameObject Object)
-            where A : class, IAlert<A>, new()
+            where A : BaseAlert, new()
             => Object.RequirePerceptions()?.GetForAlert<A>();
 
         public static IPerception GetPerception(this GameObject Object, string PerceptionName, bool IncludeShort = false)
             => Object.RequirePerceptions().Get(PerceptionName, IncludeShort);
 
         public static IPerception GetFirstPerceptionOfAlert<A>(this GameObject Object, A Alert = null)
-            where A : class, IAlert<A>, new()
+            where A : class, IAlert, new()
             => Object.RequirePerceptions().GetFirstOfAlert(Alert);
 
         public static bool TryGetPerception<P>(this GameObject Object, out P Perception)
-            where P : class, IPerception, new()
+            where P : BasePerception, new()
         {
             Perception = null;
             return Object.GetPerceptions() is PerceptionRack perceptions
@@ -82,7 +82,7 @@ namespace StealthSystemPrototype
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where P : IPerception
+            where P : BasePerception
         {
             Object.RequirePerceptions()?.Add(Perception, DoRegistration, Initial, Creation);
             return Perception;
@@ -95,7 +95,7 @@ namespace StealthSystemPrototype
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where P : class, IPerception, new()
+            where P : BasePerception, new()
             => Object.RequirePerceptions()?.Add<P>(Level, PurviewValue, DoRegistration, Initial, Creation);
 
         public static P AddPerception<P>(
@@ -103,7 +103,7 @@ namespace StealthSystemPrototype
             bool DoRegistration = true,
             bool Initial = false,
             bool Creation = false)
-            where P : class, IPerception, new()
+            where P : BasePerception, new()
             => Object.RequirePerceptions()?.Add<P>(DoRegistration, Initial, Creation);
 
         public static P AddPerception<P>(
@@ -112,13 +112,13 @@ namespace StealthSystemPrototype
             int PurviewValue,
             bool DoRegistration = true,
             bool Creation = false)
-            where P : class, IPerception, new()
+            where P : BasePerception, new()
             => Object.RequirePerceptions()?.Add<P>(Level, PurviewValue, DoRegistration, Creation);
 
         public static P RequirePerception<P>(
             this GameObject Object,
             bool Creation = false)
-            where P : class, IPerception, new()
+            where P : BasePerception, new()
             => Object.RequirePerceptions()?.Require<P>(Creation);
 
         public static bool CheckNotOnWorldMap(this GameObject Object, string Verb, bool ShowMessage = false)

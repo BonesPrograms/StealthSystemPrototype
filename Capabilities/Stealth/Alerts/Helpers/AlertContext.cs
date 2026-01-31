@@ -20,15 +20,15 @@ namespace StealthSystemPrototype.Alerts
     {
         public bool WantFieldReflection => false;
 
-        private IConcealedAction _ParentAction;
-        public IConcealedAction ParentAction
+        private BaseConcealedAction _ParentAction;
+        public BaseConcealedAction ParentAction
         { 
             get => _ParentAction;
             protected set => _ParentAction = value;
         }
 
-        private IPerception _Perception;
-        public IPerception Perception
+        private BasePerception _Perception;
+        public BasePerception Perception
         {
             get => _Perception;
             protected set => _Perception = value;
@@ -41,25 +41,25 @@ namespace StealthSystemPrototype.Alerts
             protected set => _Perceiver = value;
         }
 
-        private IAlert _Alert;
-        public IAlert Alert
+        private BaseAlert _ActionAlert;
+        public BaseAlert ActionAlert
         {
-            get => _Alert;
-            protected set => _Alert = value;
+            get => _ActionAlert;
+            protected set => _ActionAlert = value;
         }
 
-        private int _ActionIntensity;
-        public int AlertConcealment
+        private BaseAlert _SneakAlert;
+        public BaseAlert SneakAlert
         {
-            get => _ActionIntensity;
-            protected set => _ActionIntensity = value;
+            get => _SneakAlert;
+            protected set => _SneakAlert = value;
         }
 
-        private GameObject _Actor;
+        private GameObject _Hider;
         public GameObject Hider
         {
-            get => _Actor;
-            protected set => _Actor = value;
+            get => _Hider;
+            protected set => _Hider = value;
         }
 
         private GameObject _AlertObject;
@@ -82,17 +82,17 @@ namespace StealthSystemPrototype.Alerts
         {
             ParentAction = null;
             Perception = null;
-            Alert = null;
-            AlertConcealment = 0;
+            ActionAlert = null;
+            SneakAlert = null;
             Hider = null;
             AlertObject = null;
             AlertLocation = null;
         }
-        public AlertContext(
-            IConcealedAction ParentAction,
-            IPerception Perception,
-            IAlert Alert,
-            int AlertConcealment,
+        protected AlertContext(
+            BaseConcealedAction ParentAction,
+            BasePerception Perception,
+            BaseAlert ActionAlert,
+            BaseAlert SneakAlert,
             GameObject Hider,
             GameObject AlertObject,
             Cell AlertLocation)
@@ -100,18 +100,35 @@ namespace StealthSystemPrototype.Alerts
         {
             this.ParentAction = ParentAction;
             this.Perception = Perception;
-            this.Alert = Alert;
-            this.AlertConcealment = AlertConcealment;
+            this.ActionAlert = ActionAlert;
+            this.SneakAlert = SneakAlert;
             this.Hider = Hider;
             this.AlertObject = AlertObject;
             this.AlertLocation = AlertLocation;
+        }
+        public AlertContext(
+            BaseConcealedAction ParentAction,
+            BaseAlert ActionAlert,
+            BaseAlert SneakAlert,
+            GameObject Hider,
+            GameObject AlertObject,
+            Cell AlertLocation)
+            : this(
+                  ParentAction: ParentAction,
+                  Perception: null,
+                  ActionAlert: ActionAlert,
+                  SneakAlert: SneakAlert,
+                  Hider: Hider,
+                  AlertObject: AlertObject,
+                  AlertLocation: AlertLocation)
+        {
         }
         public AlertContext(AlertContext Source)
             : this(
                   ParentAction: Source.ParentAction,
                   Perception: Source.Perception,
-                  Alert: Source.Alert,
-                  AlertConcealment: Source.AlertConcealment - 1,
+                  ActionAlert: Source.ActionAlert.Copy(Degrade: true),
+                  SneakAlert: Source.SneakAlert.Copy(),
                   Hider: Source.Hider,
                   AlertObject: Source.AlertObject,
                   AlertLocation:Source.AlertLocation)
@@ -128,22 +145,23 @@ namespace StealthSystemPrototype.Alerts
 
         public virtual void Write(SerializationWriter Writer)
         {
-            Writer.Write(ParentAction);
-            Writer.Write(Perception);
+            ConcealedActionData concealedActionData = (ConcealedActionData)ParentAction;
+            Writer.WriteComposite(concealedActionData);
+            Writer.WriteComposite(Perception);
             Writer.WriteGameObject(Perceiver);
-            Writer.Write(Alert);
-            Writer.WriteOptimized(AlertConcealment);
+            Writer.WriteComposite(ActionAlert);
+            Writer.WriteComposite(SneakAlert);
             Writer.WriteGameObject(Hider);
             Writer.WriteGameObject(AlertObject);
             Writer.Write(AlertLocation);
         }
         public virtual void Read(SerializationReader Reader)
         {
-            ParentAction = Reader.ReadComposite() as IConcealedAction;
-            Perception = Reader.ReadComposite() as IPerception;
+            ParentAction = (BaseConcealedAction)Reader.ReadComposite<ConcealedActionData>();
+            Perception = Reader.ReadComposite<BasePerception>();
             Perceiver = Reader.ReadGameObject();
-            Alert = Reader.ReadComposite() as IAlert;
-            AlertConcealment = Reader.ReadOptimizedInt32();
+            ActionAlert = Reader.ReadComposite<BaseAlert>();
+            SneakAlert = Reader.ReadComposite<BaseAlert>();
             Hider = Reader.ReadGameObject();
             AlertObject = Reader.ReadGameObject();
             AlertLocation = Reader.ReadCell();
@@ -170,8 +188,8 @@ namespace StealthSystemPrototype.Alerts
         public bool Validate()
             => GameObject.Validate(Hider)
             && GameObject.Validate(Perceiver)
-            && Perception.Validate()
-            && AlertConcealment > 0;
+            && (Perception == null || Perception.Validate())
+            && SneakAlert.Intensity > 0;
 
         public static bool Validate(ref AlertContext Context)
         {
@@ -179,6 +197,11 @@ namespace StealthSystemPrototype.Alerts
                 Context = null;
 
             return Context != null;
+        }
+
+        public void SetPerception(BasePerception Perception)
+        {
+            this.Perception = Perception;
         }
     }
 }

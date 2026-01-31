@@ -27,7 +27,9 @@ namespace StealthSystemPrototype.Perceptions
         : BaseBodyPartPerception
         , IPsionicPerception
     {
-        public override IPurview Purview => GetTypedPurview();
+        public override BasePurview Purview => _Purview ??= new PsionicPurview(this);
+
+        public virtual Type AlertType => typeof(Psionic);
 
         private bool _RequiresConsciousness = true;
         public virtual bool RequiresConsciousness
@@ -63,8 +65,8 @@ namespace StealthSystemPrototype.Perceptions
             bool RequiresConsciousness,
             bool IgnoreMentalShield,
             PsionicAttunement Attunement,
-            PsionicPurview Purview)
-            : base(Owner, Source, Level, Purview)
+            int? PurviewValue = null)
+            : base(Owner, Source, Level, PurviewValue)
         {
             this.RequiresConsciousness = RequiresConsciousness;
             this.IgnoreMentalShield = IgnoreMentalShield;
@@ -76,7 +78,7 @@ namespace StealthSystemPrototype.Perceptions
             bool RequiresConsciousness,
             bool IgnoreMentalShield,
             PsionicAttunement Attunement,
-            PsionicPurview Purview)
+            int? PurviewValue = null)
             : this(
                   Owner: null,
                   Source: Source,
@@ -84,66 +86,21 @@ namespace StealthSystemPrototype.Perceptions
                   RequiresConsciousness: RequiresConsciousness,
                   IgnoreMentalShield: IgnoreMentalShield,
                   Attunement: Attunement,
-                  Purview: Purview)
+                  PurviewValue: PurviewValue)
         {
         }
         public PsionicBodyPartPerception(
             BodyPart Source,
-            int Level,
-            PsionicPurview Purview)
+            int Level)
             : base(
                   Owner: null,
                   Source: Source,
-                  Level: Level,
-                  Purview: Purview)
+                  Level: Level)
         {
         }
 
         #endregion
         #region Serialization
-
-        public virtual void WritePurview(SerializationWriter Writer, IPurview<Psionic> Purview)
-            => Writer.Write(Purview);
-
-        public sealed override void WritePurview(SerializationWriter Writer, IPurview Purview)
-        {
-            if (Purview is not IPurview<Psionic> typedPurview)
-                typedPurview = _Purview as IPurview<Psionic>;
-
-            WritePurview(Writer, typedPurview);
-
-            if (typedPurview == null)
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: GetType().ToStringWithGenerics() + " Failed to Serialize Write " +
-                        Purview.TypeStringWithGenerics() + " from untyped " + nameof(WritePurview) + " override.");
-        }
-
-        public virtual void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview<Psionic> Purview,
-            IAlertTypedPerception<Psionic> ParentPerception = null)
-            => Purview = Reader.ReadComposite<PsionicPurview>();
-
-        public sealed override void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview Purview,
-            IPerception ParentPerception = null)
-        {
-            if (Purview is not IPurview<Psionic> typedPurview)
-                typedPurview = _Purview as IPurview<Psionic>;
-
-            if (typedPurview != null)
-            {
-                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Psionic> ?? this);
-                _Purview = typedPurview;
-            }
-            else
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: GetType().ToStringWithGenerics() + " Failed to Read Serialzed " +
-                        Purview.TypeStringWithGenerics() + " from untyped " + nameof(ReadPurview) + " override.");
-        }
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
@@ -163,22 +120,34 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public override Type GetAlertType()
-            => ((IAlertTypedPerception<Psionic>)this).GetAlertType();
+            => AlertType;
 
-        public virtual IPurview<Psionic> GetTypedPurview()
-            => (_Purview ??= new PsionicPurview(this)) as PsionicPurview;
+        public V GetTypedPurview<V>()
+            where V : BasePurview<Psionic>
+            => Purview as V;
 
-        public override IPurview GetPurview()
+        public override BasePurview GetPurview()
             => Purview;
 
         public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                });
+
             args ??= new();
-            args[nameof(IPurview.Value)] = Value;
+            args[nameof(Value)] = Value;
             args[nameof(IDiffusingPurview.ConfigureDiffuser)] = new Dictionary<string, object>()
             {
+                { nameof(BasePurview.ParentPerception), this },
                 { nameof(IDiffusingPurview.Diffuser.SetSteps), Value },
             };
+
+            args.ForEach(kvp => Debug.Log(kvp.Key, kvp.Value, Indent: indent[1]));
+
             base.ConfigurePurview(Value, args);
         }
 

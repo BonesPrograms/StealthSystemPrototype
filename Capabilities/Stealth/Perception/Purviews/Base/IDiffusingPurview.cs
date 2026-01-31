@@ -29,7 +29,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public void ConfigureDiffuser(Dictionary<string, object> args = null)
         {
-            Diffuser.SetSteps(Value);
             if (!args.IsNullOrEmpty())
             {
                 if (args.ContainsKey(nameof(Diffuser.SetSteps))

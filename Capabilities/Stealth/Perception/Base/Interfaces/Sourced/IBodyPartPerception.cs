@@ -19,17 +19,7 @@ namespace StealthSystemPrototype.Perceptions
 
         public new BodyPart Source { get; set; }
 
-        public new BodyPart GetSource()
-        {
-            if (Owner == null
-                || Owner.Body?.LoopPart(SourceType, ExcludeDismembered: true) is not List<BodyPart> bodyParts)
-                return null;
-
-            if (bodyParts.Count > 1)
-                bodyParts.Sort(ClosestBodyPart);
-
-            return bodyParts[0];
-        }
+        public new BodyPart GetSource();
 
         public static GameObject GetOwner(BodyPart Source)
         {

@@ -52,7 +52,6 @@ namespace StealthSystemPrototype.Events
             Hider = null;
             Performance = null;
             Witnesses = null;
-            StringyEvent?.Clear();
             StringyEvent = null;
         }
 
@@ -64,7 +63,7 @@ namespace StealthSystemPrototype.Events
                 return null;
 
             E.Hider = Hider;
-            E.StringyEvent = E.GetStringyEvent();
+            E.GetStringyEvent();
             return E;
         }
 
@@ -77,7 +76,7 @@ namespace StealthSystemPrototype.Events
                 return null;
 
             E.Performance = (Performance ??= new());
-            E.StringyEvent = E.GetStringyEvent();
+            E.GetStringyEvent();
             return E;
         }
 
@@ -90,7 +89,7 @@ namespace StealthSystemPrototype.Events
                 return null;
 
             E.Performance = Performance;
-            E.StringyEvent = E.GetStringyEvent();
+            E.GetStringyEvent();
             return E;
         }
 
@@ -107,7 +106,7 @@ namespace StealthSystemPrototype.Events
             if (CollectWitnesses)
                 GetWitnessesEvent.GetFor(E.Hider, ref Witnesses);
             E.Witnesses = Witnesses;
-            E.StringyEvent = E.GetStringyEvent();
+            E.GetStringyEvent();
             return E;
         }
 

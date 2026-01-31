@@ -22,32 +22,47 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         , IComparable<IPurview>
         , IEquatable<IPurview>
     {
+        #region Static & Const
+
         public static int MIN_VALUE => 0;
 
         public static int MAX_VALUE => 84;
 
         public static int DEFAULT_VALUE => 4;
 
-        public IPerception ParentPerception { get; set; }
+        #endregion
+        #region Contracts
 
-        public int Value { get; }
+        #region Field Accessors
 
-        public int EffectiveValue { get; }
+        public IPerception GetParentPerception();
+
+        public Type GetAlertType();
+
+        public int GetValue();
+
+        public void SetValue(int Value);
+
+        public int GetEffectiveValue();
 
         /// <summary>
-        /// Whether or not this purview is interrupted by <see cref="Render.Occluding"/> <see cref="GameObject"/>s.
+        /// Gets the boolean value representing whether or not this <see cref="IPurview"/> is interrupted by <see cref="Render.Occluding"/> <see cref="GameObject"/>s.
         /// </summary>
-        public bool Occludes { get; }
+        /// <returns></returns>
+        public bool GetOccludes();
 
-        #region Contracts
+        #endregion
+        #region Object Life-cycle
 
         public IPurview SetParentPerception(IPerception ParentPerception);
 
         public void Configure(Dictionary<string, object> args = null);
 
+        #endregion
+
         public bool IsForAlert(IAlert Alert);
 
-        public int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0);
+        public int GetPurviewValueAdjustment(IPerception ParentPerception, int Value = 0);
 
         public bool IsWithin(AlertContext Context);
 
@@ -56,11 +71,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         #endregion
         #region Comparioson
 
+        public int CompareValueTo(IPurview Other)
+            => GetValue() - Other.GetValue();
+
+        public int CompareEffectiveValueTo(IPurview Other)
+            => GetEffectiveValue() - Other.GetEffectiveValue();
+
         public new int CompareTo(IPurview Other)
             => EitherNull(this, Other, out int comparison)
             ? comparison
-            : (Value - Other.Value) +
-                (EffectiveValue - Other.EffectiveValue);
+            : CompareValueTo(Other) + CompareEffectiveValueTo(Other);
 
         #endregion
     }

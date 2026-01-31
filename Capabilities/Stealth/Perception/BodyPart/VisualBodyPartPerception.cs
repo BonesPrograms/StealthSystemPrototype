@@ -26,7 +26,9 @@ namespace StealthSystemPrototype.Perceptions
         : BaseBodyPartPerception
         , IVisualPerception
     {
-        public override IPurview Purview => GetTypedPurview();
+        public override BasePurview Purview => new VisualPurview(this);
+
+        public virtual Type AlertType => typeof(Visual);
 
         private LightLevel _MinimumLightLevel = IVisualPerception.DefaultMinimumLightLevel;
         public virtual LightLevel MinimumLightLevel
@@ -46,8 +48,8 @@ namespace StealthSystemPrototype.Perceptions
             BodyPart Source,
             int Level,
             LightLevel MinimumLightLevel,
-            VisualPurview Purview)
-            : base(Owner, Source, Level, Purview)
+            int? PurviewValue = null)
+            : base(Owner, Source, Level, PurviewValue)
         {
             this.MinimumLightLevel = MinimumLightLevel;
         }
@@ -55,39 +57,7 @@ namespace StealthSystemPrototype.Perceptions
             GameObject Owner,
             BodyPart Source,
             int Level,
-            VisualPurview Purview)
-            : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            VisualPurview Purview)
-            : this(null, Source, Level, MinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            BodyPart Source,
-            int Level,
-            VisualPurview Purview)
-            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
-        {
-        }
-        public VisualBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            LightLevel MinimumLightLevel,
-            int PurviewValue)
-            : this(Owner, Source, Level, MinimumLightLevel, new VisualPurview(PurviewValue))
-        {
-        }
-        public VisualBodyPartPerception(
-            GameObject Owner,
-            BodyPart Source,
-            int Level,
-            int PurviewValue)
+            int? PurviewValue = null)
             : this(Owner, Source, Level, IVisualPerception.DefaultMinimumLightLevel, PurviewValue)
         {
         }
@@ -95,63 +65,20 @@ namespace StealthSystemPrototype.Perceptions
             BodyPart Source,
             int Level,
             LightLevel MinimumLightLevel,
-            int Purview)
-            : this(null, Source, Level, MinimumLightLevel, Purview)
+            int? PurviewValue = null)
+            : this(null, Source, Level, MinimumLightLevel, PurviewValue)
         {
         }
         public VisualBodyPartPerception(
             BodyPart Source,
             int Level,
-            int Purview)
-            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, Purview)
+            int? PurviewValue = null)
+            : this(Source, Level, IVisualPerception.DefaultMinimumLightLevel, PurviewValue)
         {
         }
 
         #endregion
         #region Serialization
-
-        public virtual void WritePurview(SerializationWriter Writer, IPurview<Visual> Purview)
-            => Writer.Write(Purview);
-
-        public sealed override void WritePurview(SerializationWriter Writer, IPurview Purview)
-        {
-            if (Purview is not VisualPurview typedPurview)
-                typedPurview = _Purview as VisualPurview;
-
-            WritePurview(Writer, typedPurview);
-
-            if (typedPurview == null)
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: GetType().ToStringWithGenerics() + " Failed to Serialize Write " +
-                        Purview.TypeStringWithGenerics() + " from untyped " + nameof(WritePurview) + " override.");
-        }
-
-        public virtual void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview<Visual> Purview,
-            IAlertTypedPerception<Visual> ParentPerception = null)
-            => Purview = Reader.ReadComposite<VisualPurview>();
-
-        public sealed override void ReadPurview(
-            SerializationReader Reader,
-            ref IPurview Purview,
-            IPerception ParentPerception = null)
-        {
-            if (Purview is not IPurview<Visual> typedPurview)
-                typedPurview = _Purview as IPurview<Visual>;
-
-            if (typedPurview != null)
-            {
-                ReadPurview(Reader, ref typedPurview, ParentPerception as IAlertTypedPerception<Visual> ?? this);
-                _Purview = typedPurview;
-            }
-            else
-                MetricsManager.LogModWarning(
-                    mod: ThisMod,
-                    Message: GetType().ToStringWithGenerics() + " Failed to Read Serialzed " +
-                        Purview.TypeStringWithGenerics() + " from untyped " + nameof(ReadPurview) + " override.");
-        }
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
@@ -167,41 +94,14 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public override Type GetAlertType()
-            => typeof(Visual);
+            => AlertType;
 
-        public virtual IPurview<Visual> GetTypedPurview()
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                });
+        public V GetTypedPurview<V>()
+            where V : BasePurview<Visual>
+            => Purview as V;
 
-            VisualPurview typedPurview = new(this);
-
-            // typedPurview.SetParentPerception(this);
-
-            Debug.CheckYeh(nameof(typedPurview) + " got", Indent: indent[1]);
-
-            return (_Purview ??= typedPurview) as VisualPurview;
-        }
-
-        public override IPurview GetPurview()
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                });
-
-            IPurview purview = GetTypedPurview();
-
-            Debug.CheckYeh(nameof(purview) + " got", Indent: indent[1]);
-
-            return purview;
-        }
+        public override BasePurview GetPurview()
+            => Purview;
 
         public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
@@ -213,10 +113,10 @@ namespace StealthSystemPrototype.Perceptions
                 });
 
             args ??= new();
-            args[nameof(IPurview.Value)] = Value;
+            args[nameof(Value)] = Value;
             args[nameof(IDiffusingPurview.ConfigureDiffuser)] = new Dictionary<string, object>()
             {
-                { nameof(IPurview.ParentPerception), this },
+                { nameof(BasePurview.ParentPerception), this },
                 { nameof(IDiffusingPurview.Diffuser.SetSteps), Value },
             };
 

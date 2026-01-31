@@ -15,8 +15,6 @@ namespace StealthSystemPrototype.Perceptions
 
         public T GetSource();
 
-        public GameObject GetOwner();
-
         public new bool Validate()
             => ((IPerception)this).Validate()
             && Source != null;

@@ -34,16 +34,14 @@ namespace StealthSystemPrototype.Perceptions
         public BaseIPartPerception(
             GameObject Owner,
             T Source,
-            int Level,
-            IPurview Purview)
-            : base(Owner, Source, Level, Purview)
+            int Level)
+            : base(Owner, Source, Level)
         {
         }
         public BaseIPartPerception(
             T Source,
-            int Level,
-            IPurview Purview)
-            : this(GetOwner(Source), Source, Level, Purview)
+            int Level)
+            : this(GetOwner(Source), Source, Level)
         {
         }
 

@@ -23,10 +23,16 @@ namespace StealthSystemPrototype.Perceptions
         , IComponentPerception<T>
         where T : IComponent<GameObject>
     {
+        public override GameObject Owner
+        {
+            get => base.Owner ??= GetOwner(Source);
+            set => base.Owner = value;
+        }
+
         protected T _Source;
         public virtual T Source
         {
-            get => _Source ??= GetSource();
+            get => _Source;
             set => _Source = value;
         }
 
@@ -39,18 +45,16 @@ namespace StealthSystemPrototype.Perceptions
         public BaseComponentPerception(
             GameObject Owner,
             T Source,
-            int Level,
-            IPurview Purview)
-            : base(Owner, Level, Purview)
+            int Level)
+            : base(Owner, Level)
         {
             this.Owner = Owner;
             this.Source = Source;
         }
         public BaseComponentPerception(
             T Source,
-            int Level,
-            IPurview Purview)
-            : this(GetOwner(Source), Source, Level, Purview)
+            int Level)
+            : this(GetOwner(Source), Source, Level)
         {
         }
 
@@ -70,10 +74,11 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public abstract T GetSource();
+        public virtual T GetSource()
+            => Source;
 
-        public virtual GameObject GetOwner()
-            => IComponentPerception<T>.GetOwner(Source);
+        public override GameObject GetOwner()
+            => GetOwner(Source);
 
         public static GameObject GetOwner(T Source)
             => IComponentPerception<T>.GetOwner(Source);

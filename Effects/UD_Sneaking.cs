@@ -13,11 +13,10 @@ using SerializeField = UnityEngine.SerializeField;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
-using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Capabilities.Stealth;
 
 using static StealthSystemPrototype.Capabilities.Stealth.SneakPerformance;
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Alerts;
 
 namespace XRL.World.Effects
 {
@@ -35,7 +34,7 @@ namespace XRL.World.Effects
                 new Visual(8),
                 new Auditory(3),
                 new Olfactory(5),
-            } },
+            }.Initialize() as ConcealedCommandAction },
         };
 
         public GameObject Source;
@@ -299,7 +298,7 @@ namespace XRL.World.Effects
         {
             if (CommandEventsToConceal.ContainsKey(E.Command))
             {
-                TryConcealActionEvent.Send(
+                Sneak.TryConcealAction(
                     Hider: E.Actor,
                     Performance: SneakPerformance,
                     ConcealedAction: CommandEventsToConceal[E.Command]
@@ -309,7 +308,7 @@ namespace XRL.World.Effects
         }
         public override bool HandleEvent(EnteredCellEvent E)
         {
-            TryConcealActionEvent.Send(
+            Sneak.TryConcealAction(
                 Hider: E.Actor,
                 Performance: SneakPerformance,
                 ConcealedAction: new ConcealedMinAction<EnteredCellEvent>(
@@ -320,7 +319,7 @@ namespace XRL.World.Effects
                     IAlert.GetAlert<Visual>(Intensity: 10),
                     IAlert.GetAlert<Auditory>(Intensity: 10),
                     IAlert.GetAlert<Olfactory>(Intensity: 8),
-                });
+                }.Initialize());
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)

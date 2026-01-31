@@ -7,6 +7,8 @@ using System.Reflection;
 using XRL.World.Anatomy;
 using XRL.World.Parts.Mutation;
 
+using SerializeField = UnityEngine.SerializeField;
+
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Alerts;
@@ -81,23 +83,22 @@ namespace XRL.World.Parts
         {
             get
             {
-                using Indent indent = new(1);
-
-                if (_Perceptions == null
-                    && !CollectingPerceptions)
+                if (_Perceptions == null)
                 {
-                    CollectingPerceptions.Toggle();
-
-                    GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
-
-                    CollectingPerceptions.Toggle();
+                    SyncPerceptions();
                 }
                 return _Perceptions;
             }
         }
         private bool CollectingPerceptions;
 
-        public bool WantSync;
+        [SerializeField]
+        private bool _WantSync;
+        public bool WantSync
+        {
+            get => _WantSync;
+            set => _WantSync = value;
+        }
 
         #endregion
 
@@ -112,13 +113,13 @@ namespace XRL.World.Parts
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
-            Writer.WriteObject(_Perceptions);
             base.Write(Basis, Writer);
+            Writer.WriteComposite(_Perceptions);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
-            _Perceptions = Reader.ReadObject() as PerceptionRack;
             base.Read(Basis, Reader);
+            _Perceptions = Reader.ReadComposite<PerceptionRack>();
         }
 
         #endregion
@@ -139,9 +140,15 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
 
-            GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
-            _Perceptions?.Validate();
+            if (!CollectingPerceptions)
+            {
+                CollectingPerceptions.Toggle();
 
+                GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
+
+                CollectingPerceptions.Toggle();
+            }
+            _Perceptions?.Validate();
             WantSync = false;
         }
 
@@ -409,6 +416,14 @@ namespace XRL.World.Parts
         }
         public virtual bool HandleEvent(TryConcealActionEvent E)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E.GetType().ToStringWithGenerics()),
+                    Debug.Arg(ParentObject?.DebugName ?? "null"),
+                });
+
             if (E.Hider != ParentObject
                 && !E.Hider.InSamePartyAs(ParentObject)
                 && !Perceptions.IsNullOrEmpty())

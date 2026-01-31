@@ -23,11 +23,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [HasModSensitiveStaticCache]
     [HasGameBasedStaticCache]
     [Serializable]
-    public class SneakPerformance : Rack<IAlert>
+    public class SneakPerformance : Rack<BaseAlert>
     {
         #region Const & Static
 
-        public static SneakPerformance DefaultSneakPerformance => new(IAlert.Alerts);
+        public static SneakPerformance DefaultSneakPerformance => new(BaseAlert.Alerts);
 
         public static string MS_MULTI => "MoveSpeed_Multiplier";
         public static string QN_MULTI => "Quickness_Multiplier";
@@ -66,7 +66,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        public StringMap<List<StatCollectorEntry>> CollectedStats;
+        public static StringMap<List<StatCollectorEntry>> DefaultCollectedStats => new()
+        {
+            { MS_MULTI, new() },
+            { QN_MULTI, new() },
+        };
+
+        public StringMap<List<StatCollectorEntry>> CollectedStats = DefaultCollectedStats;
+
         public float MoveSpeedMultiplier => (GetCollectedStats(MS_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
         public float QuicknessMultiplier => (GetCollectedStats(QN_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
 
@@ -80,7 +87,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 if (value)
                 {
                     Clear();
-                    AddRange(IAlert.Alerts);
+                    AddRange(BaseAlert.Alerts);
                 }
                 _WantsSync = value;
             }
@@ -90,12 +97,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             : base()
         {
         }
-        public SneakPerformance(IReadOnlyList<IAlert> SourceList)
+        public SneakPerformance(IReadOnlyList<BaseAlert> SourceList)
             : base(SourceList)
         {
         }
         public SneakPerformance(SneakPerformance Source)
-            : this(Source as IReadOnlyList<IAlert>)
+            : this(Source as IReadOnlyList<BaseAlert>)
         {
             CollectedStats = Source.CollectedStats;
 
@@ -120,50 +127,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             base.Clear();
             _WantsSync = false;
-            CollectedStats = new()
-            {
-                { MS_MULTI, new() },
-                { QN_MULTI, new() },
-            };
+            CollectedStats = DefaultCollectedStats;
         }
 
-        public int this[IAlert Alert]
-        {
-            get => GetByType(Alert.Type).Intensity;
-            set => GetByType(Alert.Type).Intensity = value;
-        }
+        public BaseAlert this[BaseAlert Alert] => GetByType(Alert.Type);
 
-        public int this[string AlertName]
-        {
-            get => Items?.FirstOrDefault(a => a.Name == AlertName)?.Intensity ?? 0;
-            set
-            {
-                if (Items?.FirstOrDefault(a => a.Name == AlertName) is IAlert alert)
-                    alert.Intensity = value;
-                else
-                {
-                    ModInfo callingMod = ThisMod;
-
-                    StackTrace trace = new(1);
-                    StackFrame frame = null;
-                    for (int i = 0; i < 8; i++)
-                    {
-                        frame = trace?.GetFrame(i);
-                        if (frame.GetMethod()?.DeclaringType is Type declaringType
-                            && declaringType != typeof(SneakPerformance))
-                        {
-                            callingMod = ModManager.GetMod(declaringType.Assembly);
-                            break;
-                        }
-                    }
-                    MetricsManager.LogModWarning(
-                        mod: callingMod,
-                        Message: "Attempted to adjust " + nameof(alert.Intensity) + " of non-existent " + nameof(IAlert) + ": " + AlertName + ". " +
-                            "Did you mean " + IAlert.Alerts?.Aggregate("NO_MATCHING_ALERT", (a, n) => GetCloserMatch(AlertName, a, n.Name)) + "?\n" +
-                            frame);
-                }
-            }
-        }
+        public BaseAlert this[string AlertName] => Items?.FirstOrDefault(a => a.Name == AlertName);
 
         public string EntriesDebugString(out string Contents, string Delimiter = "\n")
         {
@@ -251,35 +220,35 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IEnumerable<StatCollectorEntry> GetCollectedStats(string Stat)
             => GetCollectedStats(Stat, null);
 
-        public SneakPerformance SetRating(string AlertName, int Rating)
+        public SneakPerformance SetIntensity(string AlertName, int Intensity)
         {
-            this[AlertName] = Rating;
+            this[AlertName].Intensity = Intensity;
             return this;
         }
         public SneakPerformance AdjustRating(string AlertName, int Amount)
         {
-            this[AlertName] += Amount;
+            this[AlertName].Intensity += Amount;
             return this;
         }
         public SneakPerformance SetMax(string AlertName, int Max)
         {
-            this[AlertName] =  Math.Min(this[AlertName], Max);
+            this[AlertName].Intensity = Math.Min(this[AlertName].Intensity, Max);
             return this;
         }
         public SneakPerformance SetMin(string AlertName, int Min)
         {
-            this[AlertName] =  Math.Max(Min, this[AlertName]);
+            this[AlertName].Intensity =  Math.Max(Min, this[AlertName].Intensity);
             return this;
         }
         public SneakPerformance SetClamp(string AlertName, InclusiveRange Clamp)
             => SetMin(AlertName, Clamp.Min)
                 .SetMax(AlertName, Clamp.Max);
 
-        public IAlert GetByType(Type AlertType)
+        public BaseAlert GetByType(Type AlertType)
         {
             if (Items != null)
                 for (int i = 0; i < Count; i++)
-                    if (Items[i] is IAlert alert
+                    if (Items[i] is BaseAlert alert
                         && alert.IsType(AlertType))
                         return alert;
 
@@ -289,23 +258,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     "does not exist in Collection (this should be impossible).");
         }
 
-        public IAlert GetMatchingAlert(IAlert Alert)
+        public BaseAlert GetMatchingAlert(BaseAlert Alert)
             => GetByType(Alert.Type);
 
         public bool Contains<A>(A Alert)
             where A : IAlert
             => Items?.Any(a => a.IsType(Alert.Type)) ?? false;
 
-        public static IAlert HigherRated(IAlert First, IAlert Second)
+        public static BaseAlert HigherRated(BaseAlert First, BaseAlert Second)
             => First == null
                 || Second.Intensity.CompareTo(First.Intensity) > 0
             ? Second
             : First;
 
-        public IAlert GetHighestRatedEntry()
+        public BaseAlert GetHighestRatedEntry()
             => Items
                 ?.Aggregate(
-                    seed: (IAlert)null,
+                    seed: (BaseAlert)null,
                     func: HigherRated);
     }
 }

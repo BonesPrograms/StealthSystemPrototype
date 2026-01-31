@@ -28,7 +28,7 @@ namespace StealthSystemPrototype.Perceptions
     [HasModSensitiveStaticCache]
     [StealthSystemBaseClass]
     [Serializable]
-    public abstract class BasePerception
+    public class BasePerception
         : IComponent<GameObject>
         , IPerception
         , IWitnessEventHandler
@@ -56,7 +56,7 @@ namespace StealthSystemPrototype.Perceptions
 
             public override void WriteBind(SerializationWriter Writer, IEventHandler Handler, int ID)
             {
-                Writer.WriteGameObject(((IPerception)Handler).Owner, Reference: true);
+                Writer.WriteGameObject(((IPerception)Handler).GetOwner(), Reference: true);
                 Writer.WriteTokenized(Handler.GetType());
             }
 
@@ -170,14 +170,15 @@ namespace StealthSystemPrototype.Perceptions
 
         [SerializeField]
         private string _Name;
-        public string Name => _Name ??= GetName();
+        public string Name => _Name ??= (GetType()?.ToStringWithGenerics() ?? "null?");
 
         [SerializeField]
         private string _ShortName;
-        public string ShortName => _ShortName ??= GetName(true);
+        public string ShortName => _ShortName ??= (GetType()?.ToStringWithGenerics(true) ?? "?");
 
-        private GameObject _Owner;
-        public GameObject Owner
+        [NonSerialized]
+        protected GameObject _Owner;
+        public virtual GameObject Owner
         {
             get => _Owner;
             set => _Owner = value;
@@ -185,13 +186,7 @@ namespace StealthSystemPrototype.Perceptions
 
         public PerceptionRack Rack => Owner?.GetPerceptions();
 
-        [NonSerialized]
-        protected int _Level;
-        public int Level
-        {
-            get => _Level;
-            set => _Level = value;
-        }
+        public int Level;
 
         [NonSerialized]
         protected int? _EffectiveLevel;
@@ -213,16 +208,21 @@ namespace StealthSystemPrototype.Perceptions
         }
         private bool GettingLevelAdjustment = false;
 
-        public Type AlertType => GetAlertType();
+        private Type AlertType => null;
 
         [NonSerialized]
-        protected IPurview _Purview;
-        public virtual IPurview Purview => GetPurview();
+        protected BasePurview _Purview;
+        public virtual BasePurview Purview
+        {
+            get => _Purview ??= new BasePurview();
+            protected set => _Purview = value;
+        }
 
+        [NonSerialized]
         protected int _Cooldown;
         public virtual int Cooldown
         {
-            get => _Cooldown;
+            get => _Cooldown.Clamp(0, MaxCooldown);
             set => _Cooldown = value.Clamp(0, MaxCooldown);
         }
 
@@ -238,12 +238,12 @@ namespace StealthSystemPrototype.Perceptions
 
             Owner = null;
 
-            _Level = 0;
+            Level = 0;
             _EffectiveLevel = null;
 
             _Purview = null;
 
-            _Cooldown = 0;
+            Cooldown = 0;
         }
         public BasePerception(GameObject Owner)
             : this()
@@ -252,34 +252,30 @@ namespace StealthSystemPrototype.Perceptions
         }
         public BasePerception(
             GameObject Owner,
-            int Level,
-            IPurview Purview)
+            int Level)
             : this(Owner)
         {
             this.Level = Level;
-            _Purview = Purview;
         }
 
         #endregion
         #region Serialization
-
-        public abstract void WritePurview(SerializationWriter Writer, IPurview Purview);
-
-        public abstract void ReadPurview(SerializationReader Reader, ref IPurview Purview, IPerception ParentPerception = null);
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
             base.Write(Basis, Writer);
             Writer.WriteGameObject(Owner);
             Writer.WriteOptimized(Level);
-            WritePurview(Writer, _Purview);
+            Writer.WriteComposite(Purview);
+            Writer.WriteOptimized(Cooldown);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
             Owner = Reader.ReadGameObject();
             Level = Reader.ReadOptimizedInt32();
-            ReadPurview(Reader, ref _Purview, this);
+            Purview = Reader.ReadComposite() as BasePurview;
+            Cooldown = Reader.ReadOptimizedInt32();
         }
 
         public virtual void FinalizeRead(SerializationReader Reader)
@@ -322,14 +318,14 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         /// <summary>
-        /// Creates a deep copy of an <see cref="IPerception"/>, with all the same values as the original.
+        /// Creates a deep copy of a <see cref="BasePerception"/>, with all the same values as the original.
         /// </summary>
         /// <remarks>
         /// Override this method to null any reference type members that shouldn't be sharing a reference.
         /// </remarks>
         /// <param name="Owner">The new <see cref="GameObject"/> for whom the deep copy is intended.</param>
-        /// <returns>A new <see cref="IPerception"/> with values matching the original, and reassigned reference members.</returns>
-        public virtual IPerception DeepCopy(GameObject Owner)
+        /// <returns>A new <see cref="BasePerception"/> with values matching the original, and reassigned reference members.</returns>
+        public virtual BasePerception DeepCopy(GameObject Owner)
         {
             BasePerception perception = Activator.CreateInstance(GetType()) as BasePerception;
 
@@ -341,23 +337,80 @@ namespace StealthSystemPrototype.Perceptions
                     fieldInfo.SetValue(perception, fieldInfo.GetValue(this));
 
             perception.Owner = Owner;
+            perception.Purview = null;
+            perception.ClearCaches();
 
             return perception;
         }
+
+        /// <summary>
+        /// Creates a deep copy of an <see cref="IPerception"/>, with all the same values as the original.
+        /// </summary>
+        /// <remarks>
+        /// Override this method to null any reference type members that shouldn't be sharing a reference.
+        /// </remarks>
+        /// <param name="Owner">The new <see cref="GameObject"/> for whom the deep copy is intended.</param>
+        /// <returns>A new <see cref="IPerception"/> with values matching the original, and reassigned reference members.</returns>
+        IPerception IPerception.DeepCopy(GameObject Owner)
+            => DeepCopy(Owner);
+
+        #endregion
+
+        public virtual string GetName(bool Short = false)
+            => !Short
+            ? Name
+            : ShortName;
+
+        public virtual GameObject GetOwner()
+            => Owner;
+
+        public virtual Type GetAlertType()
+            => AlertType;
+
+        public virtual int GetLevel()
+            => Level;
+
+        public virtual int GetLevelAdjustment(int Level = 0)
+            => AdjustTotalPerceptionLevelEvent.GetFor(Owner, this, Level);
+
+        public virtual int GetEffectiveLevel()
+            => EffectiveLevel;
+
+        public virtual BasePurview GetPurview()
+            => Purview;
+
+        IPurview IPerception.GetPurview()
+            => GetPurview();
+
+        public virtual int GetCooldown()
+            => Cooldown;
+
+        public virtual int GetMaxCoolDown()
+            => MaxCooldown;
+
+        public virtual string ToString(bool Short)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(nameof(Short), Short),
+                });
+
+            return (Short ? ShortName : Name) + 
+                "(" + Level + "/" + EffectiveLevel + "):" +
+                "@P:" + (_Purview?.ToString() ?? "NO_PURVIEW[-0]");
+        }
+
+        public override string ToString()
+            => ToString(false);
 
         public virtual bool SameAs(IPerception Other)
             => SameAlertAs(Other);
 
         public virtual bool SameAlertAs(IPerception Other)
-            => AlertType == Other.AlertType;
-
-        public abstract Type GetAlertType();
-        
-        public bool IsCompatibleWith<A>(IPurview<A> Purview)
-            where A : IAlert
-            => AlertType == typeof(A);
-
-        public abstract IPurview GetPurview();
+            => GetAlertType() == Other.GetAlertType();
 
         public virtual void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
@@ -371,9 +424,9 @@ namespace StealthSystemPrototype.Perceptions
                 });
 
             args ??= new();
-            args[nameof(IPurview.Value)] = Value;
+            args[nameof(Value)] = Value;
 
-            if(GetPurview() is IPurview purview)
+            if (GetPurview() is BasePurview purview)
             {
                 Debug.CheckYeh(nameof(purview), Indent: indent[1]);
                 purview.Configure(args);
@@ -382,6 +435,133 @@ namespace StealthSystemPrototype.Perceptions
             {
                 Debug.CheckYeh(nameof(purview), Indent: indent[1]);
             }
+        }
+
+        public bool IsCompatibleWith(BasePurview Purview)
+            => GetAlertType() == Purview.AlertType;
+
+        bool IPerception.IsCompatibleWith(IPurview Purview)
+            => Purview is BasePurview purview
+            && IsCompatibleWith(purview);
+
+        public virtual bool CheckInPurview(AlertContext Context)
+        {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Owner), Owner?.MiniDebugName() ?? "null"),
+                    Debug.Arg(nameof(Context.Hider), Context?.Hider?.MiniDebugName() ?? "null"),
+                });
+
+            return Purview?.IsWithin(Context) ?? false;
+        }
+
+        public virtual bool IsOnCooldown()
+            => Cooldown > 0;
+
+        public virtual void TickCooldown()
+            => (--Cooldown).Clamp(0, MaxCooldown);
+
+        public virtual void GoOnCooldown(int Cooldown)
+            => this.Cooldown = Cooldown.Clamp(0, MaxCooldown);
+
+        public virtual void GoOnCooldown()
+            => Cooldown = MaxCooldown;
+
+        public virtual void GoOffCooldown()
+            => Cooldown = 0;
+
+        public virtual bool CanPerceiveAlert(BaseAlert Alert)
+            => Alert?.IsType(GetAlertType()) ?? false;
+
+        bool IPerception.CanPerceiveAlert(IAlert Alert)
+            => Alert is BaseAlert alert
+            && CanPerceiveAlert(alert);
+
+        public virtual bool CanPerceive(AlertContext Context)
+            => CanPerceiveAlert(Context?.ActionAlert);
+
+        public virtual bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
+        {
+            SuccessMargin = 0;
+            FailureMargin = 0;
+
+            if (Context == null)
+                return false;
+
+            if (!Validate())
+                return false;
+
+            if (!CanPerceiveAlert(Context.ActionAlert))
+                return false;
+
+            if (IsOnCooldown())
+                return false;
+
+            bool madeSave = IPerception.MakeSave(
+                SuccessMargin: out SuccessMargin,
+                FailureMargin: out FailureMargin,
+                Perception: this,
+                Context: Context);
+
+            if (!madeSave)
+            {
+                GoOnCooldown(FailureMargin);
+                return false;
+            }
+            Context.SetPerception(this);
+            RaiseDetection(Context, SuccessMargin);
+            return true;
+        }
+
+        public virtual IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(ToString()),
+                    Debug.Arg(nameof(Context.Perceiver), Context?.Perceiver.MiniDebugName()),
+                    Debug.Arg(nameof(Context.Hider), Context?.Hider.MiniDebugName()),
+                });
+
+            AwarenessLevel level = AwarenessLevel.Aware;
+
+            if (SuccessMargin >= 10)
+                level++;
+            if (SuccessMargin >= 20)
+                level = AwarenessLevel.Alert;
+
+            return Owner.Brain.AddOpinionDetection(
+                Detection: GetDetectionOpinionEvent.GetFor(
+                    Perceiver: Owner,
+                    Hider: Context.Hider,
+                    Detection: new Curious(),
+                    Level: ref level),
+                Context: Context,
+                Level: level);
+        }
+
+        public virtual void ClearCaches()
+        {
+            _EffectiveLevel = null;
+            _Purview?.ClearCaches();
+        }
+
+        public virtual bool Validate()
+            => Owner != null;
+
+        #region Event Handling
+
+        public override bool WantEvent(int ID, int Cascade)
+            => base.WantEvent(ID, Cascade)
+            || ID == EnteredCellEvent.ID
+            ;
+        public override bool HandleEvent(EnteredCellEvent E)
+        {
+            ClearCaches();
+            return base.HandleEvent(E);
         }
 
         #endregion
@@ -462,7 +642,13 @@ namespace StealthSystemPrototype.Perceptions
         public virtual bool HandleEvent(GetSneakDetailsEvent E)
             => true;
 
+        public virtual bool HandleEvent(GetActionAlertsEvent E)
+            => true;
+
         public virtual bool HandleEvent(TryConcealActionEvent E)
+            => true;
+
+        public virtual bool HandleEvent(GetDetectionOpinionEvent E)
             => true;
 
         public virtual bool HandleEvent(BeforeDetectedEvent E)
@@ -472,137 +658,6 @@ namespace StealthSystemPrototype.Perceptions
             => true;
 
         #endregion
-
-        public virtual string ToString(bool Short)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(nameof(Short), Short),
-                });
-
-            Debug.CheckYeh(nameof(ShortName), ShortName, Indent: indent[1]);
-            Debug.CheckYeh(nameof(EffectiveLevel), EffectiveLevel, Indent: indent[1]);
-            Debug.CheckYeh(nameof(IPurview.EffectiveValue), _Purview?.EffectiveValue ?? -0, Indent: indent[1]);
-
-            return ShortName + "(" + Level + "/" + EffectiveLevel + "):@P:" + (_Purview?.ToString() ?? "NO_PURVIEW[-0]");
-        }
-
-        public override string ToString()
-            => ToString(false);
-
-        public virtual string GetName(bool Short = false)
-            => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
-
-        public virtual bool IsOnCooldown()
-            => Cooldown > 0;
-
-        public virtual void TickCooldown()
-            => (--Cooldown).Clamp(0, MaxCooldown);
-
-        public virtual void GoOnCooldown(int Cooldown)
-            => this.Cooldown = Cooldown.Clamp(0, MaxCooldown);
-
-        public virtual void GoOnCooldown()
-            => Cooldown = MaxCooldown;
-
-        public virtual void GoOffCooldown()
-            => Cooldown = 0;
-
-        public virtual bool CheckInPurview(AlertContext Context)
-        {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(Owner), Owner?.MiniDebugName() ?? "null"),
-                    Debug.Arg(nameof(Context.Hider), Context?.Hider?.MiniDebugName() ?? "null"),
-                });
-
-            return _Purview is IPurview purview
-                && purview.IsWithin(Context);
-        }
-
-        public virtual bool CanPerceiveAlert(IAlert Alert)
-            => Alert?.IsType(AlertType) ?? false;
-
-        public virtual bool CanPerceive(AlertContext Context)
-            => CanPerceiveAlert(Context?.Alert);
-
-        public virtual bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
-        {
-            SuccessMargin = 0;
-            FailureMargin = 0;
-
-            if (Context == null)
-                return false;
-
-            if (!Validate())
-                return false;
-
-            if (!CanPerceiveAlert(Context.Alert))
-                return false;
-
-            if (IsOnCooldown())
-                return false;
-
-            bool madeSave = IPerception.MakeSave(
-                SuccessMargin: out SuccessMargin,
-                FailureMargin: out FailureMargin,
-                Context: Context,
-                BaseDifficulty: 10);
-
-            if (!madeSave)
-            {
-                GoOnCooldown(SuccessMargin);
-                return false;
-            }
-            RaiseDetection(Context, FailureMargin);
-            return true;
-        }
-
-        public virtual IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(ToString()),
-                    Debug.Arg(nameof(Context.Perceiver), Context?.Perceiver.MiniDebugName()),
-                    Debug.Arg(nameof(Context.Hider), Context?.Hider.MiniDebugName()),
-                });
-
-            AwarenessLevel level = AwarenessLevel.Aware;
-
-            if (SuccessMargin >= 10)
-                level++;
-            if (SuccessMargin >= 20)
-                level = AwarenessLevel.Alert;
-
-            return Owner.Brain.AddOpinionDetection(
-                Detection: GetDetectionOpinionEvent.GetFor(
-                    Perceiver: Owner,
-                    Hider: Context.Hider,
-                    Detection: new Curious(),
-                    Level: ref level),
-                Context: Context,
-                Level: level);
-        }
-
-        public virtual void ClearCaches()
-        {
-            _EffectiveLevel = null;
-            _Purview?.ClearCaches();
-        }
-
-        public virtual bool Validate()
-            => ((IPerception)this).Validate();
-
-        public virtual int GetLevelAdjustment(int Level = 0)
-            => AdjustTotalPerceptionLevelEvent.GetFor(Owner, this, Level);
-
         #region Comparison
 
         public virtual int CompareLevelTo(IPerception Other)
@@ -616,19 +671,6 @@ namespace StealthSystemPrototype.Perceptions
 
         public virtual int CompareTo(IPerception Other)
             => ((IPerception)this).CompareLevelTo(Other);
-
-        #endregion
-        #region Event Handling
-
-        public override bool WantEvent(int ID, int Cascade)
-            => base.WantEvent(ID, Cascade)
-            || ID == EnteredCellEvent.ID
-            ;
-        public override bool HandleEvent(EnteredCellEvent E)
-        {
-            ClearCaches();
-            return base.HandleEvent(E);
-        }
 
         #endregion
     }

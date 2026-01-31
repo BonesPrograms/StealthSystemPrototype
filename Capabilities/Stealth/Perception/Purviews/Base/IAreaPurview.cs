@@ -21,11 +21,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public IEnumerable<Cell> GetCellsInArea()
         {
-            if (ParentPerception?.Owner?.CurrentCell is not Cell { InActiveZone: true } origin
-                || origin?.GetAdjacentCells(EffectiveValue) is not IEnumerable<Cell> cellsInArea)
+            if (GetParentPerception()?.GetOwner()?.CurrentCell is not Cell { InActiveZone: true } origin
+                || origin?.GetAdjacentCells(GetEffectiveValue()) is not IEnumerable<Cell> cellsInArea)
                 return null;
 
-            if (!Occludes)
+            if (!GetOccludes())
                 return cellsInArea;
 
             return cellsInArea?.Where(c => origin.HasLOSTo(c));

@@ -66,7 +66,7 @@ namespace StealthSystemPrototype.Events
         }
         public GetSneakPerformanceEvent SetRating(string SenseName, int Rating)
         {
-            Performance.SetRating(SenseName, Rating);
+            Performance.SetIntensity(SenseName, Rating);
             return this;
         }
         public GetSneakPerformanceEvent AdjustRating(string SenseName, int Amount)

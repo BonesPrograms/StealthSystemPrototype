@@ -64,18 +64,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override string ToString()
             => base.ToString();
 
-        public override int GetPurviewAdjustment(
-            IPerception ParentPerception,
+        public override int GetPurviewValueAdjustment(
+            BasePerception ParentPerception,
             int Value = 0)
-            => base.GetPurviewAdjustment(ParentPerception, Value) + (ParentPerception?.Owner?.Level ?? 0);
-
-        #region Predicates
+            => base.GetPurviewValueAdjustment(ParentPerception, Value) + (ParentPerception?.Owner?.Level ?? 0);
 
         public override void ClearCaches()
         {
+            base.ClearCaches();
         }
 
-        #endregion
         #region Equatable
 
         public override bool Equals(IPurview Other)

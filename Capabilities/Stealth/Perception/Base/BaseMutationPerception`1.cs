@@ -37,16 +37,18 @@ namespace StealthSystemPrototype.Perceptions
             GameObject Owner,
             T Source,
             int Level,
-            IPurview Purview)
-            : base(Owner, Source, Level, Purview)
+            int? PurviewValue = null)
+            : base(Owner, Source, Level)
         {
+            Purview?.MaybeSetValue(PurviewValue);
         }
         public BaseMutationPerception(
             T Source,
             int Level,
-            IPurview Purview)
-            : base(Source, Level, Purview)
+            int? PurviewValue = null)
+            : base(Source, Level)
         {
+            Purview?.MaybeSetValue(PurviewValue);
         }
 
         #endregion

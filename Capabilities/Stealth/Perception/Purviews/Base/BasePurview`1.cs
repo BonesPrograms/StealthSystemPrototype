@@ -19,124 +19,50 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
     [StealthSystemBaseClass]
     [Serializable]
     public abstract class BasePurview<A>
-        : IPurview<A>
-        , IComposite
-        where A : IAlert, new()
+        : BasePurview
+        where A : class, IAlert, new()
     {
-        private IPerception _ParentPerception;
-        public IPerception ParentPerception
-        {
-            get => _ParentPerception;
-            set
-            {
-                using Indent indent = new(1);
-                Debug.LogCaller(indent,
-                    ArgPairs: new Debug.ArgPair[]
-                    {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
-                    Debug.Arg(nameof(Value), Value),
-                    });
-
-                SetParentPerception(value);
-            }
-        }
-
-        private int _Value;
-        public int Value
-        {
-            get => _Value;
-            protected set => _Value = value;
-        }
-
-        private int? _EffectiveValue;
-        public int EffectiveValue
-        {
-            get
-            {
-                if (_EffectiveValue == null
-                    && !GettingValueAdjustment)
-                {
-                    GettingValueAdjustment.Toggle();
-
-                    _EffectiveValue = Value + GetPurviewAdjustment(ParentPerception, Value);
-
-                    GettingValueAdjustment.Toggle();
-                }
-                return _EffectiveValue ?? Value;
-            }
-        }
-        private bool GettingValueAdjustment = false;
-
-        public abstract bool Occludes { get; }
+        public override Type AlertType => typeof(A);
 
         #region Constructors
 
         public BasePurview()
+            : base()
         {
-            ParentPerception = null;
-            Value = 0;
-            _EffectiveValue = null;
         }
-        protected BasePurview(IPerception ParentPerception)
-            : this()
+        protected BasePurview(BasePerception ParentPerception)
+            : base(ParentPerception)
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
-                });
-
-            this.ParentPerception = ParentPerception;
         }
-        protected BasePurview(IPerception ParentPerception, int Value)
-            : this(ParentPerception)
+        protected BasePurview(BasePerception ParentPerception, int Value)
+            : base(ParentPerception, Value)
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
-                    Debug.Arg(nameof(Value), Value),
-                });
-
-            this.Value = Value;
         }
         public BasePurview(BasePurview<A> Source)
-            : this(Source.ParentPerception, Source.Value)
+            : base(Source.ParentPerception, Source.Value)
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(nameof(Source)),
-                });
         }
 
         #endregion
         #region Serialization
 
-        public virtual void Write(SerializationWriter Writer)
+        public override void Write(SerializationWriter Writer)
         {
-            Writer.Write(ParentPerception);
-            Writer.WriteOptimized(Value);
+            base.Write(Writer);
+            // do writing here
         }
-        public virtual void Read(SerializationReader Reader)
+        public override void Read(SerializationReader Reader)
         {
-            ParentPerception = Reader.ReadComposite() as IPerception;
-            Value = Reader.ReadOptimizedInt32();
+            base.Read(Reader);
+            // do reading here
         }
 
         #endregion
 
-        public override string ToString()
-            => Value + "(E:" + EffectiveValue + ")" + (Occludes ? "[" + nameof(Occludes) + "]" : null);
+        public override Type GetAlertType()
+            => AlertType;
 
-        public virtual void Configure(Dictionary<string, object> args = null)
+        public override void Configure(Dictionary<string, object> args = null)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -151,9 +77,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
                 args.ForEach(kvp => Debug.Log(kvp.Key, kvp.Value, Indent: indent[1]));
 
                 if (args.ContainsKey(nameof(ParentPerception))
-                    && args[nameof(ParentPerception)] is IPerception parentPerceptionArg)
+                    && args[nameof(ParentPerception)] is BasePerception parentPerceptionArg)
                 {
-                    _ParentPerception = parentPerceptionArg;
+                    ParentPerception = parentPerceptionArg;
                 }
                 if (args.ContainsKey(nameof(Value))
                     && args[nameof(Value)] is int valueArg)
@@ -163,72 +89,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             }
         }
 
-        public IPurview SetParentPerception(IPerception ParentPerception)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception?.ToString() ?? "NO_PERCEPTION"),
-                });
-
-            if (!(ParentPerception?.IsCompatibleWith(this) ?? true))
-                throw new ArgumentException(
-                    message: GetType().ToStringWithGenerics() + " requires a " + nameof(ParentPerception) + 
-                        " compatible with " + nameof(IAlert) + " of type " + typeof(A) + ". " +
-                        ParentPerception.Name + " uses " + ParentPerception.AlertType.ToStringWithGenerics(), 
-                    paramName: nameof(ParentPerception));
-
-            _ParentPerception = ParentPerception;
-            return this;
-        }
-
-        public virtual bool IsForAlert(IAlert Alert)
-            => Alert.IsType(typeof(A));
-
-        public virtual int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0)
-            => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.Owner, ParentPerception, Value);
-
-        public BasePurview<A> SetValue(int Value)
-        {
-            this.Value = Value;
-            return this;
-        }
-
-        public BasePurview<A> AdjustBy(int Amount)
-            => SetValue(Value + Amount);
-
         #region Predicates
 
-        public virtual bool IsWithin(AlertContext Context)
-            => false;
-
-        public virtual void ClearCaches()
-        {
-            _EffectiveValue = null;
-        }
+        public override bool IsForAlert(IAlert Alert)
+            => Alert.IsType(typeof(A));
 
         #endregion
         #region Equatable
 
-        public virtual bool Equals(IPurview Other)
-            => Utils.EitherNull(this, Other, out bool areEqual)
-            ? areEqual
-            : Value == Other.Value
-                || EffectiveValue == Other.EffectiveValue;
-
-        #endregion
-        #region Comparable
-
-        public virtual int CompareTo(IPurview Other)
-            => ((IPurview)this).CompareTo(Other);
+        public override bool Equals(IPurview Other)
+            => base.Equals(Other)
+            && GetAlertType() == Other.GetAlertType();
 
         #endregion
         #region Conversion
 
         public static explicit operator int(BasePurview<A> Operand)
-            => Operand.EffectiveValue;
+            => Operand.GetEffectiveValue();
 
         #endregion
     }

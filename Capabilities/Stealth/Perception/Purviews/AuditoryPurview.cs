@@ -54,27 +54,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public AuditoryPurview(
             IAlertTypedPerception<Auditory> ParentPerception,
             BaseDoubleDiffuser Diffuser = null)
-            : base(ParentPerception, IPurview.DEFAULT_VALUE)
+            : base(ParentPerception as BasePerception, IPurview.DEFAULT_VALUE)
         {
-            _Diffuser = Diffuser;
+            _Diffuser = Diffuser ?? _Diffuser;
         }
         public AuditoryPurview(
             IAlertTypedPerception<Auditory> ParentPerception,
             int Value,
             BaseDoubleDiffuser Diffuser = null)
-            : base(ParentPerception, Value)
+            : base(ParentPerception as BasePerception, Value)
         {
-            _Diffuser = Diffuser;
+            _Diffuser = Diffuser ?? _Diffuser;
         }
         public AuditoryPurview(int Value, BaseDoubleDiffuser Diffuser = null)
             : this(null, Value)
         {
-            _Diffuser = Diffuser;
+            _Diffuser = Diffuser ?? _Diffuser;
         }
         public AuditoryPurview(AuditoryPurview Source)
             : base(Source)
         {
-            _Diffuser = Source.Diffuser;
+            _Diffuser = Source.Diffuser ?? _Diffuser;
         }
 
         #endregion
@@ -116,10 +116,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         }
 
         public virtual void ConfigureDiffuser(Dictionary<string, object> args = null)
-            => ((IDiffusingPurview)this).ConfigureDiffuser(args);
-
-        public override int GetPurviewAdjustment(IPerception ParentPerception, int Value = 0)
-            => base.GetPurviewAdjustment(ParentPerception, Value);
+        {
+            if (!args.IsNullOrEmpty())
+            {
+                if (args.ContainsKey(nameof(Diffuser.SetSteps))
+                    && args[nameof(Diffuser.SetSteps)] is int valueArg)
+                {
+                    Diffuser.SetSteps(valueArg);
+                }
+            }
+        }
 
         public virtual double Diffuse(int Value)
         {

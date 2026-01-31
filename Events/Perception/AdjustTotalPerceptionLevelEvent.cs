@@ -60,7 +60,7 @@ namespace StealthSystemPrototype.Events
 
         public static AdjustTotalPerceptionLevelEvent FromPool(
             GameObject Perceiver,
-            IPerception Perception,
+            BasePerception Perception,
             int BaseValue)
         {
             if (Perception == null
@@ -98,7 +98,7 @@ namespace StealthSystemPrototype.Events
 
         public static int GetFor(
             GameObject Perceiver,
-            IPerception Perception,
+            BasePerception Perception,
             int BaseValue)
         {
             using Indent indent = new(1);

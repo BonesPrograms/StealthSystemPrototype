@@ -23,7 +23,7 @@ using StealthSystemPrototype.Logging;
 namespace StealthSystemPrototype.Detetection.Opinions
 {
     /// <summary>
-    /// Represents the record of an <see cref="IPerception"/> having successfully detected an <see cref="IAlert"/> within an <see cref="IConcealedAction"/>, and handles the pushing of .
+    /// Represents the record of a <see cref="BasePerception"/> having successfully detected a <see cref="BaseAlert"/> within an <see cref="IConcealedAction"/>, and handles the pushing of .
     /// </summary>
     [StealthSystemBaseClass]
     public abstract class IOpinionDetection : IOpinion

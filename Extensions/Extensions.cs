@@ -791,7 +791,7 @@ namespace StealthSystemPrototype
         }
 
         public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, IPurview Purview)
-            => Cell?.GetCellsInACosmeticCircleSilent(Purview.EffectiveValue);
+            => Cell?.GetCellsInACosmeticCircleSilent(Purview.GetEffectiveValue());
 
         #endregion
         #region Collection Manipulation
