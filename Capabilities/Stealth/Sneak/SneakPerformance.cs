@@ -10,198 +10,30 @@ using XRL.World.Parts.Mutation;
 using XRL.Collections;
 using XRL.World;
 
-using SerializeField = UnityEngine.SerializeField;
-
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Senses;
 using static StealthSystemPrototype.Utils;
+
+using SerializeField = UnityEngine.SerializeField;
+using System.Diagnostics;
+using XRL.Language;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [HasModSensitiveStaticCache]
     [HasGameBasedStaticCache]
     [Serializable]
-    public class SneakPerformance : IComposite
+    public class SneakPerformance : Rack<BaseAlert>
     {
         #region Const & Static
 
-        [ModSensitiveStaticCache]
-        [GameBasedStaticCache(CreateInstance = false)]
-        private static SortedDictionary<string, ISense> _PerceptionSenses;
-        public static SortedDictionary<string, ISense> PerceptionSenses => _PerceptionSenses ??= GetSenses();
-
-        public static Dictionary<string, Entry> DefaultSneakPerformances => PerceptionSenses
-            ?.Aggregate(
-                seed: new Dictionary<string, Entry>(),
-                func: delegate (Dictionary<string, Entry> Accumulator, KeyValuePair<string, ISense> Next)
-                {
-                    Accumulator[Next.Key] = new Entry(Next.Value);
-                    return Accumulator;
-                })
-            ?? new();
+        public static SneakPerformance DefaultSneakPerformance => new(BaseAlert.Alerts);
 
         public static string MS_MULTI => "MoveSpeed_Multiplier";
         public static string QN_MULTI => "Quickness_Multiplier";
 
         #endregion
         #region Helpers
-
-        [Serializable]
-        public class Entry : IComposite, IEquatable<Entry>, IComparable<Entry>
-        {
-            public static InclusiveRange DefaultClamp => new(..100);
-
-            #region Instance Fields & Properties
-
-            private ISense _Sense;
-            public virtual ISense Sense
-            {
-                get => _Sense;
-                protected set => _Sense = value;
-            }
-
-            private int _Rating;
-
-            public int Rating
-            {
-                get => _Rating.Clamp(Clamp);
-                set => _Rating = value.Clamp(Clamp);
-            }
-
-            private InclusiveRange _Clamp;
-
-            public InclusiveRange Clamp
-            {
-                get => _Clamp;
-                set => _Clamp = value.Clamp(DefaultClamp);
-            }
-
-            #endregion 
-            #region Constructors
-
-            protected Entry()
-            {
-                Sense = null;
-                Rating = 0;
-                Clamp = default;
-            }
-            public Entry(ISense Sense, int Rating, InclusiveRange Clamp)
-                : this()
-            {
-                this.Sense = Sense;
-                this.Rating = Rating;
-                this.Clamp = Clamp;
-            }
-            public Entry(ISense Sense)
-                : this(Sense, 5, DefaultClamp)
-            {
-            }
-
-            #endregion
-            #region Serialization
-
-            public virtual void Write(SerializationWriter Writer)
-            {
-                Sense.Write(Writer);
-                Writer.WriteOptimized(Rating);
-                Clamp.WriteOptimized(Writer);
-            }
-            public virtual void Read(SerializationReader Reader)
-            {
-                Sense = Reader.ReadComposite() as ISense;
-                Rating = Reader.ReadOptimizedInt32();
-                Clamp = InclusiveRange.ReadOptimizedInclusiveRange(Reader);
-            }
-
-            #endregion
-
-            public override string ToString()
-                => Sense.Name + "(" + Sense + "): " + Rating + "[" + Clamp.ToString() + "]";
-
-            public Entry SetClamp(InclusiveRange Clamp)
-            {
-                this.Clamp = Clamp.Clamp(DefaultClamp);
-                return this;
-            }
-
-            public Entry SetMin(int Min)
-                => SetClamp(new InclusiveRange(Min, Clamp).Clamp(DefaultClamp));
-
-            public Entry SetMax(int Max)
-                => SetClamp(new InclusiveRange(Clamp, Max).Clamp(DefaultClamp));
-
-            #region Equatability & Comparison
-
-            public bool SenseEquals(Entry Other)
-            {
-                if (EitherNull(this, Other, out bool areEqual))
-                    return areEqual;
-
-                if (this == Other)
-                    return true;
-
-                if (Sense != Other.Sense)
-                    return false;
-
-                if (Sense.Order != Other.Sense.Order)
-                    return false;
-
-                return true;
-            }
-
-            public bool Equals(Entry Other, bool IgnoreClamp)
-            {
-                if (EitherNull(this, Other, out bool areEqual))
-                    return areEqual;
-
-                if (this == Other)
-                    return true;
-
-                if (!SenseEquals(Other))
-                    return false;
-
-                if (Rating != Other.Rating)
-                    return false;
-
-                return IgnoreClamp
-                    || Clamp == Other.Clamp;
-            }
-
-            public bool Equals(Entry Other)
-                => Equals(Other, false);
-
-            public int CompareTo(Entry Other)
-            {
-                if (EitherNull(this, Other, out int nullComp))
-                    return nullComp;
-
-                if (Equals(Other))
-                    return 0;
-
-                if (!SenseEquals(Other))
-                    return 0;
-
-                if (Rating.CompareTo(Other.Rating) is int ratingComp
-                    && ratingComp != 0)
-                    return ratingComp;
-
-                return Clamp.CompareTo(Other.Clamp);
-            }
-
-            #endregion
-            #region Conversions
-
-            public static implicit operator KeyValuePair<string, int>(Entry Operand)
-                => new(Operand.Sense.Name, Operand.Rating);
-
-            public static explicit operator Entry(KeyValuePair<ISense, int>  Operand)
-                => new(Operand.Key, Operand.Value, DefaultClamp);
-
-            public static implicit operator KeyValuePair<ISense, int>(Entry Operand)
-                => new(Operand.Sense, Operand.Rating);
-
-            #endregion
-        }
 
         [Serializable]
         public struct StatCollectorEntry : IComposite, IEquatable<StatCollectorEntry>
@@ -234,9 +66,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
-        private Dictionary<string, Entry> PerformanceEntries;
+        public static StringMap<List<StatCollectorEntry>> DefaultCollectedStats => new()
+        {
+            { MS_MULTI, new() },
+            { QN_MULTI, new() },
+        };
 
-        public StringMap<List<StatCollectorEntry>> CollectedStats;
+        public StringMap<List<StatCollectorEntry>> CollectedStats = DefaultCollectedStats;
+
         public float MoveSpeedMultiplier => (GetCollectedStats(MS_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
         public float QuicknessMultiplier => (GetCollectedStats(QN_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
 
@@ -248,79 +85,63 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             set
             {
                 if (value)
-                    Reset();
+                {
+                    Clear();
+                    AddRange(BaseAlert.Alerts);
+                }
                 _WantsSync = value;
             }
         }
 
         public SneakPerformance()
+            : base()
         {
-            Reset();
+        }
+        public SneakPerformance(IReadOnlyList<BaseAlert> SourceList)
+            : base(SourceList)
+        {
+        }
+        public SneakPerformance(SneakPerformance Source)
+            : this(Source as IReadOnlyList<BaseAlert>)
+        {
+            CollectedStats = Source.CollectedStats;
+
         }
 
         #region Serialization
 
-        public void Write(SerializationWriter Writer)
+        public override void Write(SerializationWriter Writer)
         {
-            Writer.WriteComposite(GetEntries().ToList());
+            base.Write(Writer);
+            Writer.WriteOptimized(Variant);
         }
-        public void Read(SerializationReader Reader)
+        public override void Read(SerializationReader Reader)
         {
-            PerformanceEntries = new(DefaultSneakPerformances);
-            foreach (Entry entry in Reader.ReadCompositeList<Entry>() ?? new())
-                PerformanceEntries[entry.Sense.Name] = entry;
+            base.Read(Reader);
+            Variant = Reader.ReadOptimizedInt32();
         }
 
         #endregion
 
-        public void Reset()
+        public override void Clear()
         {
-            PerformanceEntries = new(DefaultSneakPerformances);
+            base.Clear();
             _WantsSync = false;
-            CollectedStats = new()
-            {
-                { MS_MULTI, new() },
-                { QN_MULTI, new() },
-            };
+            CollectedStats = DefaultCollectedStats;
         }
 
-        public Entry this[ISense Sense] => PerformanceEntries[Sense.Name];
+        public BaseAlert this[BaseAlert Alert] => GetByType(Alert.Type);
 
-        public Entry this[string SenseName]
+        public BaseAlert this[string AlertName] => Items?.FirstOrDefault(a => a.Name == AlertName);
+
+        public string EntriesDebugString(out string Contents, string Delimiter = "\n")
         {
-            get
-            {
-                Entry output = null;
-                if (!PerceptionSenses.ContainsKey(SenseName))
-                {
-                    string thisIndexerName = CallChain(nameof(SneakPerformance), nameof(Entry)) + "[string " + SenseName + "]";
-                    if (ModManager.ResolveType(ISense.NAMESPACE, SenseName) is Type senseType)
-                    {
-                        if (Activator.CreateInstance(senseType) is ISense newSense)
-                            output = PerformanceEntries[SenseName] = new Entry(newSense);
-                        else
-                            MetricsManager.LogModWarning(
-                                mod: ModManager.GetMod(senseType.Assembly),
-                                Message: thisIndexerName + " could not create instance of " + nameof(Type) + " " + senseType.ToString());
-                    }
-                    else
-                        MetricsManager.LogModWarning(ThisMod, thisIndexerName + " could resolve " + nameof(Type) + " " + CallChain(ISense.NAMESPACE, SenseName));
-                }
-                else
-                    output = PerformanceEntries[SenseName];
-
-                return output;
-            }
-        }
-
-        public string PerformanceEntriesDebugString(out string Contents, string Delimiter = "\n")
-        {
-            Contents = GetEntries()
+            Contents = Items
                 ?.Aggregate(
                     seed: "",
                     func: (a, n) => a + (!a.IsNullOrEmpty() ? Delimiter : null) + n.ToString());
 
-            return nameof(PerformanceEntries);
+            return "Entries";
         }
 
         public string CollectedStatsEntriesDebugString(out string Contents, string Delimiter = "\n")
@@ -390,7 +211,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             if ((CollectedStats[Stat] ??= new()) is List<StatCollectorEntry> statList)
                 for (int i = 0; i < statList.Count; i++)
-                    if (statList[i] is StatCollectorEntry entry 
+                    if (statList[i] is StatCollectorEntry entry
                         && (Filter == null
                             || Filter(entry)))
                         yield return entry;
@@ -399,89 +220,61 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IEnumerable<StatCollectorEntry> GetCollectedStats(string Stat)
             => GetCollectedStats(Stat, null);
 
-        public SneakPerformance SetClamp(string SenseName, InclusiveRange Clamp)
+        public SneakPerformance SetIntensity(string AlertName, int Intensity)
         {
-            this[SenseName].SetClamp(Clamp);
+            this[AlertName].Intensity = Intensity;
             return this;
         }
-        public SneakPerformance SetMin(string SenseName, int Min)
+        public SneakPerformance AdjustRating(string AlertName, int Amount)
         {
-            this[SenseName].SetMin(Min);
+            this[AlertName].Intensity += Amount;
             return this;
         }
-        public SneakPerformance SetRating(string SenseName, int Rating)
+        public SneakPerformance SetMax(string AlertName, int Max)
         {
-            this[SenseName].Rating = Rating;
+            this[AlertName].Intensity = Math.Min(this[AlertName].Intensity, Max);
             return this;
         }
-        public SneakPerformance AdjustRating(string SenseName, int Amount)
+        public SneakPerformance SetMin(string AlertName, int Min)
         {
-            this[SenseName].Rating += Amount;
+            this[AlertName].Intensity =  Math.Max(Min, this[AlertName].Intensity);
             return this;
         }
-        public SneakPerformance SetMax(string SenseName, int Max)
+        public SneakPerformance SetClamp(string AlertName, InclusiveRange Clamp)
+            => SetMin(AlertName, Clamp.Min)
+                .SetMax(AlertName, Clamp.Max);
+
+        public BaseAlert GetByType(Type AlertType)
         {
-            this[SenseName].SetMax(Max);
-            return this;
+            if (Items != null)
+                for (int i = 0; i < Count; i++)
+                    if (Items[i] is BaseAlert alert
+                        && alert.IsType(AlertType))
+                        return alert;
+
+            throw new ArgumentOutOfRangeException(
+                paramName: nameof(AlertType),
+                message: nameof(AlertType) + " (" + AlertType.ToStringWithGenerics() + ") " +
+                    "does not exist in Collection (this should be impossible).");
         }
 
-        public ISense<TSense> GetSense<TSense>(int Intensity)
-            where TSense : ISense<TSense>, new()
-        {
-            TSense sense = new();
-            sense.SetIntensity(Intensity);
-            sense.AdjustIntensity(-GetEntry<TSense>().Rating);
-            return sense;
-        }
+        public BaseAlert GetMatchingAlert(BaseAlert Alert)
+            => GetByType(Alert.Type);
 
-        public IEnumerable<Entry> GetEntries(Predicate<Entry> Filter)
-        {
-            foreach ((string _, Entry entry) in PerformanceEntries ?? new())
-                if (Filter == null
-                    || Filter(entry))
-                    yield return entry;
-        }
+        public bool Contains<A>(A Alert)
+            where A : IAlert
+            => Items?.Any(a => a.IsType(Alert.Type)) ?? false;
 
-        public Entry GetEntry<TSense>()
-            where TSense : ISense<TSense>, new()
-            => ISense.SampleSense<TSense>(typeof(TSense)) is TSense tSense
-            ? this[tSense]
-            : null;
-
-        public IEnumerable<Entry> GetEntries()
-            => GetEntries((Predicate<Entry>)null);
-
-        public IEnumerable<Entry> GetEntries(Predicate<ISense> Filter)
-            => GetEntries((Entry e) => Filter == null || Filter(e.Sense));
-
-        public IEnumerable<Entry> GetEntries(Predicate<InclusiveRange> Filter)
-            => GetEntries((Entry e) => Filter == null || Filter(e.Clamp));
-
-        public IEnumerable<Entry> GetEntries(Predicate<int> Filter)
-            => GetEntries((Entry e) => Filter == null || Filter(e.Rating));
-
-        public static Entry HigherRated(Entry First, Entry Second)
+        public static BaseAlert HigherRated(BaseAlert First, BaseAlert Second)
             => First == null
-                || Second.CompareTo(First) > 0 
-            ? Second 
+                || Second.Intensity.CompareTo(First.Intensity) > 0
+            ? Second
             : First;
 
-        public static Entry HigherPotential(Entry First, Entry Second)
-            => First == null
-                || Second.Clamp.CompareTo(First.Clamp) > 0 
-            ? Second 
-            : First;
-
-        public Entry GetHighestRatedEntry()
-            => GetEntries()
+        public BaseAlert GetHighestRatedEntry()
+            => Items
                 ?.Aggregate(
-                    seed: (Entry)null,
+                    seed: (BaseAlert)null,
                     func: HigherRated);
-
-        public Entry GetHighestPotentialEntry()
-            => GetEntries()
-                ?.Aggregate(
-                    seed: (Entry)null,
-                    func: HigherPotential);
     }
 }

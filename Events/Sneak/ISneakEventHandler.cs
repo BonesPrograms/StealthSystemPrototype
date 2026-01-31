@@ -6,6 +6,7 @@ namespace StealthSystemPrototype.Events
         : IModEventHandler<BeforeSneakEvent>
         , IModEventHandler<GetSneakPerformanceEvent>
         , IModEventHandler<GetSneakDetailsEvent>
+        , IModEventHandler<GetActionAlertsEvent>
         , IModEventHandler<TryConcealActionEvent>
     {
     }

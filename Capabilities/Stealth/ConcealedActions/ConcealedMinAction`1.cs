@@ -2,37 +2,33 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 using XRL.Collections;
 using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
-    public class ConcealedMinAction<T> : IConcealedAction
+    public class ConcealedMinAction<T> : EventConcealedAction<T>
         where T : MinEvent, new()
     {
-        public T Event => SourceEvent as T;
+        public T Event => SourceEvent;
+
+        public int MinID => Event?.ID ?? 0;
 
         public ConcealedMinAction(T E, bool Aggressive, string Description)
             : base(
+                  ID: E?.TypeStringWithGenerics(),
                   SourceEvent: E,
-                  MinID: E?.ID ?? 0,
-                  Name: E?.TypeStringWithGenerics(),
                   Aggressive: Aggressive,
                   Description: Description)
         {
         }
-        public ConcealedMinAction(bool Aggressive, string Description)
-            : base(null, 0, null, Aggressive, Description)
-        {
-        }
 
-        public virtual ConcealedMinAction<T> SetEvent(T E)
+        public virtual ConcealedMinAction<T> SetEvent(T Event)
         {
-            this.SourceEvent = E;
-            MinID = E?.ID ?? 0;
-            ID = E?.TypeStringWithGenerics();
+            SourceEvent = Event;
+            ID = Event?.TypeStringWithGenerics();
             Name = ID;
             return this;
         }

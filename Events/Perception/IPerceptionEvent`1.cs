@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Perceiver;
 
-        public IPerception Perception;
+        protected BasePerception Perception;
 
         public PerceptionRack Perceptions;
 
@@ -51,13 +51,12 @@ namespace StealthSystemPrototype.Events
             Perceiver = null;
             Perception = null;
             Perceptions = null;
-            StringyEvent?.Clear();
             StringyEvent = null;
         }
 
         public static T FromPool(
             GameObject Perciever,
-            IPerception Perception,
+            BasePerception Perception,
             PerceptionRack Perceptions)
         {
             if (Perciever == null
@@ -71,7 +70,7 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
-        public static T FromPool(GameObject Perciever, IPerception Perception)
+        public static T FromPool(GameObject Perciever, BasePerception Perception)
             => FromPool(Perciever, Perception, null);
 
         public static T FromPool(GameObject Perciever, PerceptionRack Perceptions)
@@ -83,7 +82,7 @@ namespace StealthSystemPrototype.Events
         public static Event GetStringyEvent(IPerceptionEvent<T> ForEvent, ref Event ExistingEvent)
             => ForEvent == null
             ? ExistingEvent = Event.New(RegisteredEventID)
-            : ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID())
+            : (ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID()))
                 .SetParameter(nameof(ForEvent.Perceiver), ForEvent?.Perceiver)
                 .SetParameterOrNullExisting(nameof(ForEvent.Perception), ForEvent.Perception)
                 .SetParameterOrNullExisting(nameof(ForEvent.Perceptions), ForEvent.Perceptions);
@@ -93,16 +92,13 @@ namespace StealthSystemPrototype.Events
 
         public virtual void UpdateFromStringyEvent()
         {
-            if (StringyEvent?.GetParameter(nameof(Perception)) is PerceptionRack perception)
-                Perceptions = perception;
-
             if (StringyEvent?.GetParameter(nameof(Perceptions)) is PerceptionRack perceptions)
                 Perceptions = perceptions;
         }
 
         protected static T Process(
             GameObject Perciever,
-            IPerception Perception,
+            BasePerception Perception,
             PerceptionRack Perceptions,
             out bool Success)
         {
@@ -123,6 +119,12 @@ namespace StealthSystemPrototype.Events
             }
             return E;
         }
+
+        public virtual string GetPerceptionName(bool Short = false)
+            => Perception?.GetName(Short);
+
+        public virtual bool CanPerceptionPerceive(BaseAlert Alert)
+            => Perception?.CanPerceiveAlert(Alert) ?? false;
     }
 }
 

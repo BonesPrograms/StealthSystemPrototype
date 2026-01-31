@@ -2,19 +2,19 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 using XRL.Collections;
 using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
-    public class ConcealedStringAction : IConcealedAction
+    public class ConcealedStringAction : EventConcealedAction<Event>
     {
-        public Event Event => SourceEvent as Event;
+        public Event Event => SourceEvent;
 
         public ConcealedStringAction(Event SourceEvent, bool Aggressive, string Description)
-            : base(SourceEvent, 0, SourceEvent.ID, Aggressive, Description)
+            : base(SourceEvent.ID, SourceEvent, Aggressive, Description)
         {
         }
     }

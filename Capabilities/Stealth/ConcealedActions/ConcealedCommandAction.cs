@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Senses;
+using StealthSystemPrototype.Alerts;
 
 using XRL.Collections;
 using XRL.World;
@@ -19,14 +19,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Command = E.Command;
         }
         public ConcealedCommandAction(bool Aggressive, string Description)
-            : base(Aggressive, Description)
+            : base(null, Aggressive, Description)
         {
         }
 
-        public override ConcealedMinAction<CommandEvent> SetEvent(CommandEvent E)
+        public override ConcealedMinAction<CommandEvent> SetEvent(CommandEvent Event)
         {
-            Command = E.Command;
-            return base.SetEvent(E);
+            Command = Event.Command;
+            return base.SetEvent(Event) as ConcealedCommandAction;
         }
     }
 }

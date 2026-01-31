@@ -1,4 +1,5 @@
 ﻿using System;
+using XRL.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,8 +11,8 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
-using XRL.Collections;
 
 namespace StealthSystemPrototype.Events
 {

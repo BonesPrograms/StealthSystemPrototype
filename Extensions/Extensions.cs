@@ -13,13 +13,17 @@ using XRL.Rules;
 
 using Range = System.Range;
 
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Logging;
-using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Detetection.Opinions;
+using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.ResponseGoals;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Senses;
+using XRL.Collections;
 
 namespace StealthSystemPrototype
 {
@@ -345,6 +349,9 @@ namespace StealthSystemPrototype
             return true;
         }
 
+        public static IEnumerable<TSource> WhereNot<TSource>(this IEnumerable<TSource> Source, Func<TSource, bool> Predicate)
+            => Source.Where(t => !Predicate(t));
+
         #endregion
         #region Strings
 
@@ -587,6 +594,89 @@ namespace StealthSystemPrototype
         #endregion
         #region Brains & Goals
 
+        public static IOpinionDetection AddOpinionDetection(
+            this Brain Brain,
+            IOpinionDetection Detection,
+            AlertContext Context,
+            AwarenessLevel Level = AwarenessLevel.None,
+            float Magnitude = 1f)
+        {
+            if (!Brain.TryGetOpinions(Context.Hider, out var opinions))
+                return null;
+
+            string message = null;
+            if (!BeforeDetectedEvent.CheckHider(Context.Hider, ref Detection, ref message)
+                || !BeforeDetectedEvent.CheckPerceiver(Brain.ParentObject, ref Detection, ref message))
+            {
+                if (!message.IsNullOrEmpty())
+                    message.StartReplace()
+                        .AddObject(Context.Hider, nameof(Context.Hider).ToLower())
+                        .AddObject(Brain.ParentObject, nameof(Context.Perceiver).ToLower())
+                        .EmitMessage(ColorAsGoodFor: Context.Hider, ColorAsBadFor: Brain.ParentObject);
+                return null;
+            }
+
+            long currentTurn = The.Game?.TimeTicks ?? 0;
+            bool renew = false;
+            for (int v = opinions.Count - 1; v >= 0; v--)
+                if (opinions[v] is IOpinionDetection existingOpinionDetection)
+                {
+                    if (currentTurn - existingOpinionDetection.Time >= existingOpinionDetection.Cooldown)
+                    {
+                        renew = true;
+                        Detection = existingOpinionDetection;
+                        opinions.RemoveAt(v);
+
+                        if (Level < Detection.Level)
+                            Level = Detection.Level;
+                        else
+                            Level.Increment();
+
+                        Magnitude = Math.Min(Detection.Limit, Detection.Magnitude + Magnitude);
+                        break;
+                    }
+                    return null;
+                }
+
+            Detection.Time = currentTurn;
+            Detection.Magnitude = Magnitude;
+            Detection.Initialize(Context, Level);
+            opinions.Add(Detection);
+            Brain.AfterAddOpinionDetection(Detection, Context, renew);
+            return Detection;
+        }
+
+        public static void CascadeOpinionDetection(this Brain Brain, IOpinionDetection Detection)
+            => Brain.AddOpinionDetection(
+                    Detection: Detection.DeepCopy(Brain.ParentObject),
+                    Context: Detection.AlertContext,
+                    Level: Detection.Level,
+                    Magnitude: Detection.Magnitude);
+
+        public static D AddOpinionDetection<D>(
+            this Brain Brain,
+            AlertContext Context,
+            AwarenessLevel Level = AwarenessLevel.None,
+            float Magnitude = 1f)
+            where D : IOpinionDetection, new()
+            => Brain.AddOpinionDetection(new D(), Context, Level, Magnitude) as D;
+
+        public static void AfterAddOpinionDetection(
+            this Brain Brain,
+            IOpinionDetection Opinion,
+            AlertContext Context,
+            bool Renew = false)
+        {
+            if (!Renew && Opinion.Value < 0)
+            {
+                int feeling = Context.Perceiver.Brain.GetFeeling(Context.Hider);
+                if (feeling < -10
+                    && feeling - Opinion.Value >= -10)
+                    Brain.PlayWorldSound("sfx_creature_angered");
+            }
+            AfterAddOpinionEvent.Send(Opinion, Context.Perceiver, Context.Hider, Context.AlertObject, Renew);
+        }
+
         public static GoalHandler FindGoal(this Brain Brain, Type Type)
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
@@ -599,43 +689,42 @@ namespace StealthSystemPrototype
             return null;
         }
 
-        public static IAlert FindAlert<TSense>(this Brain Brain, IPerception<TSense> Perception)
-            where TSense : ISense<TSense>, new()
+        public static IDetectionResponseGoal FindDetectionResponse(this Brain Brain, Predicate<IDetectionResponseGoal> Where)
         {
             if (Brain?.Goals?.Items is not List<GoalHandler> goalHandlers)
                 return null;
 
-
-            for (int i = goalHandlers.Count - 1; i >= 0; i--)
-                if (goalHandlers[i] is IAlert<IPerception<TSense>, TSense> alert
-                    && alert.Perception == Perception)
-                    return alert;
+            for (int v = goalHandlers.Count - 1; v >= 0; v--)
+                if (goalHandlers[v] is IDetectionResponseGoal detectionResponseGoal
+                    && (Where == null
+                        || Where(detectionResponseGoal)))
+                    return detectionResponseGoal;
 
             return null;
         }
 
-        public static IAlert FirstAlert(this Brain Brain, Predicate<IAlert> Predicate)
-            => Brain?.Goals?.Items
-                ?.FirstOrDefault(
-                    g => g is IAlert gAlert
-                    && (Predicate == null || Predicate(gAlert))
-                ) as IAlert;
+        public static IDetectionResponseGoal FindDetectionResponse(this Brain Brain, IOpinionDetection Opinion)
+            => Brain.FindDetectionResponse(Where: r => r.SourceOpinion == Opinion);
 
-        public static IAlert FirstAlert(this Brain Brain)
-            => Brain?.Goals?.Items?.FirstOrDefault(g => g is IAlert) as IAlert;
+        public static IDetectionResponseGoal FindDetectionResponse<D>(this Brain Brain, D Opinion = null)
+            where D : IOpinionDetection, new()
+            => Brain.FindDetectionResponse(Where: r => r.SourceOpinion.GetType() == (Opinion.GetType() ?? typeof(D)));
 
-        public static bool AnyAlert(this Brain Brain, Predicate<IAlert> Predicate)
-            => Brain?.Goals?.Items is List<GoalHandler> goalHandlers
-            && goalHandlers.Any(g
-                => g is IAlert gAlert
-                && (Predicate == null
-                    || Predicate(gAlert)));
+        public static IDetectionResponseGoal FindDetectionResponse<R>(this Brain Brain)
+            where R : IDetectionResponseGoal, new()
+            => Brain.FindDetectionResponse(Where: r => r.GetType() == typeof(R));
 
-        public static IAlert FindAlert(this Brain Brain, IAlert Alert)
-            => Brain.FindGoal(Alert.GetType()) as IAlert;
+        public static bool AnyDetectionResponse(this Brain Brain, Predicate<IDetectionResponseGoal> Where)
+            => Brain?.FindDetectionResponse(Where) != null;
 
         #endregion
         #region Cells
+
+        public static int CosmeticDistanceToCell(this Cell Cell, Cell OtherCell)
+            => Cell != null
+                && OtherCell != null
+            ? Cell.CosmeticDistanceTo(OtherCell.X, OtherCell.Y)
+            : 0;
 
         public static bool HasLOSTo(this Cell Cell, Cell OtherCell)
         {
@@ -701,8 +790,8 @@ namespace StealthSystemPrototype
                         yield return output;
         }
 
-        public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, Radius Radius)
-            => Cell?.GetCellsInACosmeticCircleSilent(Radius.EffectiveValue);
+        public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, IPurview Purview)
+            => Cell?.GetCellsInACosmeticCircleSilent(Purview.GetEffectiveValue());
 
         #endregion
         #region Collection Manipulation
@@ -712,6 +801,79 @@ namespace StealthSystemPrototype
             List?.ToList()?.Sort(Comparison);
             return List;
         }
+
+        public static void ForEach<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<KeyValuePair<K, V>> Proc)
+        {
+            if (Dictionary != null)
+                foreach (KeyValuePair<K, V> item in Dictionary)
+                    Proc(item);
+        }
+
+        public static void ForEach<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<K> KeyProc,
+            Action<V> ValueProc)
+            => Dictionary.ForEach(
+                Proc: delegate (KeyValuePair<K, V> kvp)
+                {
+                    KeyProc?.Invoke(kvp.Key);
+                    ValueProc?.Invoke(kvp.Value);
+                });
+
+        public static void ForEachKey<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<K> KeyProc)
+            => Dictionary.ForEach(KeyProc: KeyProc, ValueProc: null);
+
+        public static void ForEachValue<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<V> ValueProc)
+            => Dictionary.ForEach(KeyProc: null, ValueProc: ValueProc);
+
+        public static void DoAndThenForEach<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<IDictionary<K, V>> Do,
+            Action<KeyValuePair<K, V>> Proc)
+        {
+            Do?.Invoke(Dictionary);
+            Dictionary?.ForEach(Proc);
+        }
+
+        public static void DoAndThenForEach<K, V>(
+            this IDictionary<K, V> Dictionary,
+            Action<IDictionary<K, V>> Do,
+            Action<K> KeyProc,
+            Action<V> ValueProc)
+            => Dictionary.DoAndThenForEach(
+                Do: Do,
+                Proc: delegate (KeyValuePair<K, V> kvp)
+                {
+                    KeyProc?.Invoke(kvp.Key);
+                    ValueProc?.Invoke(kvp.Value);
+                });
+
+        public static T[] GetSubset<T>(this T[] Array, Range Range)
+        {
+            int listCount = Array.Length;
+            int startIndex = Range.Start.GetOffset(listCount);
+            int endIndex = Range.End.GetOffset(listCount);
+            int rangeLength = endIndex - startIndex;
+            if (rangeLength < 0)
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(Range),
+                    message: "Length of " + nameof(Range) + " (" + Range.ToString() + ") is negative for " + 
+                        nameof(Array) + " of " + Array.Length + " elements.");
+
+            T[] output = new T[rangeLength];
+            for (int i = 0; i < rangeLength; i++)
+                output[i] = Array[i + startIndex];
+
+            return output;
+        }
+        public static IList<T> GetSubset<T>(this IList<T> List, Range Range)
+            => List?.ToArray()?.GetSubset(Range);
 
         #endregion
         #region Math?
@@ -733,6 +895,50 @@ namespace StealthSystemPrototype
         public static Range ReadOptimizedRange(this SerializationReader Reader)
             => new(Reader.ReadOptimizedInt32(), Reader.ReadOptimizedInt32());
 
+        public static void WriteOptimized(this SerializationWriter Writer, bool? Bool)
+        {
+            switch (Bool)
+            {
+                case true:
+                    Writer.WriteOptimized(1);
+                    break;
+                case false:
+                    Writer.WriteOptimized(-1);
+                    break;
+                default:
+                case null:
+                    Writer.WriteOptimized(0);
+                    break;
+            }
+        }
+        public static bool? ReadOptimizedNullableBool(this SerializationReader Reader)
+            => Reader.ReadOptimizedInt32() switch
+            {
+                1 => true,
+                -1 => false,
+                _ => null,
+            };
+
+        public static void WriteOptimized(this SerializationWriter Writer, Dictionary<string, string> Dictionary)
+            => Dictionary.DoAndThenForEach(
+                Do: d => Writer.WriteOptimized(Dictionary == null ? -1 : Dictionary.Keys.Count),
+                KeyProc: k => Writer.WriteOptimized(k),
+                ValueProc: v => Writer.WriteOptimized(v));
+
+        public static Dictionary<string, string> ReadOptimizedStringPairDictionary(this SerializationReader Reader)
+        {
+            int count = Reader.ReadOptimizedInt32();
+
+            if (count < 0)
+                return null;
+
+            Dictionary<string, string> readDictionary = new(count);
+            for (int i = 0; i < count; i++)
+                readDictionary[Reader.ReadOptimizedString()] = Reader.ReadOptimizedString();
+
+            return readDictionary;
+        }
+
         #endregion
         #region Indices
 
@@ -740,27 +946,6 @@ namespace StealthSystemPrototype
             => !Index.IsFromEnd
             ? Index.Value
             : -Index.Value;
-
-        #endregion
-        #region Ranges
-
-        public static int Sum(this Range Range, bool IncludeIntermediateValues)
-            => new InclusiveRange(Range).Sum(IncludeIntermediateValues);
-
-        public static int Sum(this Range Range)
-            => Range.Sum(false);
-
-        public static int Average(this Range Range)
-            => new InclusiveRange(Range).Average();
-
-        public static int Length(this Range Range)
-            => new InclusiveRange(Range).AbsLength;
-
-        public static int Floor(this Range Range)
-            => new InclusiveRange(Range).Start;
-
-        public static int Ceiling(this Range Range)
-            => new InclusiveRange(Range).End;
 
         #endregion
         #region InclusiveRanges
@@ -784,6 +969,26 @@ namespace StealthSystemPrototype
         #region Comparison
 
         // nuffin yet.
+
+        #endregion
+        #region Predicates
+
+        public static bool HasCustomAttribute<T>(this Type Type)
+            where T : Attribute
+            => Type.GetCustomAttribute<T>() != null;
+
+        public static bool HasCustomAttribute(this Type Type, Type Attribute)
+            => Type.GetCustomAttribute(Attribute) != null;
+
+        public static bool HasDefaultPublicParameterlessConstructor(this Type Type)
+            => Type?.GetDefaultConstructor() is ConstructorInfo constructorInfo
+            && constructorInfo.IsPublic;
+
+        #endregion
+        #region Boolean
+
+        public static bool Toggle(this ref bool Boolean)
+            => Boolean = !Boolean;
 
         #endregion
     }

@@ -7,11 +7,14 @@ using System.Reflection;
 using XRL.World.Anatomy;
 using XRL.World.Parts.Mutation;
 
+using SerializeField = UnityEngine.SerializeField;
+
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
-using StealthSystemPrototype.Senses;
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Const;
@@ -23,9 +26,10 @@ namespace XRL.World.Parts
     public class UD_PerceptionHelper 
         : IScribedPart
         , IPerceptionEventHandler
-        , IAlertEventHandler
+        , IDetectionEventHandler
         , ISneakEventHandler
     {
+        #region Debug
         [UD_DebugRegistry]
         public static void doDebugRegistry(DebugMethodRegistry Registry)
         {
@@ -43,7 +47,7 @@ namespace XRL.World.Parts
                     { typeof(MinEvent), false },
                 });
         }
-
+        #endregion
         #region Static & Const
 
         public const string ANIMAL_BLUEPRINT = "Animal";
@@ -80,42 +84,42 @@ namespace XRL.World.Parts
             get
             {
                 if (_Perceptions == null)
-                    GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
+                {
+                    SyncPerceptions();
+                }
                 return _Perceptions;
             }
         }
+        private bool CollectingPerceptions;
 
-        public bool WantSync;
+        [SerializeField]
+        private bool _WantSync;
+        public bool WantSync
+        {
+            get => _WantSync;
+            set => _WantSync = value;
+        }
 
-        #region Debugging
-
-        private IPerception _BestPerception;
-        public IPerception BestPerception => _BestPerception ??= Perceptions.GetHighestRatedPerceptionFor(The.Player);
-
-        #endregion
         #endregion
 
         public UD_PerceptionHelper()
         {
             _Perceptions = null;
+            CollectingPerceptions = false;
             WantSync = false;
-
-            _BestPerception = null;
         }
 
         #region Serialization
 
         public override void Write(GameObject Basis, SerializationWriter Writer)
         {
-            Writer.WriteObject(_Perceptions);
-            Writer.WriteObject(_BestPerception);
             base.Write(Basis, Writer);
+            Writer.WriteComposite(_Perceptions);
         }
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
-            _Perceptions = Reader.ReadObject() as PerceptionRack;
-            _BestPerception = Reader.ReadObject() as IPerception;
             base.Read(Basis, Reader);
+            _Perceptions = Reader.ReadComposite<PerceptionRack>();
         }
 
         #endregion
@@ -136,14 +140,17 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
 
-            GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
-            _Perceptions?.Validate();
+            if (!CollectingPerceptions)
+            {
+                CollectingPerceptions.Toggle();
 
+                GetPerceptionsEvent.GetFor(ParentObject, ref _Perceptions);
+
+                CollectingPerceptions.Toggle();
+            }
+            _Perceptions?.Validate();
             WantSync = false;
         }
-
-        public void ClearBestPerception()
-            => _BestPerception = null;
 
         private static bool IsClearPerceptionsMinEvent(int ID)
             => !ValidatePerceptionsMinEvents.IsNullOrEmpty()
@@ -153,33 +160,38 @@ namespace XRL.World.Parts
             => !ValidatePerceptionsStringyEvents.IsNullOrEmpty()
             && ValidatePerceptionsStringyEvents.Contains(ID);
 
-        private bool ProcessPerceptionAlteringEvent(MinEvent E)
+        public bool ProcessPerceptionAlteringEvent(IEvent E)
         {
-            using Indent indent = new(1);
+            MinEvent mE = null;
+            Event sE =null;
+
+            Debug.ArgPair eDebugPair = default;
+            if (E is MinEvent)
+            {
+                mE = E as MinEvent;
+                eDebugPair = Debug.Arg(mE?.TypeStringWithGenerics());
+            }
+            else
+            if (E is Event)
+            {
+                sE = E as Event;
+                eDebugPair = Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), sE?.ID);
+            }
+
+                using Indent indent = new(1);
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(E?.TypeStringWithGenerics()),
+                    eDebugPair,
                     Debug.Arg(ParentObject.DebugName ?? "null"),
                 });
 
-            if (!IsClearPerceptionsMinEvent(E.ID))
+            if (mE != null
+                && IsClearPerceptionsMinEvent(mE.ID))
                 return false;
 
-            WantSync = true;
-            return true;
-        }
-        private bool ProcessPerceptionAlteringEvent(Event E)
-        {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), E?.ID),
-                    Debug.Arg(ParentObject.DebugName ?? "null"),
-                });
-
-            if (!IsClearPerceptionsStringyEvent(E.ID))
+            if (sE != null
+                && !IsClearPerceptionsStringyEvent(sE.ID))
                 return false;
 
             WantSync = true;
@@ -209,8 +221,7 @@ namespace XRL.World.Parts
 
             ProcessPerceptionAlteringEvent(E);
 
-            if (Perceptions != null
-                && !Perceptions.FireEvent(E))
+            if (!(Perceptions?.FireEvent(E) ?? true))
                 return false;
 
             return base.FireEvent(E);
@@ -226,11 +237,12 @@ namespace XRL.World.Parts
             if (ID.EqualsAny(
                 args: new int[]
                 {
+                    EndTurnEvent.ID,
                     GetPerceptionsEvent.ID,
-                    GetPerceptionDieRollEvent.ID,
-                    GetPerceptionRadiusEvent.ID,
+                    AdjustTotalPerceptionLevelEvent.ID,
+                    AdjustTotalPurviewEvent.ID,
                     TryConcealActionEvent.ID,
-                    AfterAlertEvent.ID,
+                    AfterDetectedEvent.ID,
                     GetDebugInternalsEvent.ID,
                 }))
                 return true;
@@ -243,8 +255,7 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject.DebugName ?? "null"),
                 });
 
-            if (Perceptions?.HasWantEvent(ID, Cascade)
-                ?? false)
+            if (Perceptions?.HasWantEvent(ID, Cascade) ?? false)
                 return true;
 
             return false;
@@ -261,6 +272,11 @@ namespace XRL.World.Parts
             return base.HandleEvent(E)
                 && (Perceptions?.DelegateHandleEvent(E)
                     ?? true);
+        }
+        public override bool HandleEvent(EndTurnEvent E)
+        {
+            Perceptions?.TickCooldowns();
+            return base.HandleEvent(E);
         }
         public override bool HandleEvent(RegenerateDefaultEquipmentEvent E)
         {
@@ -287,12 +303,20 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
 
+            if (ParentObject.GetFirstBodyPart("Face") is BodyPart facePart)
+            {
+                E.RequireBodyPartPerception<VisualBodyPartPerception>(facePart, Level: 3, PurviewValue: 5);
+                E.RequireBodyPartPerception<AuditoryBodyPartPerception>(facePart, Level: 3, PurviewValue: 4);
+                E.RequireBodyPartPerception<OlfactoryBodyPartPerception>(facePart, Level: 3, PurviewValue: 3);
+            }
+
+            if (ParentObject.TryGetPart(out Esper esper))
+                E.RequirePerception(new EsperPsionicPerception(esper, 1, new EsperPurview(4)));
+
+            /*
             E.RequirePerception(new SimpleVisualPerception(ParentObject));
             E.RequirePerception(new SimpleAuditoryPerception(ParentObject));
             E.RequirePerception(new SimpleOlfactoryPerception(ParentObject));
-
-            if (ParentObject.TryGetPart(out Esper esper))
-                E.RequirePerception(new EsperPsionicPerception(esper));
 
             if (ParentObject.TryGetPart(out HeightenedHearing heightenedHearing))
                 E.RequireAuditoryIPartPerception(heightenedHearing);
@@ -308,12 +332,13 @@ namespace XRL.World.Parts
 
             if (ParentObject.TryGetPart(out SensePsychic sensePsychic))
                 E.RequirePsionicIPartPerception(sensePsychic);
+            */
 
             Debug.Log(nameof(E.Perceptions), E.Perceptions?.Count ?? 0, Indent: indent[1]);
 
             return base.HandleEvent(E);
         }
-        public bool HandleEvent(GetPerceptionDieRollEvent E)
+        public bool HandleEvent(AdjustTotalPerceptionLevelEvent E)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -327,19 +352,19 @@ namespace XRL.World.Parts
             if (WantSync)
                 SyncPerceptions();
 
-            if (E.Sense.Name == nameof(Visual)
+            /*
+            if (E.Alert.Name == nameof(Visual)
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
                 E.SetDieRollMin(40);
 
-            if (E.Sense.Name == nameof(Olfactory)
+            if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
                 E.SetDieRollMin(40);
 
-            if (E.Sense.Name == nameof(Olfactory)
+            if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
                 E.AdjustDieRoll(2 * heightenedSmell.Level);
-
             if (E.Type.Name.EqualsAny(
                 new string[]
                 {
@@ -351,14 +376,15 @@ namespace XRL.World.Parts
                 && body.LoopPart(FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
             {
                 if (facesList.Count > 1)
-                    E.AdjustDieRoll(15);
+                    E.AdjustByAmount(15);
                 else
                 if (facesList.Count < 1)
-                    E.SetDieRollMax(0);
+                    E.SetMaxValue(0);
             }
+            */
             return base.HandleEvent(E);
         }
-        public bool HandleEvent(GetPerceptionRadiusEvent E)
+        public bool HandleEvent(AdjustTotalPurviewEvent E)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -372,51 +398,47 @@ namespace XRL.World.Parts
             if (WantSync)
                 SyncPerceptions();
 
-            if (E.Sense.Name == nameof(Visual)
+            /*
+            if (E.Alert.Name == nameof(Visual)
                 && ParentObject.RequirePart<Mutations>() is var mutations
                 && mutations.MutationList.Any(bm => VisionMutations.Contains(bm.GetDisplayName())))
-                E.SetMinRadius(E.BaseRadius.GetValue() + 2);
+                E.SetMinRadius(E.Purview.GetValue() + 2);
 
-            if (E.Sense.Name == nameof(Olfactory)
+            if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.GetBlueprint().InheritsFrom(ANIMAL_BLUEPRINT))
-                E.SetMinRadius(E.BaseRadius.GetValue() + 2);
+                E.SetMinRadius(E.Purview.GetValue() + 2);
 
-            if (E.Sense.Name == nameof(Olfactory)
+            if (E.Alert.Name == nameof(Olfactory)
                 && ParentObject.TryGetPart(out HeightenedSmell heightenedSmell))
-                E.SetMinRadius(E.BaseRadius.GetValue() + Math.Min(heightenedSmell.Level, 5));
-
-            if (E.Type.Name.EqualsAny(
-                new string[]
-                {
-                    nameof(SimpleVisualPerception),
-                    nameof(SimpleAuditoryPerception),
-                    nameof(SimpleOlfactoryPerception),
-                })
-                && ParentObject.Body is Body body
-                && body.LoopPart(FACE_BODYPART, bp => !bp.IsDismembered) is List<BodyPart> facesList)
-            {
-                if (facesList.Count > 1)
-                    E.SetMinRadius(E.Radius.GetValue() + 2);
-                else
-                if (facesList.Count < 1)
-                    E.SetMaxRadius(0);
-            }
+                E.SetMinRadius(E.Purview.GetValue() + Math.Min(heightenedSmell.Level, 5));
+            */
             return base.HandleEvent(E);
         }
         public virtual bool HandleEvent(TryConcealActionEvent E)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E.GetType().ToStringWithGenerics()),
+                    Debug.Arg(ParentObject?.DebugName ?? "null"),
+                });
+
             if (E.Hider != ParentObject
                 && !E.Hider.InSamePartyAs(ParentObject)
                 && !Perceptions.IsNullOrEmpty())
             {
-                Perceptions.Sense(E.ConcealedAction, E.Hider);
+                Perceptions.TryPerceive(E.ConcealedAction);
             }
             return base.HandleEvent(E);
         }
-        public virtual bool HandleEvent(AfterAlertEvent E)
+        public virtual bool HandleEvent(AfterDetectedEvent E)
         {
-            if (ParentObject.BelongsToFaction(E.Perceiver.GetPrimaryFaction()))
-                ParentObject?.Brain.PushGoal(E.Alert.Copy());
+            if (ParentObject.BelongsToFaction(E.Perceiver.GetPrimaryFaction())
+                && ParentObject != E.Perceiver
+                && ParentObject != E.Hider)
+                ParentObject?.Brain.CascadeOpinionDetection(Detection: E.Detection.DeepCopy(ParentObject));
+
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)

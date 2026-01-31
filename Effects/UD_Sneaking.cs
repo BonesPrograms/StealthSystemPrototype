@@ -13,11 +13,10 @@ using SerializeField = UnityEngine.SerializeField;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
-using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Capabilities.Stealth;
 
 using static StealthSystemPrototype.Capabilities.Stealth.SneakPerformance;
-using StealthSystemPrototype.Capabilities.Stealth;
-using StealthSystemPrototype.Senses;
 
 namespace XRL.World.Effects
 {
@@ -35,7 +34,7 @@ namespace XRL.World.Effects
                 new Visual(8),
                 new Auditory(3),
                 new Olfactory(5),
-            } },
+            }.Initialize() as ConcealedCommandAction },
         };
 
         public GameObject Source;
@@ -299,18 +298,17 @@ namespace XRL.World.Effects
         {
             if (CommandEventsToConceal.ContainsKey(E.Command))
             {
-                TryConcealActionEvent.Send(
+                Sneak.TryConcealAction(
                     Hider: E.Actor,
                     Performance: SneakPerformance,
                     ConcealedAction: CommandEventsToConceal[E.Command]
-                        ?.SetEvent(E)
-                        ?.AdjustSenseIntensities(SneakPerformance));
+                        ?.SetEvent(E));
             }
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(EnteredCellEvent E)
         {
-            TryConcealActionEvent.Send(
+            Sneak.TryConcealAction(
                 Hider: E.Actor,
                 Performance: SneakPerformance,
                 ConcealedAction: new ConcealedMinAction<EnteredCellEvent>(
@@ -318,17 +316,17 @@ namespace XRL.World.Effects
                     Aggressive: false,
                     Description: !E.Forced ? "sneaking around" : "being knocked around")
                 {
-                    SneakPerformance.GetSense<Visual>(Intensity: 10),
-                    SneakPerformance.GetSense<Auditory>(Intensity: 10),
-                    SneakPerformance.GetSense<Olfactory>(Intensity: 8),
-                });
+                    IAlert.GetAlert<Visual>(Intensity: 10),
+                    IAlert.GetAlert<Auditory>(Intensity: 10),
+                    IAlert.GetAlert<Olfactory>(Intensity: 8),
+                }.Initialize());
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
             E.AddEntry(this, nameof(IsMoveSpeedMultiplierApplied), IsMoveSpeedMultiplierApplied);
             E.AddEntry(this, nameof(AppliedMoveSpeedMultiplierAmount), AppliedMoveSpeedMultiplierAmount);
-            E.AddEntry(this, SneakPerformance.PerformanceEntriesDebugString(out string performanceEntriesContents), performanceEntriesContents);
+            E.AddEntry(this, SneakPerformance.EntriesDebugString(out string performanceEntriesContents), performanceEntriesContents);
             E.AddEntry(this, SneakPerformance.CollectedStatsEntriesDebugString(out string collectedStatsEntriesContents), collectedStatsEntriesContents);
             return base.HandleEvent(E);
         }

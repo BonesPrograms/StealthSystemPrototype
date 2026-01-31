@@ -15,7 +15,6 @@ using StealthSystemPrototype;
 using static StealthSystemPrototype.Options;
 using static StealthSystemPrototype.Const;
 using static StealthSystemPrototype.Utils;
-// using static StealthSystemPrototype.Logging.DebugMethodRegistry;
 
 namespace StealthSystemPrototype.Logging
 {
@@ -101,9 +100,7 @@ namespace StealthSystemPrototype.Logging
             => !Indents.IsNullOrEmpty();
 
         public static void PushToIndents(Indent Indent)
-        {
-            Indents.Push(Indent);
-        }
+            => Indents.Push(Indent);
 
         [GameBasedCacheInit]
         [ModSensitiveCacheInit]
@@ -117,15 +114,14 @@ namespace StealthSystemPrototype.Logging
         public static Indent DiscardIndent()
         {
             if (!Indents.TryPop(out _))
-            {
                 ResetIndent();
-            }
+
             return LastIndent;
         }
         public static bool HasIndent(Indent Indent)
             => Indents.Contains(Indent);
 
-        public static string GetCallingTypeAndMethod(bool AppendSpace = false, bool TrimModPrefix = true, bool ConvertGenerics = false)
+        public static string CallingTypeAndMethodNames(bool AppendSpace = false, bool TrimModPrefix = true, bool ConvertGenerics = false)
         {
             if (TryGetCallingTypeAndMethod(out Type declaringType, out MethodBase methodBase))
             {
@@ -136,11 +132,11 @@ namespace StealthSystemPrototype.Logging
                 if (TrimModPrefix)
                     declaringTypeName = declaringTypeName.Replace(ThisMod.ID + "_", "");
 
-                return declaringTypeName + "." + methodBase.Name + (AppendSpace ? " " : "");
+                return CallChain(declaringTypeName, methodBase.Name) + (AppendSpace ? " " : "");
             }
             return null;
         }
-        public static string GetCallingMethod(bool AppendSpace = false)
+        public static string CallingMethodName(bool AppendSpace = false)
         {
             if (TryGetCallingTypeAndMethod(out _, out MethodBase methodBase))
             {
@@ -293,7 +289,7 @@ namespace StealthSystemPrototype.Logging
             {
                 output += " " + MessageAfter;
             }
-            return Log(GetCallingTypeAndMethod(ConvertGenerics: true) + output, Indent, CallingMethod);
+            return Log(CallingTypeAndMethodNames(ConvertGenerics: true) + output, Indent, CallingMethod);
         }
         public static Indent LogCaller(
             Indent Indent = null,
@@ -489,8 +485,13 @@ namespace StealthSystemPrototype.Logging
                     ? "NULL_METHOD"
                     : null;
 
+            string genericsString = null;
+            if (!MethodBase.IsConstructor
+                && MethodBase.IsGenericMethod)
+                genericsString = MethodBase.GetGenericArguments().GenericsString();
+
             return MethodBase.Name +
-                MethodBase.GetGenericArguments().GenericsString() +
+                genericsString +
                 MethodBase.GetParameters().ParamsString();
         }
 

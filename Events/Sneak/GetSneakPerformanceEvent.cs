@@ -54,9 +54,9 @@ namespace StealthSystemPrototype.Events
             return E.Performance;
         }
 
-        public GetSneakPerformanceEvent SetClamp(string SenseName, InclusiveRange Clamp)
+        public GetSneakPerformanceEvent SetClamp(string AlertName, InclusiveRange Clamp)
         {
-            Performance.SetClamp(SenseName, Clamp);
+            Performance.SetClamp(AlertName, Clamp);
             return this;
         }
         public GetSneakPerformanceEvent SetMin(string SenseName, int Min)
@@ -66,7 +66,7 @@ namespace StealthSystemPrototype.Events
         }
         public GetSneakPerformanceEvent SetRating(string SenseName, int Rating)
         {
-            Performance.SetRating(SenseName, Rating);
+            Performance.SetIntensity(SenseName, Rating);
             return this;
         }
         public GetSneakPerformanceEvent AdjustRating(string SenseName, int Amount)

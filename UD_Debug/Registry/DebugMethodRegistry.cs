@@ -174,7 +174,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachValue)));
                 return this;
             }
@@ -195,7 +195,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachValue)));
                 return this;
             }
@@ -214,7 +214,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(MethodNameValues) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(MethodNameValues) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterEach)));
                 return this;
             }
@@ -236,7 +236,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(MethodValues) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(MethodValues) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterEach)));
                 return this;
             }
@@ -257,7 +257,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachFalse)));
                 return this;
             }
@@ -273,7 +273,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachFalse)));
                 return this;
             }
@@ -288,7 +288,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachTrue)));
                 return this;
             }
@@ -304,7 +304,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachTrue)));
                 return this;
             }
@@ -319,7 +319,7 @@ namespace StealthSystemPrototype.Logging
             {
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
-                    Message: GetCallingTypeAndMethod(ConvertGenerics: true) + " passed empty " + nameof(MinEventTypeValues) + " to " +
+                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(MinEventTypeValues) + " to " +
                     CallChain(nameof(DebugMethodRegistry), nameof(RegisterHandleEventVariants)));
                 return this;
             }

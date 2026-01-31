@@ -71,7 +71,7 @@ namespace StealthSystemPrototype.Logging
         }
 
         protected int CapIndent(int Indent)
-            => Math.Max(BaseValue, Math.Min(Indent, MaxIndent));
+            => Indent.Clamp(BaseValue, MaxIndent);
 
         protected int CapIndent()
             => CapIndent(LastValue);
