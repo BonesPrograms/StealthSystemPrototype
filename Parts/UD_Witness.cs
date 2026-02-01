@@ -11,6 +11,9 @@ using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using XRL.World.Effects;
+using XRL.World.AI;
+using StealthSystemPrototype.Detetection.Opinions;
 
 namespace XRL.World.Parts
 {
@@ -25,7 +28,30 @@ namespace XRL.World.Parts
 
         public PerceptionRack Perceptions => ParentObject?.GetPerceptions();
 
-        public SneakerRack ZoneSneakers;
+        protected SneakerRack _ZoneSneakers;
+
+        public SneakerRack ZoneSneakers
+        {
+            get => _ZoneSneakers;
+            protected set => _ZoneSneakers = value;
+        }
+
+        public bool PlayerPerceptable
+        {
+            get
+            {
+                if (!The.Player.HasEffect<UD_Sneaking>())
+                    return true;
+
+                if (ParentObject.Brain.TryGetOpinions(The.Player, out OpinionList opinions)
+                    && opinions.Any(o
+                        => o is IOpinionDetection detectionOpinion
+                        && detectionOpinion.Level > AwarenessLevel.Suspect))
+                    return true;
+
+                return false;
+            }
+        }
 
         #endregion
 
@@ -114,7 +140,7 @@ namespace XRL.World.Parts
                 && The.Player is GameObject player
                 && !ParentObject.IsPlayer()
                 && ParentObject != player
-                //&& PlayerPerceptable
+                && PlayerPerceptable
                 )
             {
                 /*

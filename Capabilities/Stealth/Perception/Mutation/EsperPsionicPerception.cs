@@ -26,7 +26,16 @@ namespace StealthSystemPrototype.Perceptions
     [Serializable]
     public class EsperPsionicPerception : PsionicMutationPerception<Esper>
     {
-        public override BasePurview Purview => new EsperPurview(this);
+        public override Esper Source
+        {
+            get => base.Source = _Owner?.GetPart<Esper>();
+            set => base.Source = _Owner?.GetPart<Esper>();
+        }
+        public override BasePurview Purview
+        {
+            get => _Purview ??= new EsperPurview(this);
+            protected set => base.Purview = value;
+        }
 
         public override bool RequiresConsciousness => true;
         public override bool IgnoreMentalShield => false;
@@ -102,21 +111,7 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
-        {
-            base.ConfigurePurview(Value, args);
-        }
-
         public override int GetLevelAdjustment(int Level = 0)
             => base.GetLevelAdjustment(Level) + (Owner?.StatMod("Ego") ?? 0);
-
-        public override bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
-            => base.TryPerceive(Context, out SuccessMargin, out FailureMargin);
-
-        public override IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin)
-            => base.RaiseDetection(Context, SuccessMargin);
-
-        public override Esper GetSource()
-            => base.GetSource();
     }
 }

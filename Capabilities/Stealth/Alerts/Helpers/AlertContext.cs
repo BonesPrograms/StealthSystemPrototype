@@ -188,7 +188,8 @@ namespace StealthSystemPrototype.Alerts
         public bool Validate()
             => GameObject.Validate(Hider)
             && GameObject.Validate(Perceiver)
-            && (Perception == null || Perception.Validate())
+            && (Perception == null 
+                || Perception.Validate())
             && SneakAlert.Intensity > 0;
 
         public static bool Validate(ref AlertContext Context)

@@ -22,11 +22,12 @@ namespace XRL.World.Parts
 {
     [HasWishCommand]
     [Serializable]
-    public class UD_Sneak : IScribedPart//, ISneakSource
+    public class UD_Sneak : IScribedPart, ISneakSource
     {
         public static string SUPPORT_TYPE => nameof(UD_Sneak);
         public static string COMMAND_SNEAK => "CommandToggleSneaking";
 
+        [SerializeField]
         private SneakPerformance _SneakPerformance;
         public SneakPerformance SneakPerformance
         {
@@ -37,11 +38,44 @@ namespace XRL.World.Parts
             protected set => _SneakPerformance = value;
         }
 
+        [SerializeField]
         private Guid _SneakActivatedAbilityID;
         public Guid SneakActivatedAbilityID => _SneakActivatedAbilityID;
 
+        Guid ISneakSource.SneakActivatedAbilityID
+        { 
+            get => SneakActivatedAbilityID;
+            set => _SneakActivatedAbilityID = value;
+        }
+
+        public string SneakActivatedAbilityClass => "Skill";
+
+        public int BaseSneakPerformance => ParentObject.StatMod("Intelligence");
+
+        protected List<GameObject> _Witnesses;
+        protected List<GameObject> Witnesses => _Witnesses ??= The.ActiveZone.GetObjects(GO => GO.WithinAnyPurview(ParentObject));
+        public bool IsBeingPerceived
+        {
+            get
+            {
+                if (!IsSneaking())
+                    return true;
+
+
+
+                return true;
+            }
+        }
+
         [SerializeField]
-        private bool WantRecalc;
+        private bool _WantRecalc;
+        public bool WantRecalc
+        {
+            get => _WantRecalc;
+            set => _WantRecalc = value;
+        }
+
+        bool ISneakSource.IsSneaking => IsSneaking();
 
         public UD_Sneak()
         {
@@ -130,6 +164,7 @@ namespace XRL.World.Parts
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
             || ID == NeedPartSupportEvent.ID
+            || ID == EndTurnEvent.ID
             || ID == CommandEvent.ID
             || ID == GetSneakPerformanceEvent.ID
             ;
@@ -139,6 +174,11 @@ namespace XRL.World.Parts
                 && !PartSupportEvent.Check(E, this))
                 ParentObject.RemovePart(this);
 
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(EndTurnEvent E)
+        {
+            _Witnesses = null;
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(CommandEvent E)

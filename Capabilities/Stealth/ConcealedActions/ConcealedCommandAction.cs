@@ -13,13 +13,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     {
         public string Command;
 
-        public ConcealedCommandAction(CommandEvent E, bool Aggressive, string Description)
-            : base(E, Aggressive, Description)
+        public ConcealedCommandAction(CommandEvent E, string Action, bool Aggressive, string Description)
+            : base(E, Action,  Aggressive, Description)
         {
             Command = E.Command;
         }
-        public ConcealedCommandAction(bool Aggressive, string Description)
-            : base(null, Aggressive, Description)
+        public ConcealedCommandAction(string Action, bool Aggressive, string Description)
+            : base(null, Action,  Aggressive, Description)
         {
         }
 

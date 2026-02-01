@@ -10,7 +10,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     {
         public Guid SneakActivatedAbilityID { get; set; }
             
-        public string  SneakActivatedAbilityClass { get; set; }
+        public string SneakActivatedAbilityClass { get; }
 
         public int BaseSneakPerformance { get; }
 
@@ -18,6 +18,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public bool IsBeingPerceived { get; }
 
-        protected bool WantRecalc { get; set; }
+        public bool WantRecalc { get; set; }
+
+        public bool IsSneaking { get; }
     }
 }

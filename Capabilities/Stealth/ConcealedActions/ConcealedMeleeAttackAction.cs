@@ -14,21 +14,64 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     {
         public static BaseAlert[] DefaultAlertTypes => new BaseAlert[]
         {
-            new Kinesthetic(30),
-            new Visual(15),
-            new Auditory(12),
+            BaseAlert.GetAlert<Kinesthetic>(Intensity: 35,
+                Properties: new()
+                {
+                    { "Pain", null }
+                }),
+            BaseAlert.GetAlert<Visual>(Intensity: 25),
+            BaseAlert.GetAlert<Auditory>(Intensity: 25),
+            BaseAlert.GetAlert<Psionic>(Intensity: 15,
+                Properties: new()
+                {
+                    { "Intent", "Negative" },
+                    { "Aggressive", null }
+                }),
         };
 
         public override bool Aggressive => true;
 
+        public ConcealedMeleeAttackAction(GetAttackerHitDiceEvent E, string Action, string Description)
+            : base(E, Action, true, Description)
+        {
+        }
+
         public ConcealedMeleeAttackAction(GetAttackerHitDiceEvent E, string Description)
-            : base(E, true, Description)
+            : this(E, "attacking", Description)
         {
         }
 
         public override BaseConcealedAction Initialize()
         {
-            Items = DefaultAlertTypes;
+            Dictionary<string, BaseAlert> alertTypes = new();
+            foreach (BaseAlert defaultAlert in DefaultAlertTypes)
+            {
+                if (alertTypes.ContainsKey(defaultAlert.Name)
+                    && alertTypes[defaultAlert.Name] is BaseAlert existingAlert)
+                {
+                    existingAlert.Intensity = defaultAlert.Intensity;
+
+                    existingAlert.Properties ??= new();
+                    foreach ((string name, string value) in defaultAlert.Properties)
+                    {
+                        if (existingAlert.Properties.ContainsKey(name))
+                            existingAlert.Properties[name] += "," + value;
+                        else
+                            existingAlert.Properties[name] = value;
+                    }
+                }
+                else
+                    alertTypes[defaultAlert.Name] = defaultAlert;
+            }
+
+            Items ??= new BaseAlert[0];
+            for (int i = 0; i < Items.Length; i++)
+            {
+                if (Items[i] is BaseAlert itemsAlert)
+                    alertTypes[itemsAlert.Name] = itemsAlert;
+            }
+            Clear();
+            AddRange(alertTypes.Values);
             return base.Initialize();
         }
 

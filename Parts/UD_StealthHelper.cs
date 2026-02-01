@@ -36,7 +36,7 @@ namespace XRL.World.Parts
             Perceiver
                 ?.GetPart<UD_Witness>()
                 ?.Perceptions
-                ?.ToString(Short: true, Entity: Hider);
+                ?.ToString(Short: true);
 
         private string ProcWitness(
             string Accumulator,

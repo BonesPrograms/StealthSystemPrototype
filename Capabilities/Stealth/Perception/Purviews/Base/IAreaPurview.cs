@@ -31,7 +31,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             return cellsInArea?.Where(c => origin.HasLOSTo(c));
         }
 
-        public bool IsInArea(AlertContext Context)
+        public bool CheckInArea(AlertContext Context)
             => GetCellsInArea() is IEnumerable<Cell> areaCells
             && areaCells.Contains(Context.AlertLocation);
     }

@@ -50,13 +50,13 @@ namespace XRL.World.Parts.Skill
 
         public override void Register(GameObject Object, IEventRegistrar Registrar)
         {
-            Registrar.Register(GetSneakPerformanceEvent.ID, EventOrder.EXTREMELY_EARLY);
+            // do registrations here
             base.Register(Object, Registrar);
         }
         public override bool WantEvent(int ID, int cascade)
             => base.WantEvent(ID, cascade)
             || ID == PartSupportEvent.ID
-            // || ID == GetSneakPerformanceEvent.ID
+            || ID == GetSneakPerformanceEvent.ID
             ;
         public override bool HandleEvent(PartSupportEvent E)
         {

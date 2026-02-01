@@ -44,8 +44,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             if (Diffuser == null)
                 return Value;
 
-            if (Diffuser.TryGetValue(Value, out double diffusedValue))
-                return diffusedValue;
+            int effectiveValue = GetEffectiveValue();
+            if (effectiveValue >= Diffuser.Count)
+                Diffuser.SetSteps(effectiveValue);
+
+            if (Diffuser.TryGetValue(effectiveValue, out double diffusionFactor))
+                return Value * diffusionFactor;
 
             return 0;
         }

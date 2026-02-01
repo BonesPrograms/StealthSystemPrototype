@@ -36,6 +36,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     { nameof(Add), false },
                     { nameof(HasWantEvent), false },
                     { nameof(PerceptionWantsEvent), false },
+                    { nameof(DelegateHandleEvent), false },
+                    { nameof(FireEvent), false },
                 });
         #endregion
 
@@ -137,32 +139,28 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             string Accumulator,
             IPerception Next,
             string Delimiter,
-            bool Short,
-            GameObject Entity)
+            bool Short)
             => Accumulator + (!Accumulator.IsNullOrEmpty() ? Delimiter : null) + Next.ToString(Short: Short);
 
         private string AggregatePerceptionAlert(
             string Accumulator,
-            IPerception Next,
+            BasePerception Next,
             string Delimiter,
             bool Short,
-            GameObject Entity,
-            IAlert Alert = null)
+            BaseAlert Alert = null)
             => Alert == null
                 || Next.CanPerceiveAlert(Alert)
             ? AggregatePerception(
                 Accumulator: Accumulator,
                 Next: Next,
                 Delimiter: Delimiter,
-                Short: Short,
-                Entity: Entity)
+                Short: Short)
             : Accumulator;
 
         public virtual string ToString(
             string Delimiter,
             bool Short,
-            GameObject Entity,
-            IAlert Alert = null)
+            BaseAlert Alert = null)
         {
             if (Items == null)
                 MetricsManager.LogException(
@@ -170,23 +168,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     x: new InnerArrayNullException(nameof(Items)),
                     category: GAME_MOD_EXCEPTION);
 
-            IPerception[] items = new IPerception[Count];
+            BasePerception[] items = new BasePerception[Count];
             Array.Copy(Items, items, Count);
-            return items?.Aggregate("", (a, n) => AggregatePerceptionAlert(a, n, Delimiter, Short, Entity, Alert));
+            return items?.Aggregate("", (a, n) => AggregatePerceptionAlert(a, n, Delimiter, Short, Alert));
         }
 
         public virtual string ToString(
-            bool Short,
-            GameObject Entity = null)
-            => ToString(", ", Short, Entity, null);
+            bool Short)
+            => ToString(", ", Short, null);
 
         public virtual string ToStringLines(
-            bool Short = false,
-            GameObject Entity = null)
-            => ToString("\n", Short, Entity, null);
+            bool Short = false)
+            => ToString("\n", Short, null);
 
         public override string ToString()
-            => ToString(Short: false, Entity: null);
+            => ToString(Short: false);
 
         public sealed override void Add(BasePerception Perception)
             => Add(Perception);
@@ -675,14 +671,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
         public bool DelegateHandleEvent(MinEvent E)
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(MinEvent), E?.TypeStringWithGenerics()),
-                    Debug.Arg(Owner?.MiniDebugName()),
-                });
-
             if (E.CascadeTo(MinEvent.CASCADE_NONE))
                 return true;
 
@@ -697,6 +685,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 if (!perception.HandleEvent(E))
                     return false;
             }
+
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(MinEvent), E?.TypeStringWithGenerics()),
+                    Debug.Arg(Owner?.MiniDebugName()),
+                });
 
             return true;
         }

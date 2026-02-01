@@ -123,22 +123,52 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             if (Diffuser == null)
                 return Value;
 
-            if (Diffuser.TryGetValue(Value, out double diffusedValue))
-                return diffusedValue;
+            if (EffectiveValue >= Diffuser.Count)
+                Diffuser.SetSteps(EffectiveValue);
+
+            if (Diffuser.TryGetValue(EffectiveValue, out double diffusionFactor))
+                return Value * diffusionFactor;
 
             return 0;
         }
 
+        public override int GetModifedEffectiveLevel(AlertContext Context)
+        {
+            if (ParentPerception == null
+                || !CheckWithinLine(Context, out int distance))
+                return 0;
+
+            return (int)Diffuse(distance);
+        }
+
         #region Predicates
 
-        public override bool IsWithin(AlertContext Context)
-            => base.IsWithin(Context);
+        public virtual bool CheckWithinLine(Cell PerceiverLocation, Cell AlertLocation, out int Distance)
+        {
+            Distance = -1;
+            if (PerceiverLocation is not Cell { InActiveZone: true } origin
+                || AlertLocation is not Cell { InActiveZone: true } destination)
+                return false;
+
+            Distance = origin.CosmeticDistanceToCell(destination);
+
+            return Distance <= GetEffectiveValue()
+                && (!GetOccludes()
+                    || origin.HasLOSTo(destination));
+        }
+
+        public virtual bool CheckWithinLine(AlertContext Context, out int Distance)
+            => CheckWithinLine(
+                PerceiverLocation: Context.Perceiver.CurrentCell,
+                AlertLocation: Context.AlertLocation,
+                Distance: out Distance);
+
+        #endregion
 
         public override void ClearCaches()
         {
         }
 
-        #endregion
         #region Equatable
 
         public override bool Equals(IPurview Other)

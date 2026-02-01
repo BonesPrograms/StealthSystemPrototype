@@ -64,7 +64,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public int GetPurviewValueAdjustment(IPerception ParentPerception, int Value = 0);
 
-        public bool IsWithin(AlertContext Context);
+        public int GetModifedEffectiveLevel(AlertContext Context);
+
+        public bool CheckWithin(Cell AlertLocation);
+
+        public bool CheckWithin(AlertContext Context);
 
         public void ClearCaches();
 

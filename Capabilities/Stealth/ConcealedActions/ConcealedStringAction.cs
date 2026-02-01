@@ -13,8 +13,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     {
         public Event Event => SourceEvent;
 
-        public ConcealedStringAction(Event SourceEvent, bool Aggressive, string Description)
-            : base(SourceEvent.ID, SourceEvent, Aggressive, Description)
+        public ConcealedStringAction(Event SourceEvent, string Action, bool Aggressive, string Description)
+            : base(SourceEvent.ID, SourceEvent, Action, Aggressive, Description)
         {
         }
     }

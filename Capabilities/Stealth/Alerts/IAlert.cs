@@ -10,6 +10,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
+using static StealthSystemPrototype.Alerts.AlertRack;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -23,12 +24,25 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     {
         #region Static & Cache
 
-        public static A GetAlert<A>(int Intensity)
+        public static A GetAlert<A>(int Intensity, Dictionary<string, string> Properties = null)
             where A : class, IAlert, new()
-            => new()
+        {
+            A newAlert = new()
             {
-                Intensity = Intensity
+                Intensity = Intensity,
             };
+            newAlert.Initialize();
+            newAlert.Properties ??= new();
+            foreach ((string name, string value) in Properties)
+            {
+                if (newAlert.Properties.ContainsKey(name))
+                    newAlert.Properties[name] += "," + value;
+                else
+                    newAlert.Properties[name] = value;
+            }
+            newAlert.Created();
+            return newAlert;
+        }
 
         #endregion
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 using XRL.World;
 using XRL.World.Parts;
@@ -12,8 +13,9 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
+using static StealthSystemPrototype.AlertExtensions;
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
-using System.Linq;
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Events
 {
@@ -28,22 +30,31 @@ namespace StealthSystemPrototype.Events
         public string ActionName => ConcealedAction?.Name;
         public string Action => ConcealedAction?.Action;
 
-        public List<BaseAlert> ActionAlerts;
+        protected AlertRack ActionAlerts;
 
-        protected List<BaseAlert> RemovedActionAlertsList;
+        protected AlertRack RemovedActionAlerts;
 
-        protected int AdjustAllByLinear;
+        protected Dictionary<string, int> AdjustByPercent;
+
+        protected Dictionary<string, int> AdjustByLinear;
+
+        protected Dictionary<string, int> AdjustByPercentFinal;
 
         protected int AdjustAllByPercent;
+
+        protected int AdjustAllByLinear;
 
         public GetActionAlertsEvent()
             : base()
         {
             ConcealedAction = null;
             ActionAlerts = null;
-            RemovedActionAlertsList = null;
-            AdjustAllByLinear = 0;
+            RemovedActionAlerts = null;
+            AdjustByPercent = null;
+            AdjustByLinear = null;
+            AdjustByPercentFinal = null;
             AdjustAllByPercent = 0;
+            AdjustAllByLinear = 0;
         }
 
         public override void Reset()
@@ -51,9 +62,12 @@ namespace StealthSystemPrototype.Events
             base.Reset();
             ConcealedAction = null;
             ActionAlerts = null;
-            RemovedActionAlertsList = null;
-            AdjustAllByLinear = 0;
+            RemovedActionAlerts = null;
+            AdjustByPercent = null;
+            AdjustByLinear = null;
+            AdjustByPercentFinal = null;
             AdjustAllByPercent = 0;
+            AdjustAllByLinear = 0;
         }
 
         public static GetActionAlertsEvent FromPool(BaseConcealedAction ConcealedAction)
@@ -63,11 +77,15 @@ namespace StealthSystemPrototype.Events
                 return null;
 
             E.ConcealedAction = ConcealedAction;
-            E.ActionAlerts = new(ConcealedAction);
-            E.RemovedActionAlertsList = new();
+            E.ActionAlerts = new(ConcealedAction.Coalesce(), CoalesceMethod.Merge);
+            E.RemovedActionAlerts = new(CoalesceMethod.Merge);
 
-            E.AdjustAllByLinear = 0;
+            E.AdjustByPercent = new();
+            E.AdjustByLinear = new();
+            E.AdjustByPercentFinal = new();
+
             E.AdjustAllByPercent = 0;
+            E.AdjustAllByLinear = 0;
 
             E.GetStringyEvent();
 
@@ -97,21 +115,69 @@ namespace StealthSystemPrototype.Events
                 || Process(FromPool(ConcealedAction), Success: out bool _) is not GetActionAlertsEvent E)
                 return;
 
-            ConcealedAction.ReplaceActionAlerts(E.PreviewActionAlerts());
+            Debug.Log(nameof(E.ActionAlerts), E.ActionAlerts?.Count, Indent: indent[1]);
+            Debug.Log(nameof(E.AdjustAllByLinear), E.AdjustAllByLinear, Indent: indent[1]);
+            Debug.Log(nameof(E.AdjustAllByPercent), E.AdjustAllByPercent, Indent: indent[1]);
+
+            E.ConcealedAction.ReplaceActionAlerts(E.PreviewActionAlerts());
         }
 
         public IReadOnlyList<BaseAlert> PreviewActionAlerts()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(ActionAlerts), ActionAlerts?.Count ?? -1),
+                    Debug.Arg(nameof(RemovedActionAlerts), RemovedActionAlerts?.Count ?? -1),
+                });
+
             ActionAlerts ??= new();
             if (ActionAlerts.IsNullOrEmpty())
                 return ActionAlerts;
 
+            AdjustByPercent ??= new();
+            AdjustByLinear ??= new();
+            AdjustByPercentFinal ??= new();
+
+            foreach (BaseAlert actionAlert in ActionAlerts)
+            {
+                string alertName = actionAlert.Name;
+
+                if (!AdjustByPercent.ContainsKey(alertName))
+                    AdjustByPercent[alertName] = 0;
+                AdjustByPercent[alertName] += AdjustAllByPercent;
+
+                if (!AdjustByLinear.ContainsKey(alertName))
+                    AdjustByLinear[alertName] = 0;
+                AdjustByLinear[alertName] += AdjustAllByLinear;
+            }
+
             List<BaseAlert> previewList = new(ActionAlerts);
+
             foreach (BaseAlert actionAlert in previewList)
             {
-                float percent = 1 + AdjustAllByPercent / 100;
-                actionAlert.Intensity = (int)(actionAlert.Intensity * percent);
-                actionAlert.Intensity += AdjustAllByPercent;
+                Debug.Log(actionAlert.Name, actionAlert.Intensity, Indent: indent[1]);
+
+                if (AdjustByPercent.ContainsKey(actionAlert.Name)
+                    && AdjustByPercent[actionAlert.Name] is int percentInt)
+                {
+                    float percent = 1 + percentInt / 100;
+                    actionAlert.Intensity = (int)(actionAlert.Intensity * percent);
+                    if (percent != 1)
+                        Debug.Log(nameof(percent), percent, Indent: indent[2]);
+                }
+                if (AdjustByLinear.ContainsKey(actionAlert.Name)
+                    && AdjustByLinear[actionAlert.Name] is int linearInt)
+                    actionAlert.Intensity += linearInt;
+
+
+                if (AdjustByPercentFinal.ContainsKey(actionAlert.Name)
+                    && AdjustByPercentFinal[actionAlert.Name] is int percentFinalInt)
+                {
+                    float percent = 1 + percentFinalInt / 100;
+                    actionAlert.Intensity = (int)(actionAlert.Intensity * percent);
+                }
             }
             return previewList;
         }
@@ -125,68 +191,76 @@ namespace StealthSystemPrototype.Events
         public int AdjustAllPercent(float Amount)
             => AdjustAllByPercent += (int)(100f * Amount);
 
-        public BaseAlert AddActionAlert(BaseAlert ActionAlert)
+        public A AddActionAlert<A>(A ActionAlert)
+            where A : BaseAlert, new()
         {
-            ActionAlerts ??= new();
-            if (ActionAlerts.FirstOrDefault(a => a.IsSame(ActionAlert)) is BaseAlert existentAlert)
-            {
-                ActionAlert.Intensity += existentAlert.Intensity;
-                ActionAlerts.Remove(existentAlert);
-            }
+            if (RemovedActionAlerts.IndexOf(ActionAlert) is int removedActionAlertIndex
+                && removedActionAlertIndex >= 0)
+                RemovedActionAlerts.TakeAt(removedActionAlertIndex);
             ActionAlerts.Add(ActionAlert);
-
-            return RemoveRemovedActionAlert(ActionAlert);
+            return ActionAlert;
         }
+        public A AddActionAlert<A>(int Intensity, Dictionary<string, string> Properties = null)
+            where A : BaseAlert, new()
+            => AddActionAlert(BaseAlert.GetAlert<A>(Intensity: Intensity, Properties));
 
-        public A AdjustActionAlert<A>(A ActionAlert, int Amount)
-            where A : BaseAlert
+        public A AdjustActionAlert<A>(ref Dictionary<string, int> AdjustmentDictionary, A ActionAlert, int Amount)
+            where A : BaseAlert, new()
         {
-            ActionAlerts ??= new();
-            if (ActionAlerts.FirstOrDefault(a => a.IsSame(ActionAlert) || a.IsType(typeof(A))) is A actionAlert)
-            {
-                actionAlert.AdjustIntensity(Amount);
-                return actionAlert;
-            }
-            return null;
+            AdjustmentDictionary ??= new();
+
+            if (ActionAlert != null
+                && !ActionAlerts.Any(a => a.IsType(typeof(A))))
+                AddActionAlert(ActionAlert);
+
+            using BaseAlert tempAlert = BaseAlert.GetAlert<A>(Intensity: 0);
+            if (!AdjustmentDictionary.ContainsKey(tempAlert.Name))
+                AdjustmentDictionary[tempAlert.Name] = 0;
+
+            AdjustmentDictionary[tempAlert.Name] += Amount;
+
+            return ActionAlerts.FirstOrDefault(a => a.IsType(typeof(A))) as A;
         }
 
-        public A AdjustActionAlert<A>(int Amount)
-            where A : BaseAlert
-            => AdjustActionAlert<A>(null, Amount);
+        public A AdjustActionAlertPercent<A>(A ActionAlert, int Amount)
+            where A : BaseAlert, new()
+            => AdjustActionAlert(ref AdjustByPercent, ActionAlert, Amount)
+            ;
+        public bool AdjustActionAlertPercent<A>(int Amount)
+            where A : BaseAlert, new()
+            => AdjustActionAlertPercent<A>(null, Amount) != null;
+
+        public A AdjustActionAlertLinear<A>(A ActionAlert, int Amount)
+            where A : BaseAlert, new()
+            => AdjustActionAlert(ref AdjustByLinear, ActionAlert, Amount)
+            ;
+        public A AdjustActionAlertLinear<A>(int Amount)
+            where A : BaseAlert, new()
+            => AdjustActionAlertLinear<A>(null, Amount);
+
+        public A AdjustActionAlertPercentFinal<A>(A ActionAlert, int Amount)
+            where A : BaseAlert, new()
+            => AdjustActionAlert(ref AdjustByPercentFinal, ActionAlert, Amount)
+            ;
+        public A AdjustActionAlertPercentFinal<A>(int Amount)
+            where A : BaseAlert, new()
+            => AdjustActionAlertPercentFinal<A>(null, Amount);
 
         public A RemoveActionAlert<A>(A ActionAlert)
-            where A : BaseAlert
+            where A : BaseAlert, new()
         {
-            ActionAlerts ??= new();
-            if (ActionAlerts.FirstOrDefault(a => a.IsSame(ActionAlert) || a.IsType(typeof(A))) is A actionAlert
-                && ActionAlerts.Remove(actionAlert))
-                return AddRemovedActionAlert(actionAlert) as A;
-
-            return null;
+            if (ActionAlerts.IndexOf(ActionAlert) is int actionAlertIndex
+                && actionAlertIndex >= 0)
+                ActionAlert ??= ActionAlerts.TakeAt(actionAlertIndex) as A;
+            RemovedActionAlerts.Add(ActionAlert);
+            return ActionAlert;
         }
         public A RemoveActionAlert<A>()
-            where A : BaseAlert
+            where A : BaseAlert, new()
             => RemoveActionAlert<A>(null);
 
-        protected BaseAlert AddRemovedActionAlert(BaseAlert ActionAlert)
-        {
-            if (RemovedActionAlertsList.FirstOrDefault(a => a.IsSame(ActionAlert)) is BaseAlert existentAlert)
-            {
-                ActionAlert.Intensity += existentAlert.Intensity;
-                RemovedActionAlertsList.Remove(existentAlert);
-            }
-            RemovedActionAlertsList.Add(ActionAlert);
-            return ActionAlert;
-        }
-        protected BaseAlert RemoveRemovedActionAlert(BaseAlert ActionAlert)
-        {
-            RemovedActionAlertsList ??= new();
-            RemovedActionAlertsList.Remove(RemovedActionAlertsList.FirstOrDefault(a => a.IsSame(ActionAlert)));
-            return ActionAlert;
-        }
-
-        public IReadOnlyList<BaseAlert> RemovedActionAlerts()
-            => RemovedActionAlertsList;
+        public IReadOnlyList<BaseAlert> GetRemovedActionAlerts()
+            => RemovedActionAlerts.Coalesce();
     }
 }
 

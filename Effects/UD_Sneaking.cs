@@ -30,7 +30,7 @@ namespace XRL.World.Effects
 
         public static Dictionary<string, ConcealedCommandAction> CommandEventsToConceal => new()
         {
-            { Survival_Camp.COMMAND_NAME, new ConcealedCommandAction(false, "making camp") {
+            { Survival_Camp.COMMAND_NAME, new ConcealedCommandAction("camping", false, "making camp") {
                 new Visual(8),
                 new Auditory(3),
                 new Olfactory(5),
@@ -221,6 +221,7 @@ namespace XRL.World.Effects
             // || ID == GetSneakDetailsEvent.ID
             || ID == EndTurnEvent.ID
             || ID == EnteredCellEvent.ID
+            || ID == GetAttackerHitDiceEvent.ID
             || ID == GetDebugInternalsEvent.ID
             ;
         public virtual bool HandleEvent(GetSneakDetailsEvent E)
@@ -313,12 +314,37 @@ namespace XRL.World.Effects
                 Performance: SneakPerformance,
                 ConcealedAction: new ConcealedMinAction<EnteredCellEvent>(
                     E: E,
+                    Action: "moving",
                     Aggressive: false,
                     Description: !E.Forced ? "sneaking around" : "being knocked around")
                 {
-                    IAlert.GetAlert<Visual>(Intensity: 10),
-                    IAlert.GetAlert<Auditory>(Intensity: 10),
-                    IAlert.GetAlert<Olfactory>(Intensity: 8),
+                    BaseAlert.GetAlert<Visual>(Intensity: 10),
+                    BaseAlert.GetAlert<Auditory>(Intensity: 10),
+                    BaseAlert.GetAlert<Olfactory>(Intensity: 8),
+                }.Initialize());
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(GetAttackerHitDiceEvent E)
+        {
+            Sneak.TryConcealAction(
+                Hider: E.Attacker,
+                Performance: SneakPerformance,
+                ConcealedAction: new ConcealedMeleeAttackAction(
+                    E: E,
+                    Description: "attacking =subject.refname= with =object.t=")
+                {
+                    BaseAlert.GetAlert<Kinesthetic>(Intensity: 35,
+                        Properties: new()
+                        {
+                            { "Pain", null }
+                        }),
+                    BaseAlert.GetAlert<Visual>(Intensity: 25),
+                    BaseAlert.GetAlert<Auditory>(Intensity: 25),
+                    BaseAlert.GetAlert<Psionic>(Intensity: 15,
+                        Properties: new() 
+                        { 
+                            { "Intent", "Negative" }
+                        }),
                 }.Initialize());
             return base.HandleEvent(E);
         }
@@ -326,8 +352,14 @@ namespace XRL.World.Effects
         {
             E.AddEntry(this, nameof(IsMoveSpeedMultiplierApplied), IsMoveSpeedMultiplierApplied);
             E.AddEntry(this, nameof(AppliedMoveSpeedMultiplierAmount), AppliedMoveSpeedMultiplierAmount);
-            E.AddEntry(this, SneakPerformance.EntriesDebugString(out string performanceEntriesContents), performanceEntriesContents);
-            E.AddEntry(this, SneakPerformance.CollectedStatsEntriesDebugString(out string collectedStatsEntriesContents), collectedStatsEntriesContents);
+            E.AddEntry(
+                FX: this,
+                Name: SneakPerformance.EntriesDebugString(out string performanceEntriesContents),
+                Value: performanceEntriesContents);
+            E.AddEntry(
+                FX: this,
+                Name: SneakPerformance.CollectedStatsEntriesDebugString(out string collectedStatsEntriesContents),
+                Value: collectedStatsEntriesContents);
             return base.HandleEvent(E);
         }
         public override bool Render(RenderEvent E)
@@ -339,7 +371,7 @@ namespace XRL.World.Effects
                 else
                     E.ApplyColors("&K", "W", int.MaxValue, int.MaxValue);
 
-                E.RenderEffectIndicator("?", null, "&K", "K", 35);
+                E.RenderEffectIndicator(3.CP437(), null, "&K", "K", 35);
             }
             return base.Render(E);
         }

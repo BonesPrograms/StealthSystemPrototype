@@ -230,8 +230,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public virtual bool IsForAlert(IAlert Alert)
             => Alert.IsType(GetAlertType());
 
-        public virtual bool IsWithin(AlertContext Context)
+        public virtual int GetModifedEffectiveLevel(AlertContext Context)
+            => ParentPerception?.EffectiveLevel ?? 0;
+
+        public virtual bool CheckWithin(Cell AlertLocation)
             => false;
+
+        public virtual bool CheckWithin(AlertContext Context)
+            => CheckWithin(Context.AlertLocation)
+            && GetModifedEffectiveLevel(Context) > 0;
 
         public virtual void ClearCaches()
         {

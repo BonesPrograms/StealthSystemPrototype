@@ -18,11 +18,24 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
     /// </summary>
     public interface ILinePurview : IPurview
     {
-        public bool IsWithinLine(AlertContext Context)
-            => Context?.Perceiver?.CurrentCell is Cell { InActiveZone: true } origin
-            && Context?.AlertLocation is Cell { InActiveZone: true } destination
-            && origin.CosmeticDistanceToCell(destination) <= GetEffectiveValue()
-            && (!GetOccludes()
-                || origin.HasLOSTo(destination));
+        public bool CheckWithinLine(Cell PerceiverLocation, Cell AlertLocation, out int Distance)
+        {
+            Distance = -1;
+            if (PerceiverLocation is not Cell { InActiveZone: true } origin
+                || AlertLocation is not Cell { InActiveZone: true } destination)
+                return false;
+
+            Distance = origin.CosmeticDistanceToCell(destination);
+
+            return Distance <= GetEffectiveValue()
+                && (!GetOccludes()
+                    || origin.HasLOSTo(destination));
+        }
+
+        public bool CheckWithinLine(AlertContext Context, out int Distance)
+            => CheckWithinLine(
+                PerceiverLocation: Context.Perceiver.CurrentCell,
+                AlertLocation: Context.AlertLocation,
+                Distance: out Distance);
     }
 }

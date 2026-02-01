@@ -75,7 +75,7 @@ namespace StealthSystemPrototype.Events
                 || FromPool(Hider) is not T E)
                 return null;
 
-            E.Performance = (Performance ??= new());
+            E.Performance = (Performance ??= SneakPerformance.DefaultSneakPerformance);
             E.GetStringyEvent();
             return E;
         }

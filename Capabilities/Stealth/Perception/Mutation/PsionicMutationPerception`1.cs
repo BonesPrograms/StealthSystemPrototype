@@ -30,7 +30,11 @@ namespace StealthSystemPrototype.Perceptions
         , IPsionicPerception
         where T : BaseMutation
     {
-        public override BasePurview Purview => new PsionicPurview(this);
+        public override BasePurview Purview
+        {
+            get => _Purview ??= new PsionicPurview(this);
+            protected set => base.Purview = value;
+        }
 
         public virtual Type AlertType => typeof(Psionic);
 
@@ -135,12 +139,9 @@ namespace StealthSystemPrototype.Perceptions
         public override Type GetAlertType()
             => AlertType;
 
-        public V GetTypedPurview<V>()
+        public virtual V GetTypedPurview<V>()
             where V : BasePurview<Psionic>
             => Purview as V;
-
-        public override BasePurview GetPurview()
-            => Purview;
 
         public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
@@ -212,8 +213,5 @@ namespace StealthSystemPrototype.Perceptions
 
         public override IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin)
             => base.RaiseDetection(Context, SuccessMargin);
-
-        public override T GetSource()
-            => base.GetSource();
     }
 }

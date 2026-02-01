@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 using StealthSystemPrototype.Events;
@@ -30,6 +31,26 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 return true;
             }
             return false;
+        }
+
+        public static ISneakSource GetSneakSource(GameObject Sneaker)
+        {
+            List<ISneakSource> sneakSources = new();
+            if (Sneaker.PartsList
+                .Where(p => typeof(ISneakSource).IsAssignableFrom(p.GetType()))
+                .Select(p => p as ISneakSource).ToList() is List<ISneakSource> iPartSneakSources)
+                sneakSources.AddRange(iPartSneakSources);
+            if (Sneaker.Effects
+                .Where(p => typeof(ISneakSource).IsAssignableFrom(p.GetType()))
+                .Select(p => p as ISneakSource).ToList() is List<ISneakSource> fxSneakSources)
+                sneakSources.AddRange(fxSneakSources);
+
+            sneakSources.OrderInPlace((x, y) => -x.BaseSneakPerformance.CompareTo(y.BaseSneakPerformance));
+
+            if (sneakSources.IsNullOrEmpty())
+                return null;
+
+            return sneakSources[0];
         }
     }
 }

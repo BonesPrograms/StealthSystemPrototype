@@ -12,7 +12,7 @@ namespace StealthSystemPrototype.Perceptions
     public interface IComponentPerception<T> : ISourcedPerception<T>
         where T : IComponent<GameObject>
     {
-        public static GameObject GetOwner(T Source)
+        public static GameObject FindOwner(T Source)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,

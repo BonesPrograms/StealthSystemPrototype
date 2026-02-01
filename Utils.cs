@@ -18,6 +18,8 @@ using static StealthSystemPrototype.Const;
 using Debug = StealthSystemPrototype.Logging.Debug;
 using XRL.Language;
 using XRL.World;
+using StealthSystemPrototype.Capabilities.Stealth;
+using XRL.UI;
 
 namespace StealthSystemPrototype
 {
@@ -271,6 +273,25 @@ namespace StealthSystemPrototype
         #endregion
         #region Strings
 
+        [GameBasedStaticCache]
+        private static List<string> _CP437Chars;
+        public static IReadOnlyList<string> CP437Chars
+        {
+            get
+            {
+                if (_CP437Chars.IsNullOrEmpty())
+                    _CP437Chars = CharCache.Values.Select(c => Sidebar.ToCP437(c)).ToList();
+
+                return _CP437Chars;
+            }
+        }
+
+        public static string GetCP437Char(byte Index)
+            => CP437Chars[Index];
+
+        public static string CP437(byte Index)
+            => GetCP437Char(Index);
+
         public static string CallChain(params string[] Strings)
             => Strings
                 ?.Aggregate(
@@ -448,6 +469,5 @@ namespace StealthSystemPrototype
 
         public static Type GetMinEventType(int ID)
             => MinEvent.EventTypes[ID];
-
     }
 }

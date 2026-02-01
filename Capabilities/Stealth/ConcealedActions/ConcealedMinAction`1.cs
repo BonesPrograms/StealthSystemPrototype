@@ -16,10 +16,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public int MinID => Event?.ID ?? 0;
 
-        public ConcealedMinAction(T E, bool Aggressive, string Description)
+        public ConcealedMinAction(T E, string Action, bool Aggressive, string Description)
             : base(
                   ID: E?.TypeStringWithGenerics(),
                   SourceEvent: E,
+                  Action: Action,
                   Aggressive: Aggressive,
                   Description: Description)
         {

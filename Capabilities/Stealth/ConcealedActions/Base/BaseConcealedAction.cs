@@ -10,15 +10,19 @@ using XRL.Collections;
 using StealthSystemPrototype.Alerts;
 
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using static StealthSystemPrototype.AlertExtensions;
+using StealthSystemPrototype.Logging;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [StealthSystemBaseClass]
     [Serializable]
     public class BaseConcealedAction
-        : Rack<BaseAlert>
+        : AlertRack
         , IConcealedAction
     {
+        public override CoalesceMethod DefaultCoalesceMethod => CoalesceMethod.Highest;
+
         private string _ID;
         public virtual string ID
         {
@@ -37,7 +41,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual string Action
         {
             get => _Action;
-            protected set => _Action = value;
+            set => _Action = value;
         }
 
         private GameObject _Hider;
@@ -68,6 +72,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public string Description;
 
+        #region Constructors
+
         public BaseConcealedAction()
         {
             ID = null;
@@ -79,18 +85,20 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Aggressive = false;
             Description = null;
         }
-        protected BaseConcealedAction(string ID, string Name, bool Aggressive, string Description)
+        protected BaseConcealedAction(string ID, string Name, string Action, bool Aggressive, string Description)
             : this()
         {
             this.ID = ID ?? Name;
             this.Name = Name ?? this.ID;
+            this.Action = Action ?? this.Name;
             this.Aggressive = Aggressive;
             this.Description = Description;
         }
-        protected BaseConcealedAction(string Name, bool Aggressive, string Description)
+        protected BaseConcealedAction(string Name, string Action, bool Aggressive, string Description)
             : this(
                   ID: Name,
                   Name: Name,
+                  Action: Action,
                   Aggressive: Aggressive,
                   Description: Description)
         {
@@ -111,6 +119,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Description = Source.GetDescription();
         }
 
+        #endregion
         #region Serialization
 
         public override void Write(SerializationWriter Writer)
@@ -166,13 +175,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => Description;
 
         public virtual BaseConcealedAction Initialize()
-            => this;
+            => Coalesce() as BaseConcealedAction;
 
         IConcealedAction IConcealedAction.Initialize()
             => Initialize();
 
         public virtual void Configure()
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(ID, Name),
+                    Debug.Arg(nameof(Count), Count),
+                });
         }
 
         public void ReplaceActionAlerts(IEnumerable<BaseAlert> NewActionAlerts)

@@ -27,8 +27,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
                 Looker: Context?.Perceiver,
                 IgnoreCreatures: true);
 
-        public bool CanPathTo(AlertContext Context)
+        public bool CheckCanPathTo(AlertContext Context, out int Steps)
         {
+            Steps = -1;
             if (GetPathTo(Context) is not FindPath findPath
                 || !findPath.Found)
                 return false;
@@ -44,7 +45,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
                     return false;
 
                 if (steps[i] == Context.AlertLocation)
+                {
+                    Steps = i;
                     return true;
+                }
 
                 effectiveRangeCents -= weights[i];
             }

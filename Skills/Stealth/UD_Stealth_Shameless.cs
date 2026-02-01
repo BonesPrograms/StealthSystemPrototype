@@ -29,12 +29,13 @@ namespace XRL.World.Parts.Skill
 
         public override void Register(GameObject Object, IEventRegistrar Registrar)
         {
-            // do registrations here.
+            // do registrations here
             base.Register(Object, Registrar);
         }
         public override bool WantEvent(int ID, int cascade)
             => base.WantEvent(ID, cascade)
             || ID == GetSneakPerformanceEvent.ID
+            || ID == GetActionAlertsEvent.ID
             ;
         public virtual bool HandleEvent(GetSneakPerformanceEvent E)
         {
@@ -42,6 +43,15 @@ namespace XRL.World.Parts.Skill
             {
                 E.Performance.AdjustMoveSpeedMultiplier(this, 10);
                 E.Performance.AdjustQuicknessMultiplier(this, 10);
+            }
+
+            return base.HandleEvent(E);
+        }
+        public virtual bool HandleEvent(GetActionAlertsEvent E)
+        {
+            if (E.Hider == ParentObject)
+            {
+                throw new NotImplementedException();
             }
 
             return base.HandleEvent(E);

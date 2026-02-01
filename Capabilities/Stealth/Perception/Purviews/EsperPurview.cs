@@ -69,11 +69,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             int Value = 0)
             => base.GetPurviewValueAdjustment(ParentPerception, Value) + (ParentPerception?.Owner?.Level ?? 0);
 
-        public override void ClearCaches()
-        {
-            base.ClearCaches();
-        }
-
         #region Equatable
 
         public override bool Equals(IPurview Other)

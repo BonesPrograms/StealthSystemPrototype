@@ -17,13 +17,14 @@ using static StealthSystemPrototype.Utils;
 using SerializeField = UnityEngine.SerializeField;
 using System.Diagnostics;
 using XRL.Language;
+using static StealthSystemPrototype.AlertExtensions;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [HasModSensitiveStaticCache]
     [HasGameBasedStaticCache]
     [Serializable]
-    public class SneakPerformance : Rack<BaseAlert>
+    public class SneakPerformance : AlertRack
     {
         #region Const & Static
 
@@ -72,6 +73,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             { QN_MULTI, new() },
         };
 
+        public override CoalesceMethod DefaultCoalesceMethod => CoalesceMethod.Lowest;
+
         public StringMap<List<StatCollectorEntry>> CollectedStats = DefaultCollectedStats;
 
         public float MoveSpeedMultiplier => (GetCollectedStats(MS_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
@@ -95,17 +98,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public SneakPerformance()
             : base()
-        {
-        }
+        { }
         public SneakPerformance(IReadOnlyList<BaseAlert> SourceList)
             : base(SourceList)
-        {
-        }
+        { }
         public SneakPerformance(SneakPerformance Source)
             : this(Source as IReadOnlyList<BaseAlert>)
         {
             CollectedStats = Source.CollectedStats;
-
         }
 
         #region Serialization

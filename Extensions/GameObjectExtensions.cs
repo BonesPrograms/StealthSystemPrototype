@@ -44,6 +44,13 @@ namespace StealthSystemPrototype
         public static PerceptionRack RequirePerceptions(this GameObject Object)
             => Object.RequirePart<UD_PerceptionHelper>()?.Perceptions;
 
+        public static bool HasPerceptions(this GameObject Object)
+            => Object.HasPart<UD_PerceptionHelper>();
+
+        public static bool HasAnyPerceptions(this GameObject Object)
+            => Object.GetPart<UD_PerceptionHelper>()?.Perceptions is PerceptionRack perceptions
+            && perceptions.Count > 0;
+
         public static bool HasPerception<A>(this GameObject Object, BasePerception Perception = null)
             => Object.RequirePerceptions().Has(Perception);
 
@@ -120,6 +127,10 @@ namespace StealthSystemPrototype
             bool Creation = false)
             where P : BasePerception, new()
             => Object.RequirePerceptions()?.Require<P>(Creation);
+
+        public static bool WithinAnyPurview(this GameObject Object, GameObject Perceiver)
+            => Perceiver?.GetPerceptions() is PerceptionRack perceptions
+            && perceptions.Any(p => p.Purview.CheckWithin(Object.CurrentCell));
 
         public static bool CheckNotOnWorldMap(this GameObject Object, string Verb, bool ShowMessage = false)
         {

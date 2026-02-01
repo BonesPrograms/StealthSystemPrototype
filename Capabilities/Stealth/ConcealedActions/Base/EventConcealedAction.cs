@@ -26,13 +26,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             SourceEvent = null;
         }
-        public EventConcealedAction(string ID, E SourceEvent, bool Aggressive, string Description)
-            : base(ID, null, Aggressive, Description)
+        public EventConcealedAction(string ID, E SourceEvent, string Action, bool Aggressive, string Description)
+            : base(ID, null, Action, Aggressive, Description)
         {
             this.SourceEvent = SourceEvent;
         }
-        public EventConcealedAction(E Source, bool Aggressive, string Description)
-            : this(null, Source, Aggressive, Description)
+        public EventConcealedAction(E Source, string Action, bool Aggressive, string Description)
+            : this(null, Source, Action, Aggressive, Description)
         {
             ID = Name;
         }

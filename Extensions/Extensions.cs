@@ -355,6 +355,14 @@ namespace StealthSystemPrototype
         #endregion
         #region Strings
 
+        public static string CP437(this byte Index)
+            => Utils.CP437(Index);
+
+        public static string CP437(this int Index)
+            => byte.TryParse(Index.ToString(), out byte index)
+            ? Utils.CP437(index)
+            : null;
+
         public static string MiniDebugName(this GameObject Object)
             => (Object?.ID ?? "#") + ":" + (Object?.GetReferenceDisplayName(WithoutTitles: true, Short: true)?.Strip() ?? "no one");
 
@@ -874,6 +882,32 @@ namespace StealthSystemPrototype
         }
         public static IList<T> GetSubset<T>(this IList<T> List, Range Range)
             => List?.ToArray()?.GetSubset(Range);
+
+        public static int[] GetIndices<T>(this T[] Array, Predicate<T> Where)
+        {
+            if (Array.IsNullOrEmpty())
+                return new int[0];
+
+            if (Where == null)
+                throw new ArgumentNullException(nameof(Where), "A condition by which to retreive a collection of indices is required.");
+
+            int[] output = new int[Array.Length];
+            int j = 0;
+            for (int i = 0; i < Array.Length; i++)
+                if (Where(Array[i]))
+                    output[j] = i;
+
+            return output;
+        }
+
+        public static string AggregateCommaDelimited<T>(this IEnumerable<T> source)
+            => source?.Aggregate("", CommaDelimitedAggregator) ?? string.Empty;
+
+        public static string AggregateCommaSpaceDelimited<T>(this IEnumerable<T> source)
+            => source?.Aggregate("", CommaSpaceDelimitedAggregator) ?? string.Empty;
+
+        public static string AggregateNewLineDelimited<T>(this IEnumerable<T> source)
+            => source?.Aggregate("", NewLineDelimitedAggregator) ?? string.Empty;
 
         #endregion
         #region Math?

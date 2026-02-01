@@ -11,21 +11,26 @@ using StealthSystemPrototype.Alerts;
 
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using System.Reflection;
+using static StealthSystemPrototype.AlertExtensions;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
     public class ConcealedActionData
-        : Rack<BaseAlert>
+        : AlertRack
         , IConcealedAction
     {
         public static string METHOD_GET_TYPE => "Method_" + nameof(GetType);
+
+        protected CoalesceMethod? _DefaultCoalesceMethod;
+        public override CoalesceMethod DefaultCoalesceMethod => _DefaultCoalesceMethod ??= CoalesceMethod.Merge;
 
         public StringMap<object> StoredFields = new()
         {
             { METHOD_GET_TYPE, null },
             { nameof(Type.GenericTypeArguments), null },
             { nameof(Items), null },
+            { nameof(DefaultCoalesceMethod), null },
             { nameof(ID), null },
             { nameof(Name), null },
             { nameof(Action), null },
@@ -60,6 +65,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Length = ((ICollection<BaseAlert>)Source).Count;
             Size = ((ICollection<BaseAlert>)Source).Count;
             StoredFields[nameof(Items)] = Items;
+
+            _DefaultCoalesceMethod = Source.DefaultCoalesceMethod;
+
             StoredFields[nameof(ID)] = Source.GetAction();
             StoredFields[nameof(Name)] = Source.GetName();
             StoredFields[nameof(Action)] = Source.GetAction();

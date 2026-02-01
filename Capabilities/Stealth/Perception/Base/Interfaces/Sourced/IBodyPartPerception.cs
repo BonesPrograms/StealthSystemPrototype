@@ -21,7 +21,7 @@ namespace StealthSystemPrototype.Perceptions
 
         public new BodyPart GetSource();
 
-        public static GameObject GetOwner(BodyPart Source)
+        public static GameObject FindOwner(BodyPart Source)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,

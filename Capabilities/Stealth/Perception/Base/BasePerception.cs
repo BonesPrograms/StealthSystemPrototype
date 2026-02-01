@@ -22,6 +22,7 @@ using static StealthSystemPrototype.Utils;
 
 using SerializeField = UnityEngine.SerializeField;
 using XRL.Collections;
+using XRL.Messages;
 
 namespace StealthSystemPrototype.Perceptions
 {
@@ -106,7 +107,7 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
-        #region Const & Static Values
+        #region Cache
 
         [ModSensitiveStaticCache]
         public static Dictionary<Type, int[]> PerceptionEvents;
@@ -164,6 +165,256 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         #endregion
+        #region Const & Static
+
+        public static void RollSave(
+            out int NaturalRoll,
+            out int Roll,
+            out int Difficulty,
+            out int BaseDifficulty,
+            ref bool IgnoreNatural1,
+            ref bool IgnoreNatural20,
+            BasePerception Perception,
+            AlertContext Context,
+            bool LogRoll = false)
+        {
+            GameObject perceiver = Context.Perceiver;
+            GameObject hider = Context.Hider;
+            GameObject alertObject = Context.AlertObject;
+
+            BaseAlert actonAlert = Context.ActionAlert;
+            BaseAlert sneakAlert = Context.SneakAlert;
+
+            string perceptionName = Perception.GetName();
+            string alertName = actonAlert.Name;
+
+            string action = Context.ParentAction.Action;
+
+            NaturalRoll = Stat.Random(1, 20);
+            Roll = NaturalRoll;
+
+            BaseDifficulty = sneakAlert.Intensity;
+            Difficulty = BaseDifficulty - actonAlert.Intensity;
+
+            Roll += Perception.Purview.GetModifedEffectiveLevel(Context);
+
+            ModifyAttackingSaveEvent.Process(
+                Attacker: hider,
+                Defender: perceiver,
+                Source: alertObject,
+                Stat: perceptionName,
+                AttackerStat: alertName,
+                Vs: action,
+                NaturalRoll: NaturalRoll,
+                Roll: ref Roll,
+                BaseDifficulty: BaseDifficulty,
+                Difficulty: ref Difficulty,
+                IgnoreNatural1: ref IgnoreNatural1,
+                IgnoreNatural20: ref IgnoreNatural20,
+                Actual: true);
+
+            ModifyOriginatingSaveEvent.Process(
+                Attacker: hider,
+                Defender: perceiver,
+                Source: alertObject,
+                Stat: perceptionName,
+                AttackerStat: alertName,
+                Vs: action,
+                NaturalRoll: NaturalRoll,
+                Roll: ref Roll,
+                BaseDifficulty: BaseDifficulty,
+                Difficulty: ref Difficulty,
+                IgnoreNatural1: ref IgnoreNatural1,
+                IgnoreNatural20: ref IgnoreNatural20,
+                Actual: true);
+
+            ModifyDefendingSaveEvent.Process(
+                Attacker: hider,
+                Defender: perceiver,
+                Source: alertObject,
+                Stat: perceptionName,
+                AttackerStat: alertName,
+                Vs: action,
+                NaturalRoll: NaturalRoll,
+                Roll: ref Roll,
+                BaseDifficulty: BaseDifficulty,
+                Difficulty: ref Difficulty,
+                IgnoreNatural1: ref IgnoreNatural1,
+                IgnoreNatural20: ref IgnoreNatural20,
+                Actual: true);
+
+            if (perceiver.IsPlayer())
+            {
+                if (actonAlert.Type.EqualsAny(
+                    args: new Type[]
+                    {
+                        typeof(Psionic),
+                        typeof(Visual),
+                        typeof(Auditory),
+                    }))
+                    perceiver.PlayWorldSound("sfx_ability_mutation_mental_generic_save");
+                else
+                if (actonAlert.Type.EqualsAny(
+                    args: new Type[]
+                    {
+                        typeof(Olfactory),
+                        typeof(Thermal),
+                        typeof(Kinesthetic),
+                    }))
+                    perceiver.PlayWorldSound("sfx_ability_mutation_physical_generic_save");
+                else
+                    perceiver.PlayWorldSound("Sounds/Abilities/sfx_ability_mutation_physicalDefect_generic_activate");
+
+            }
+
+            if (!LogRoll
+                || !XRL.UI.Options.DebugSavingThrows)
+                return;
+
+            StringBuilder SB = Event.NewStringBuilder();
+            SB.Append(perceiver.IsPlayer() ? "Player" : perceiver.Blueprint)
+                .Append(" rolled ")
+                .Append(NaturalRoll);
+
+            if (Roll != NaturalRoll)
+                SB.Append(" modified to ").Append(Roll);
+
+            SB.Append(" on ").Append(perceptionName).Append(" save");
+
+            if (action != null)
+                SB.Append(" vs. ").Append(action);
+
+            if (hider != null)
+            {
+                SB.Append(" from ").Append(hider.IsPlayer() ? "player" : hider.Blueprint);
+
+                if (alertName != null && alertName != perceptionName)
+                    SB.Append(" (using ").Append(alertName).Append(')');
+            }
+            SB.Append(" with difficulty ").Append(BaseDifficulty);
+
+            if (Difficulty != BaseDifficulty)
+                SB.Append(" modified to ").Append(Difficulty);
+
+            MessageQueue.AddPlayerMessage(SB.ToString());
+        }
+        public static bool MakeSave(
+            out int SuccessMargin,
+            out int FailureMargin,
+            BasePerception Perception,
+            AlertContext Context,
+            bool IgnoreNaturals = false,
+            bool IgnoreNatural1 = false,
+            bool IgnoreNatural20 = false,
+            bool IgnoreGodmode = false)
+        {
+            GameObject perceiver = Context.Perceiver;
+            GameObject hider = Context.Hider;
+            GameObject alertObject = Context.AlertObject;
+
+            string perceptionName = Perception.GetName();
+            string alertName = Context.ActionAlert.Name;
+
+            string action = Context.ParentAction.Action;
+
+            if (IgnoreNaturals)
+            {
+                IgnoreNatural1 = true;
+                IgnoreNatural20 = true;
+            }
+            SuccessMargin = 0;
+            FailureMargin = 0;
+
+            RollSave(
+                out int NaturalRoll,
+                out int Roll,
+                out int Difficulty,
+                out int BaseDifficulty,
+                ref IgnoreNatural1,
+                ref IgnoreNatural20,
+                Perception,
+                Context,
+                LogRoll: false);
+
+            bool godMode = perceiver.IsPlayer()
+                && The.Core.IDKFA
+                && !IgnoreGodmode;
+
+            bool validNat20 = NaturalRoll == 20
+                && !IgnoreNatural20;
+
+            bool validNat1 = NaturalRoll == 1
+                && !IgnoreNatural1;
+
+            bool rollSuccess = Roll >= Difficulty;
+
+            bool made;
+
+            if (godMode)
+                made = true;
+            else
+            if (validNat20)
+                made = true;
+            else
+            if (validNat1)
+                made = false;
+            else
+                made = rollSuccess;
+
+            if (made)
+            {
+                if (Roll > Difficulty)
+                    SuccessMargin = Roll - Difficulty;
+            }
+            else
+            if (Roll < Difficulty)
+                FailureMargin = Difficulty - Roll;
+
+            if (XRL.UI.Options.DebugSavingThrows)
+            {
+                StringBuilder SB = Event.NewStringBuilder();
+                SB.Append(perceiver.DebugName)
+                    .Append(made ? " made " : " failed ")
+                    .Append(perceptionName)
+                    .Append(" save");
+
+                if (action != null)
+                    SB.Append(" vs. ").Append(action);
+
+                if (hider != null)
+                {
+                    SB.Append(" from ").Append(hider.DebugName);
+
+                    if (alertName != null && alertName != perceptionName)
+                        SB.Append(" (using ").Append(alertName).Append(')');
+                }
+                if (alertObject != null)
+                    SB.Append(" via ").Append(alertObject.DebugName);
+
+                SB.Append(" on ");
+
+                if ((NaturalRoll == 1 && !IgnoreNatural1) || (NaturalRoll == 20 && !IgnoreNatural20))
+                    SB.Append("natural ");
+
+                SB.Append(NaturalRoll);
+
+                if (Roll != NaturalRoll)
+                    SB.Append(" modified to ").Append(Roll);
+
+                SB.Append(" with difficulty ").Append(BaseDifficulty);
+
+                if (Difficulty != BaseDifficulty)
+                    SB.Append(" modified to ").Append(Difficulty);
+
+                if (perceiver.IsPlayer() && The.Core.IDKFA && !IgnoreGodmode)
+                    SB.Append(" (godmode)");
+
+                MessageQueue.AddPlayerMessage(SB.ToString());
+            }
+            return made;
+        }
+
+        #endregion
         #region Instance Fields & Properties
 
         public sealed override IEventBinder Binder => EventBinder.Instance;
@@ -208,13 +459,11 @@ namespace StealthSystemPrototype.Perceptions
         }
         private bool GettingLevelAdjustment = false;
 
-        private Type AlertType => null;
-
         [NonSerialized]
         protected BasePurview _Purview;
         public virtual BasePurview Purview
         {
-            get => _Purview ??= new BasePurview();
+            get => throw new NotSupportedException("Derived classes must provide an implementation.");
             protected set => _Purview = value;
         }
 
@@ -365,7 +614,7 @@ namespace StealthSystemPrototype.Perceptions
             => Owner;
 
         public virtual Type GetAlertType()
-            => AlertType;
+            => throw new NotSupportedException("Derived classes must provide an implementation.");
 
         public virtual int GetLevel()
             => Level;
@@ -454,7 +703,7 @@ namespace StealthSystemPrototype.Perceptions
                     Debug.Arg(nameof(Context.Hider), Context?.Hider?.MiniDebugName() ?? "null"),
                 });
 
-            return Purview?.IsWithin(Context) ?? false;
+            return Purview?.CheckWithin(Context) ?? false;
         }
 
         public virtual bool IsOnCooldown()
@@ -499,7 +748,10 @@ namespace StealthSystemPrototype.Perceptions
             if (IsOnCooldown())
                 return false;
 
-            bool madeSave = IPerception.MakeSave(
+            if (!CheckInPurview(Context))
+                return false;
+
+            bool madeSave = MakeSave(
                 SuccessMargin: out SuccessMargin,
                 FailureMargin: out FailureMargin,
                 Perception: this,

@@ -31,7 +31,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         private List<Cell> _AreaCells;
         public virtual List<Cell> AreaCells
         {
-            get => _AreaCells ??= ((IAreaPurview)this).GetCellsInArea()?.ToList();
+            get
+            {
+                if (_AreaCells.IsNullOrEmpty())
+                {
+                    if (ParentPerception?.Owner?.CurrentCell is not Cell { InActiveZone: true } origin
+                    || origin?.GetAdjacentCells(EffectiveValue / 2) is not IEnumerable<Cell> cellsInArea)
+                        return null;
+
+                    _AreaCells = Event.NewCellList(cellsInArea);
+
+                    if (Occludes)
+                        _AreaCells.RemoveAll(c => !origin.HasLOSTo(c));
+                }
+                return _AreaCells;
+            }
             set => _AreaCells = value;
         }
 
@@ -132,29 +146,78 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             if (Diffuser == null)
                 return Value;
 
-            if (Diffuser.TryGetValue(Value, out double diffusedValue))
-                return diffusedValue;
+            if (EffectiveValue >= Diffuser.Count)
+                Diffuser.SetSteps(EffectiveValue);
+
+            if (Diffuser.TryGetValue(EffectiveValue, out double diffusionFactor))
+                return Value * diffusionFactor;
 
             return 0;
         }
 
         public virtual FindPath GetPathTo(AlertContext Context)
-            => ((IPathingPurview)this).GetPathTo(Context);
+            => LastPath = new(
+                StartCell: Context?.Perceiver?.CurrentCell,
+                EndCell: Context?.AlertLocation,
+                Looker: Context?.Perceiver,
+                IgnoreCreatures: true);
 
-        public virtual bool CanPathTo(AlertContext Context)
-            => ((IPathingPurview)this).CanPathTo(Context);
+        public virtual IEnumerable<Cell> GetCellsInArea()
+            => AreaCells;
+
+        public override int GetModifedEffectiveLevel(AlertContext Context)
+        {
+            if (ParentPerception == null
+                || !CheckInArea(Context)
+                || !CheckCanPathTo(Context, out int steps))
+                return 0;
+
+            int effectiveLevel = ParentPerception?.EffectiveLevel ?? 0;
+
+            return (int)Diffuse(steps);
+        }
 
         #region Predicates
 
-        public override bool IsWithin(AlertContext Context)
-            => base.IsWithin(Context);
+        public virtual bool CheckCanPathTo(AlertContext Context, out int Steps)
+        {
+            Steps = -1;
+            if (GetPathTo(Context) is not FindPath findPath
+                || !findPath.Found)
+                return false;
+
+            List<Cell> steps = findPath.Steps;
+            List<int> weights = findPath.Weights;
+
+            int stepsCount = steps.Count;
+            int effectiveRangeCents = EffectiveValue * 100;
+            for (int i = 0; i < stepsCount; i++)
+            {
+                if (effectiveRangeCents < 0)
+                    return false;
+
+                if (steps[i] == Context.AlertLocation)
+                {
+                    Steps = i;
+                    return true;
+                }
+
+                effectiveRangeCents -= weights[i];
+            }
+            return false;
+        }
+
+        public virtual bool CheckInArea(AlertContext Context)
+            => AreaCells?.Contains(Context.AlertLocation) ?? false;
+
+        #endregion
 
         public override void ClearCaches()
         {
             AreaCells = null;
+            LastPath = null;
         }
 
-        #endregion
         #region Equatable
 
         public override bool Equals(IPurview Other)

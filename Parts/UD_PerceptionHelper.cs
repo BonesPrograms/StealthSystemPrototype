@@ -446,7 +446,7 @@ namespace XRL.World.Parts
             E.AddEntry(
                 Part: this,
                 Name: nameof(Perceptions),
-                Value: Perceptions?.ToStringLines(Short: true, Entity: The.Player) ?? "none??");
+                Value: Perceptions?.ToStringLines(Short: true) ?? "none??");
             return base.HandleEvent(E);
         }
 

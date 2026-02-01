@@ -79,7 +79,11 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        public override BasePurview Purview => new OlfactoryPurview(this);
+        public override BasePurview Purview
+        {
+            get => _Purview ??= new OlfactoryPurview(this);
+            protected set => base.Purview = value;
+        }
 
         public virtual Type AlertType => typeof(Olfactory);
 
@@ -183,12 +187,9 @@ namespace StealthSystemPrototype.Perceptions
         public override Type GetAlertType()
             => AlertType;
 
-        public V GetTypedPurview<V>()
+        public virtual V GetTypedPurview<V>()
             where V : BasePurview<Olfactory>
             => Purview as V;
-
-        public override BasePurview GetPurview()
-            => Purview;
 
         public override void ConfigurePurview(int Value, Dictionary<string, object> args = null)
         {
@@ -211,18 +212,5 @@ namespace StealthSystemPrototype.Perceptions
 
             base.ConfigurePurview(Value, args);
         }
-
-        public override bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
-            => base.TryPerceive(Context, out SuccessMargin, out FailureMargin);
-
-        public override IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin)
-            => base.RaiseDetection(Context, SuccessMargin);
-
-        public override BodyPart GetSource()
-            => ((IBodyPartPerception)this).GetSource();
-
-        public override bool Validate()
-            => base.Validate()
-            && Owner.Body?.GetFirstPart(SourceType, false) != null;
     }
 }

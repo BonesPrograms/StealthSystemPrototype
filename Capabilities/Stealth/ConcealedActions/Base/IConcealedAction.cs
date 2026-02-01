@@ -6,6 +6,8 @@ using StealthSystemPrototype.Perceptions;
 
 using XRL.World;
 
+using static StealthSystemPrototype.AlertExtensions;
+
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     /// <summary>
@@ -20,6 +22,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         , IReadOnlyList<BaseAlert>
         , IReadOnlyCollection<BaseAlert>
     {
+        public CoalesceMethod DefaultCoalesceMethod { get; }
+
         public string GetID();
 
         public string GetName();

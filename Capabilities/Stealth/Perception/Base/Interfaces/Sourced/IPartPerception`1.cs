@@ -19,7 +19,7 @@ namespace StealthSystemPrototype.Perceptions
 
         public new T GetBestSource();
 
-        public new static GameObject GetOwner(T Source)
+        public new static GameObject FindOwner(T Source)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,

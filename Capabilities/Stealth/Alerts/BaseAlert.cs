@@ -13,6 +13,7 @@ using StealthSystemPrototype.Perceptions;
 
 using static StealthSystemPrototype.Utils;
 using StealthSystemPrototype.Alerts;
+using static StealthSystemPrototype.Alerts.AlertRack;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -221,6 +222,25 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return null;
         }
 
+        public static A GetAlert<A>(int Intensity, Dictionary<string, string> Properties = null)
+            where A : BaseAlert, new()
+        {
+            A newAlert = new()
+            {
+                Intensity = Intensity,
+            };
+            newAlert.Initialize();
+            foreach ((string name, string value) in Properties)
+            {
+                if (newAlert.Properties.ContainsKey(name))
+                    newAlert.Properties[name] += "," + value;
+                else
+                    newAlert.Properties[name] = value;
+            }
+            newAlert.Created();
+            return newAlert;
+        }
+
         [ModSensitiveCacheInit]
         public void InitAlertCache()
         {
@@ -308,6 +328,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual void Initialize()
         {
+            Properties = new();
         }
 
         public virtual void Created()
@@ -316,6 +337,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public bool IsType(Type Type)
             => Type?.InheritsFrom(GetType()) ?? false;
+
+        public bool IsType<A>()
+            where A : BaseAlert, new()
+            => IsType(typeof(A));
 
         public bool IsSame(IAlert Alert)
             => IsType(Alert?.GetType());
@@ -336,6 +361,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 if ((fieldInfo.Attributes & FieldAttributes.NotSerialized) == 0
                     && !fieldInfo.IsLiteral)
                     fieldInfo.SetValue(baseAlert, fieldInfo.GetValue(this));
+
+            baseAlert.Properties = new(Properties);
 
             if (Degrade)
             {
