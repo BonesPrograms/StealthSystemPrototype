@@ -3,15 +3,17 @@ using System.Collections.Generic;
 using System.Text;
 using System.Linq;
 
+using Genkit;
+
 using XRL.World;
 using XRL.World.Parts;
 using XRL.Collections;
 
 using StealthSystemPrototype.Alerts;
-
-using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
-using static StealthSystemPrototype.AlertExtensions;
 using StealthSystemPrototype.Logging;
+
+using static StealthSystemPrototype.AlertExtensions;
+using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -91,6 +93,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             this.ID = ID ?? Name;
             this.Name = Name ?? this.ID;
             this.Action = Action ?? this.Name;
+            this.Hider = Hider;
             this.Aggressive = Aggressive;
             this.Description = Description;
         }
@@ -179,6 +182,57 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         IConcealedAction IConcealedAction.Initialize()
             => Initialize();
+
+        public virtual BaseConcealedAction SetHider(GameObject Hider)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Hider?.MiniDebugName() ?? "null"),
+                });
+
+            this.Hider = Hider;
+            return this;
+        }
+
+        IConcealedAction IConcealedAction.SetHider(GameObject Hider)
+            => SetHider(Hider);
+
+        public virtual BaseConcealedAction SetAlertObject(GameObject AlertObject = null)
+        {
+            this.AlertObject = AlertObject ?? Hider;
+
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(AlertObject?.MiniDebugName() ?? "null"),
+                    Debug.Arg("set", this.AlertObject?.MiniDebugName() ?? "null"),
+                });
+            return this;
+        }
+
+        IConcealedAction IConcealedAction.SetAlertObject(GameObject AlertObject)
+            => SetAlertObject(AlertObject);
+
+        public virtual BaseConcealedAction SetAlertLocation(Cell AlertLocation = null)
+        {
+            this.AlertLocation = AlertLocation ?? Hider?.CurrentCell;
+
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg("[" + (AlertLocation?.Location ?? new Location2D(0,0)) + "]"),
+                    Debug.Arg("set", "[" + (this.AlertLocation?.Location ?? new Location2D(0,0)) + "]"),
+                });
+            return this;
+        }
+
+        IConcealedAction IConcealedAction.SetAlertLocation(Cell AlertLocation)
+            => SetAlertLocation(AlertLocation);
+
 
         public virtual void Configure()
         {

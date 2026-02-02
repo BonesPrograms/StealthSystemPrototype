@@ -424,11 +424,18 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
 
-            if (E.Hider != ParentObject
-                && !E.Hider.InSamePartyAs(ParentObject)
-                && !Perceptions.IsNullOrEmpty())
+            if (E.Hider != ParentObject)
             {
-                Perceptions.TryPerceive(E.ConcealedAction);
+                Debug.CheckYeh(nameof(Perceptions), "!= " + nameof(ParentObject), Indent: indent[1]);
+                if (!E.Hider.InSamePartyAs(ParentObject))
+                {
+                    Debug.CheckYeh(nameof(E.Hider), "!" + nameof(GameObject.InSamePartyAs) + "(" + nameof(ParentObject) + ")", Indent: indent[1]);
+                    if (!Perceptions.IsNullOrEmpty())
+                    {
+                        Debug.CheckYeh(nameof(Perceptions), "!IsNullOrEmpty", Indent: indent[1]);
+                        Perceptions.TryPerceive(E.ConcealedAction);
+                    }
+                }
             }
             return base.HandleEvent(E);
         }

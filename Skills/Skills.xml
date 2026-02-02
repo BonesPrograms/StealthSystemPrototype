@@ -48,7 +48,7 @@
            Cost="200"
            Attribute="Intelligence,Strength"
            Minimum="23,17"
-           Prereq="Cudgel_Bludgeon"
+           Prereq="UD_Stealth_SleightOfHand,Cudgel_Bludgeon"
            Class="UD_Stealth_Sap"
            Snippet="sapping"
            Description="Activated; While light footed, you gain the ability to render a creatures unconscious."

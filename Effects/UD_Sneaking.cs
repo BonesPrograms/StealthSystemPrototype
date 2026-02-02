@@ -110,12 +110,14 @@ namespace XRL.World.Effects
         {
             UD_StealthHelper stealthHelperPart = Object.RequirePart<UD_StealthHelper>();
             string abortedByEventMessage = null;
-            if (!BeforeSneakEvent.Check(Object, SneakPerformance, ref stealthHelperPart.Witnesses, ref abortedByEventMessage))
+            List<GameObject> witnesses = stealthHelperPart.Witnesses;
+            if (!BeforeSneakEvent.Check(Object, SneakPerformance, ref witnesses, ref abortedByEventMessage))
             {
                 if (!abortedByEventMessage.IsNullOrEmpty())
                     return Object.ShowFailure(abortedByEventMessage);
                 return false;
             }
+            stealthHelperPart.Witnesses = witnesses;
 
             if (Object.HasEffect<UD_Sneaking>()
                 && !Object.CanChangeMovementMode(VERBING)
@@ -238,24 +240,34 @@ namespace XRL.World.Effects
                             SB.AppendLine().AppendLine();
 
                         float totalMSMulti = GetMovespeedMultiplier();
-                        bool mSTotalGood = totalMSMulti >= 1f;
-                        SB.Append("Moves at ").AppendColored(mSTotalGood ? "g" : "r", totalMSMulti.ToString()).Append("X the normal speed. ")
-                            .Append("(").AppendColored(mSTotalGood ? "g" : "r", AppliedMoveSpeedMultiplierAmount.Signed()).Append(" move speed)");
+
+                        string mSTotalColor = "C";
+                        if (totalMSMulti > 1f)
+                            mSTotalColor = "G";
+                        else
+                        if (totalMSMulti < 1f)
+                            mSTotalColor = "R";
+
+                        SB.Append("Moves at ").AppendColored(mSTotalColor, totalMSMulti.ToString()).Append("X the normal speed. ")
+                            .Append("(").AppendColored(mSTotalColor, AppliedMoveSpeedMultiplierAmount.Signed()).Append(" move speed)");
 
                         if (SneakPerformance.GetCollectedStats(MS_MULTI)
                             ?.ToList() is List<StatCollectorEntry> mSEntries)
                         {
-                            SB.Append("Sources:").AppendLine();
+                            SB.AppendLine()
+                                .Append("Sources:")
+                                .AppendLine();
                             int count = mSEntries.Count;
                             for (int i = 0; i < count; i++)
                             {
                                 float mSMulti = mSEntries[i].GetMulti();
-                                bool mSMultiGood = mSMulti >= 0;
                                 string mSMultiAmount = (mSMulti -1f).Signed();
                                 string mSShiftAmount = GetMoveSpeedShiftAmount(Object, mSMulti).Signed();
+                                bool mSMultiGood = (mSMulti - 1f) >= 0;
+                                string mSMultiColor = mSMultiGood ? "G" : "R";
                                 SB.Append(mSEntries[i].Source + ": ")
-                                    .AppendColored(mSMultiGood ? "g" : "r", mSMultiAmount).Append("X ")
-                                    .Append("(").AppendColored(mSMultiGood ? "g" : "r", mSShiftAmount).Append(" MS)");
+                                    .AppendColored(mSMultiColor, mSMultiAmount).Append("X ")
+                                    .Append("(").AppendColored(mSMultiColor, mSShiftAmount).Append(" MS)");
                                 if (i < count - 1)
                                     SB.AppendLine();
                             }
@@ -267,24 +279,34 @@ namespace XRL.World.Effects
                             SB.AppendLine().AppendLine();
 
                         float totalQNMulti = GetQuicknessMultiplier();
-                        bool qNTotalGood = totalQNMulti >= 1f;
-                        SB.Append("Acts at ").AppendColored(qNTotalGood ? "g" : "r", totalQNMulti.ToString()).Append("X the normal speed. ")
-                            .Append("(").AppendColored(qNTotalGood ? "g" : "r", AppliedQuicknessMultiplierAmount.Signed()).Append(" quickness)");
+
+                        string qNTotalColor = "C";
+                        if (totalQNMulti > 1f)
+                            qNTotalColor = "G";
+                        else
+                        if (totalQNMulti < 1f)
+                            qNTotalColor = "R";
+
+                        SB.Append("Acts at ").AppendColored(qNTotalColor, totalQNMulti.ToString()).Append("X the normal speed. ")
+                            .Append("(").AppendColored(qNTotalColor, AppliedQuicknessMultiplierAmount.Signed()).Append(" quickness)");
 
                         if (SneakPerformance.GetCollectedStats(QN_MULTI)
                             ?.ToList() is List<StatCollectorEntry> qNEntries)
                         {
-                            SB.Append("Sources:").AppendLine();
+                            SB.AppendLine()
+                                .Append("Sources:")
+                                .AppendLine();
                             int count = qNEntries.Count;
                             for (int i = 0; i < count; i++)
                             {
                                 float qNMulti = qNEntries[i].GetMulti();
-                                bool qNMultiGood = qNMulti >= 0;
                                 string qNMultiAmount = (qNMulti - 1f).Signed();
                                 string qNShiftAmount = GetQuicknessShiftAmount(Object, qNMulti).Signed();
+                                bool qNMultiGood = (qNMulti - 1f) >= 0;
+                                string qNMultiColor = qNMultiGood ? "G" : "R";
                                 SB.Append(qNEntries[i].Source + ": ")
-                                    .AppendColored(qNMultiGood ? "g" : "r", qNMultiAmount).Append("X ")
-                                    .Append("(").AppendColored(qNMultiGood ? "g" : "r", qNShiftAmount).Append(" QN)");
+                                    .AppendColored(qNMultiColor, qNMultiAmount).Append("X ")
+                                    .Append("(").AppendColored(qNMultiColor, qNShiftAmount).Append(" QN)");
                                 if (i < count - 1)
                                     SB.AppendLine();
                             }
@@ -303,7 +325,10 @@ namespace XRL.World.Effects
                     Hider: E.Actor,
                     Performance: SneakPerformance,
                     ConcealedAction: CommandEventsToConceal[E.Command]
-                        ?.SetEvent(E));
+                        ?.SetEvent(E)
+                        ?.Initialize(),
+                    AlertObject: E.Actor,
+                    AlertCell: E.Actor.CurrentCell);
             }
             return base.HandleEvent(E);
         }
@@ -321,7 +346,9 @@ namespace XRL.World.Effects
                     BaseAlert.GetAlert<Visual>(Intensity: 10),
                     BaseAlert.GetAlert<Auditory>(Intensity: 10),
                     BaseAlert.GetAlert<Olfactory>(Intensity: 8),
-                }.Initialize());
+                }.Initialize(),
+                AlertObject: E.Actor,
+                AlertCell: E.Actor.CurrentCell);
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(GetAttackerHitDiceEvent E)
@@ -345,7 +372,9 @@ namespace XRL.World.Effects
                         { 
                             { "Intent", "Negative" }
                         }),
-                }.Initialize());
+                }.Initialize(),
+                AlertObject: E.Attacker,
+                AlertCell: E.Defender.CurrentCell);
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
@@ -371,7 +400,7 @@ namespace XRL.World.Effects
                 else
                     E.ApplyColors("&K", "W", int.MaxValue, int.MaxValue);
 
-                E.RenderEffectIndicator(3.CP437(), null, "&K", "K", 35);
+                E.RenderEffectIndicator(168.CP437(), null, "&K", "K", 35);
             }
             return base.Render(E);
         }

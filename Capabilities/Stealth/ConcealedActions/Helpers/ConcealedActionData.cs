@@ -135,6 +135,33 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         IConcealedAction IConcealedAction.Initialize()
             => Initialize();
 
+        public virtual ConcealedActionData SetHider(GameObject Hider)
+        {
+            StoredFields[nameof(this.Hider)] = Hider;
+            return this;
+        }
+
+        IConcealedAction IConcealedAction.SetHider(GameObject Hider)
+            => SetHider(Hider);
+
+        public virtual ConcealedActionData SetAlertObject(GameObject AlertObject = null)
+        {
+            StoredFields[nameof(this.AlertObject)] = AlertObject ?? Hider;
+            return this;
+        }
+
+        IConcealedAction IConcealedAction.SetAlertObject(GameObject AlertObject)
+            => SetAlertObject(AlertObject);
+
+        public virtual ConcealedActionData SetAlertLocation(Cell AlertLocation = null)
+        {
+            StoredFields[nameof(this.AlertLocation)] = AlertLocation ?? Hider?.CurrentCell;
+            return this;
+        }
+
+        IConcealedAction IConcealedAction.SetAlertLocation(Cell AlertLocation)
+            => SetAlertLocation(AlertLocation);
+
         public virtual void Configure()
         {
         }

@@ -32,7 +32,7 @@ namespace XRL.World.Parts
 
         public SneakerRack ZoneSneakers
         {
-            get => _ZoneSneakers;
+            get => _ZoneSneakers ??= new(ParentObject);
             protected set => _ZoneSneakers = value;
         }
 
@@ -46,7 +46,7 @@ namespace XRL.World.Parts
                 if (ParentObject.Brain.TryGetOpinions(The.Player, out OpinionList opinions)
                     && opinions.Any(o
                         => o is IOpinionDetection detectionOpinion
-                        && detectionOpinion.Level > AwarenessLevel.Suspect))
+                        && detectionOpinion.Level >= AwarenessLevel.Aware))
                     return true;
 
                 return false;
@@ -81,8 +81,8 @@ namespace XRL.World.Parts
             base.Initialize();
         }
 
-        public void ClearPerceptions()
-            => PerceptionHelper.SyncPerceptions();
+        public void ClearSneakers()
+            => _ZoneSneakers = null;
 
         #region Event Handling
 
@@ -110,15 +110,15 @@ namespace XRL.World.Parts
             if (ParentObject != E.Hider
                 && !ParentObject.InSamePartyAs(E.Hider))
             {
-                using Indent indent = new(1);
-                Debug.LogCaller(indent,
-                    ArgPairs: new Debug.ArgPair[]
-                    {
-                        Debug.Arg(E.GetType().ToStringWithGenerics()),
-                        Debug.Arg(ParentObject?.DebugName ?? "null"),
-                        Debug.Arg(nameof(Perceptions), Perceptions?.Count ?? 0),
-                    });
+                if (ZoneSneakers != null
+                    && Sneak.GetSneakSource(E.Hider) is ISneakSource hiderSneakSource
+                    && !ZoneSneakers.Contains(hiderSneakSource))
+                    ZoneSneakers.Add(hiderSneakSource);
 
+                E.AddWitness(this);
+
+                using Indent indent = new(1);
+                Debug.CheckYeh(Name, ParentObject?.DebugName ?? "null", Indent: indent);
                 /*
                 if (Perceptions.Sense(E.Hider, out IPerception perception) > AwarenessLevel.None)
                 {

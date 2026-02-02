@@ -44,6 +44,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public IConcealedAction Initialize();
 
+        public IConcealedAction SetHider(GameObject Hider);
+
+        public IConcealedAction SetAlertObject(GameObject AlertObject = null);
+
+        public IConcealedAction SetAlertLocation(Cell AlertLocation = null);
+
         public void Configure();
     }
 }

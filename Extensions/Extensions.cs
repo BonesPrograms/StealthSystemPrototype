@@ -1024,6 +1024,12 @@ namespace StealthSystemPrototype
         public static bool Toggle(this ref bool Boolean)
             => Boolean = !Boolean;
 
+        public static IEnumerable<int> IntsTwixt(this (int Low, int High) Tuple, bool InclusiveStart = true, bool InclusiveEnd = true)
+            => Utils.IntsTwixt(Tuple.Low, Tuple.High, InclusiveStart, InclusiveEnd);
+
+        public static IEnumerable<int> IntsUpto(this int High, bool InclusiveEnd = false)
+            => Utils.IntsUpto(High, InclusiveEnd);
+
         #endregion
     }
 }

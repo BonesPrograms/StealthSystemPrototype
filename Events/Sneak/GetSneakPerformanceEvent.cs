@@ -50,7 +50,7 @@ namespace StealthSystemPrototype.Events
             if (success)
                 success = E.Witnesses.HandleEvent(E, true);
 
-            E.Performance.WantsSync = false;
+            E.Performance.WantSync = false;
             return E.Performance;
         }
 

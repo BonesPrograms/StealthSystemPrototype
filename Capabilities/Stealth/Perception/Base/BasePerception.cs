@@ -46,6 +46,7 @@ namespace StealthSystemPrototype.Perceptions
                 MethodNameValues: new Dictionary<string, bool>()
                 {
                     { nameof(ToString), false },
+                    { nameof(ConfigurePurview), false },
                 });
         }
         #endregion

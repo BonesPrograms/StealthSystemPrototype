@@ -21,9 +21,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public static bool TryConcealAction(
             GameObject Hider,
             SneakPerformance Performance,
-            BaseConcealedAction ConcealedAction)
+            BaseConcealedAction ConcealedAction,
+            GameObject AlertObject = null,
+            Cell AlertCell = null)
         {
-            ConcealedAction.Configure();
+            ConcealedAction.SetHider(Hider)
+                .SetAlertObject(AlertObject)
+                .SetAlertLocation(AlertCell)
+                .Configure();
             GetActionAlertsEvent.GetFor(ConcealedAction);
             if (!ConcealedAction.IsNullOrEmpty())
             {
@@ -40,6 +45,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 .Where(p => typeof(ISneakSource).IsAssignableFrom(p.GetType()))
                 .Select(p => p as ISneakSource).ToList() is List<ISneakSource> iPartSneakSources)
                 sneakSources.AddRange(iPartSneakSources);
+
             if (Sneaker.Effects
                 .Where(p => typeof(ISneakSource).IsAssignableFrom(p.GetType()))
                 .Select(p => p as ISneakSource).ToList() is List<ISneakSource> fxSneakSources)

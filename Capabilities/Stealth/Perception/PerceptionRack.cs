@@ -402,7 +402,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             perceptionRack.EnsureCapacity(Size);
 
             for (int i = 0; i < Length; i++)
-                perceptionRack.Items[i] = Items[i].DeepCopy(Parent) as BasePerception;
+                perceptionRack.Items[i] = Items[i].DeepCopy(Parent);
 
             return perceptionRack;
         }
@@ -413,7 +413,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Debug.LogMethod(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(Owner?.MiniDebugName() ?? "null"),
+                    Debug.Arg(Owner?.DebugName ?? "null"),
                 });
 
             bool allValid = true;
@@ -455,6 +455,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Predicate<BasePerception> Filter,
             bool ClearFirst)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(ClearFirst), ClearFirst),
+                });
+
             if (Items == null)
                 throw new InnerArrayNullException(nameof(Items));
 
@@ -547,6 +554,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual bool CanPerceiveAlert(BaseAlert Alert)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Alert?.ToString() ?? "NO_ALERT"),
+                });
+
             if (Alert == null)
                 throw new ArgumentNullException(nameof(Alert), nameof(this.CanPerceiveAlert) + " requires an " + nameof(BaseAlert) + " to check for perceivablitiy.");
 
@@ -562,6 +576,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public bool CanPerceive(AlertContext Context)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Context?.ActionAlert?.ToString() ?? "NO_CONTEXT"),
+                });
+
             if (Context?.ActionAlert is BaseAlert alert)
             {
                 if (CanPerceiveAlert(alert))
@@ -579,16 +600,48 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual bool TryPerceive(AlertContext Context)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Context?.ActionAlert?.ToString() ?? "NO_CONTEXT"),
+                });
+
             bool any = false;
             List<BasePerception> highestFirst = GetPerceptionsBestFirst(Context)?.ToList() ?? new();
             foreach (BasePerception perception in highestFirst)
-                any = perception.TryPerceive(Context, out _, out _) || any;
-
+            {
+                any = perception.TryPerceive(Context, out int SuccessMargin, out int FailureMargin) || any;
+            }
             return any;
         }
 
         public virtual bool TryPerceive(BaseConcealedAction ConcealedAction)
-            => GetAlertContexts(ConcealedAction).Aggregate(false, (a, n) => TryPerceive(n) || a);
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Owner?.DebugName ?? "NO_OWNER"),
+                    Debug.Arg(nameof(ConcealedAction.Hider), ConcealedAction.Hider?.DebugName ?? "NO_HIDER"),
+                });
+
+            bool any = false;
+            if (GetAlertContexts(ConcealedAction) is IEnumerable<AlertContext> alertContexts)
+            {
+                Debug.CheckYeh(nameof(alertContexts), alertContexts.Count(), Indent: indent[1]);
+                foreach (AlertContext context in alertContexts)
+                {
+                    bool didPercieve = TryPerceive(context);
+                    any = didPercieve || any;
+                    Debug.YehNah(context.ActionAlert.ToString() ?? "NO_CONTEXT", didPercieve, Indent: indent[2]);
+                }
+            }
+            else
+                Debug.CheckNah(nameof(alertContexts), "null", Indent: indent[1]);
+            return any;
+        }
+            //=> GetAlertContexts(ConcealedAction).Aggregate(false, (a, n) => TryPerceive(n) || a);
 
         #region Event Dispatch
 
@@ -637,7 +690,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 {
                     Debug.Arg(Perception?.Name ?? "null"),
                     Debug.Arg(MinEvent.EventTypes[ID].ToStringWithGenerics()),
+                    Debug.Arg(Owner?.DebugName ?? "NO_OWNER"),
                 });
+
+            if (!Owner.TryGetPart(out UD_Witness witness)
+                || witness.ZoneSneakers.IsNullOrEmpty()
+                || witness.ZoneSneakers.All(s => !s.IsSneaking))
+                return false;
 
             return Perception.WantEvent(ID, Cascade)
                 || GameObjectHasRegisteredEventFrom(Perception.Owner, ID, Perception)
@@ -654,6 +713,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 {
                     Debug.Arg(MinEvent.EventTypes[ID].ToStringWithGenerics()),
                     Debug.Arg(nameof(Cascade), Cascade),
+                    Debug.Arg(Owner?.DebugName ?? "NO_OWNER"),
                 });
 
             if (MinEvent.CascadeTo(Cascade, MinEvent.CASCADE_NONE))
@@ -691,7 +751,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(nameof(MinEvent), E?.TypeStringWithGenerics()),
-                    Debug.Arg(Owner?.MiniDebugName()),
+                    Debug.Arg(Owner?.DebugName ?? "NO_OWNER"),
                 });
 
             return true;
@@ -706,6 +766,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(CallChain(nameof(Event), nameof(Event.ID)), E?.ID),
+                    Debug.Arg(Owner?.DebugName ?? "NO_OWNER"),
                 });
 
             if (Owner == null
@@ -808,14 +869,31 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (Items == null)
                 throw new InnerArrayNullException(nameof(Items));
 
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Owner?.DebugName ?? "NO_OWNER"),
+                    Debug.Arg(nameof(ConcealedAction.Hider), ConcealedAction.Hider?.DebugName ?? "NO_HIDER"),
+                });
+
+            SneakPerformance sneakPerformance = ConcealedAction.SneakPerformance;
+            Debug.YehNah(nameof(sneakPerformance), sneakPerformance?.Count ?? -1, !sneakPerformance.IsNullOrEmpty(), Indent: indent[1]);
+
+            GameObject alertObject = ConcealedAction.AlertObject ?? ConcealedAction.Hider;
+            Debug.YehNah(nameof(alertObject), alertObject?.DebugName ?? "NO_ALERT_OBJECT", alertObject != null, Indent: indent[1]);
+
+            Cell alertLocation = ConcealedAction.AlertLocation ?? ConcealedAction.Hider?.CurrentCell;
+            Debug.YehNah(nameof(alertLocation), "[" + (alertLocation?.Location ?? new(0, 0)) + "]", alertLocation != null, Indent: indent[1]);
+
             // iterate all the alerts in the concealed action.
             // these represent how obvious the action was to this type of sense.
             foreach (BaseAlert actionAlert in ConcealedAction)
             {
                 yield return new AlertContext(
                     ParentAction: ConcealedAction,
-                    ActionAlert: actionAlert,
-                    SneakAlert: ConcealedAction.SneakPerformance[actionAlert],
+                    ActionAlert: actionAlert.Copy(Degrade: false),
+                    SneakAlert: sneakPerformance[actionAlert],
                     Hider: ConcealedAction.Hider,
                     AlertObject: ConcealedAction.AlertObject ?? ConcealedAction.Hider,
                     AlertLocation: ConcealedAction.AlertLocation ?? ConcealedAction.Hider?.CurrentCell);

@@ -69,6 +69,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (!_AlertTypes.IsNullOrEmpty())
                 return _AlertTypes;
 
+            using Indent indent = new(1);
+            Debug.LogCaller(Indent: indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(ClearFirst), ClearFirst),
+                });
+
             return ModManager.GetTypesAssignableFrom(typeof(BaseAlert))
                 ?.WhereNot(HasCustomAttribute<StealthSystemBaseClassAttribute>)
                 ?.WhereNot(IsAbstract)
@@ -83,10 +90,15 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (!_Alerts.IsNullOrEmpty())
                 return _Alerts;
 
+            using Indent indent = new(1);
+            Debug.LogCaller(Indent: indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                Debug.Arg(nameof(ClearFirst), ClearFirst),
+                });
+
             if (!AlertTypes.IsNullOrEmpty())
             {
-                using Indent indent = new();
-                Debug.LogCritical(nameof(CacheAlertTypesByName), Indent: indent);
                 List<BaseAlert> alerts = new();
                 foreach (Type alertType in AlertTypes)
                 {
@@ -97,10 +109,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                         {
                             alertInstance.Initialize();
                             alerts.Add(alertInstance);
-                            Debug.LogCritical(YehNah(true) + " " + alertInstance.Name, Indent: indent[1]);
+                            Debug.CheckYeh(alertInstance.Name, Indent: indent[1]);
                         }
                         else
-                            Debug.LogCritical(YehNah(false) + " " + alertType.ToStringWithGenerics(), Indent: indent[1]);
+                            Debug.CheckYeh(alertType.ToStringWithGenerics(), Indent: indent[1]);
                     }
                     catch (Exception x)
                     {
@@ -126,8 +138,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (!_AlertsByName.IsNullOrEmpty())
                 return _AlertsByName;
 
-            using Indent indent = new();
-            Debug.LogCritical(nameof(CacheAlertTypesByName), Indent: indent);
+            using Indent indent = new(1);
+            Debug.LogCaller(Indent: indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(ClearFirst), ClearFirst),
+                });
+
             Dictionary<string, BaseAlert> alertTypesByName = new();
             if (!Alerts.IsNullOrEmpty())
             {
@@ -146,10 +163,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                             && alertInstance?.Name is string alertName)
                         {
                             alertTypesByName[alertName] = alertInstance;
-                            Debug.LogCritical(YehNah(true) + " " + alertInstance.Name, Indent: indent[1]);
+                            Debug.CheckYeh(alertInstance.Name, Indent: indent[1]);
                         }
                         else
-                            Debug.LogCritical(YehNah(false) + " " + alertType.ToStringWithGenerics(), Indent: indent[1]);
+                            Debug.CheckYeh(alertType.ToStringWithGenerics(), Indent: indent[1]);
                     }
                     catch (Exception x)
                     {
@@ -175,8 +192,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             if (!_AlertTypesByName.IsNullOrEmpty())
                 return _AlertTypesByName;
 
-            using Indent indent = new();
-            Debug.LogCritical(nameof(CacheAlertTypesByName), Indent: indent);
+            using Indent indent = new(1);
+            Debug.LogCaller(Indent: indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(ClearFirst), ClearFirst),
+                });
+
             Dictionary<string, Type> alertTypesByName = new();
             if (!Alerts.IsNullOrEmpty())
             {
@@ -201,10 +223,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                         if (alertInstance?.Name is string alertName)
                         {
                             alertTypesByName[alertName] = alertType;
-                            Debug.LogCritical(YehNah(true) + " " + alertInstance.Name, Indent: indent[1]);
+                            Debug.CheckYeh(alertInstance.Name, Indent: indent[1]);
                         }
                         else
-                            Debug.LogCritical(YehNah(false) + " " + alertType.ToStringWithGenerics(), Indent: indent[1]);
+                            Debug.CheckYeh(alertType.ToStringWithGenerics(), Indent: indent[1]);
                     }
                     catch (Exception x)
                     {
@@ -230,13 +252,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 Intensity = Intensity,
             };
             newAlert.Initialize();
-            foreach ((string name, string value) in Properties)
-            {
-                if (newAlert.Properties.ContainsKey(name))
-                    newAlert.Properties[name] += "," + value;
-                else
-                    newAlert.Properties[name] = value;
-            }
+            if (!Properties.IsNullOrEmpty())
+                foreach ((string name, string value) in Properties)
+                {
+                    if (newAlert.Properties.ContainsKey(name))
+                        newAlert.Properties[name] += "," + value;
+                    else
+                        newAlert.Properties[name] = value;
+                }
             newAlert.Created();
             return newAlert;
         }
@@ -268,7 +291,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             set => _Intensity = value;
         }
 
-        private Dictionary<string, string> _Properties;
+        private Dictionary<string, string> _Properties = new();
         public virtual Dictionary<string, string> Properties
         {
             get => _Properties;
@@ -326,9 +349,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #endregion
 
+        public override string ToString()
+            => Name + ":(" + Intensity + ")";
+
         public virtual void Initialize()
         {
-            Properties = new();
         }
 
         public virtual void Created()
@@ -362,7 +387,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     && !fieldInfo.IsLiteral)
                     fieldInfo.SetValue(baseAlert, fieldInfo.GetValue(this));
 
-            baseAlert.Properties = new(Properties);
+            baseAlert.Properties = new();
+
+            if (!Properties.IsNullOrEmpty())
+                baseAlert.Properties = new(Properties);
+            else
 
             if (Degrade)
             {

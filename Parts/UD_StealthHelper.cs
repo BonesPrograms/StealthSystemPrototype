@@ -21,7 +21,13 @@ namespace XRL.World.Parts
     {
         public static bool ConstantDebugOutput = false;
 
-        public List<GameObject> Witnesses;
+        protected List<GameObject> _Witnesses;
+
+        public List<GameObject> Witnesses
+        {
+            get => _Witnesses;
+            set => _Witnesses = value;
+        }
 
         public List<AwarenessLevel> WitnessesAwarenessLevels;
 
@@ -106,8 +112,8 @@ namespace XRL.World.Parts
         }
         public override bool HandleEvent(GetDebugInternalsEvent E)
         {
-            E.AddEntry(this, nameof(Witnesses), WitnessListString().Strip());
             E.AddEntry(this, nameof(Witnesses) + " " + nameof(Witnesses.Count), Witnesses?.Count ?? 0);
+            E.AddEntry(this, nameof(Witnesses), WitnessListString().Strip());
             return base.HandleEvent(E);
         }
         public override bool Render(RenderEvent E)

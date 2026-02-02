@@ -22,6 +22,19 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         : BasePurview
         where A : class, IAlert, new()
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public new static void doDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Capabilities.Stealth.Perception.BasePurview<A>),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(Configure), false },
+                });
+        }
+        #endregion
+
         public override Type AlertType => typeof(A);
 
         #region Constructors

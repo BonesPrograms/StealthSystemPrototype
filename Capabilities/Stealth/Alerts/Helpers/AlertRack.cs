@@ -31,6 +31,8 @@ namespace StealthSystemPrototype.Alerts
         private CoalesceMethod? _DefaultCoalesceMethod;
         public virtual CoalesceMethod DefaultCoalesceMethod { get; }
 
+        private bool IsCoalescing = false;
+
         #region Constructors
 
         public AlertRack()
@@ -81,28 +83,35 @@ namespace StealthSystemPrototype.Alerts
 
         #endregion
 
-        public virtual AlertRack Coalesce(CoalesceMethod? Method = null)
+        public AlertRack Coalesce(CoalesceMethod? Method = null)
         {
-            _DefaultCoalesceMethod ??= CoalesceMethod.Merge;
-
-            CoalesceMethod method = Method ?? DefaultCoalesceMethod;
-            Dictionary<string, BaseAlert> coalescedList = new();
-            for (int i = 0; i < Count; i++)
+            if (!IsCoalescing)
             {
-                if (Items[i] is BaseAlert currentAlert)
+                IsCoalescing.Toggle();
+
+                _DefaultCoalesceMethod ??= CoalesceMethod.Merge;
+
+                CoalesceMethod method = Method ?? DefaultCoalesceMethod;
+                Dictionary<string, BaseAlert> coalescedList = new();
+                for (int i = 0; i < Count; i++)
                 {
-                    BaseAlert newAlert = currentAlert;
-                    if (coalescedList.ContainsKey(currentAlert.Name))
+                    if (Items[i] is BaseAlert currentAlert)
                     {
-                        if (coalescedList[currentAlert.Name] is BaseAlert storedAlert)
-                            newAlert = storedAlert.Coalesce(newAlert, method);
+                        BaseAlert newAlert = currentAlert;
+                        if (coalescedList.ContainsKey(currentAlert.Name))
+                        {
+                            if (coalescedList[currentAlert.Name] is BaseAlert storedAlert)
+                                newAlert = storedAlert.Coalesce(newAlert, method);
+                        }
+                        coalescedList[currentAlert.Name] = newAlert;
                     }
-                    coalescedList[currentAlert.Name] = newAlert;
                 }
+                Clear();
+                AddRange(coalescedList.Values);
+                Variant++;
+
+                IsCoalescing.Toggle();
             }
-            Clear();
-            AddRange(coalescedList.Values);
-            Variant++;
             return this;
         }
 

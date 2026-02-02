@@ -17,6 +17,9 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using StealthSystemPrototype.Detetection.Opinions;
+using StealthSystemPrototype.Alerts;
+using XRL.World.AI;
 
 namespace XRL.World.Parts
 {
@@ -27,16 +30,21 @@ namespace XRL.World.Parts
         public static string SUPPORT_TYPE => nameof(UD_Sneak);
         public static string COMMAND_SNEAK => "CommandToggleSneaking";
 
-        [SerializeField]
-        private SneakPerformance _SneakPerformance;
+        protected SneakPerformance _SneakPerformance;
         public SneakPerformance SneakPerformance
         {
-            get => _SneakPerformance == null
-                    || _SneakPerformance.WantsSync
-                ? GetSneakPerformanceEvent.GetFor(ParentObject, ref _SneakPerformance)
-                : _SneakPerformance;
+            get
+            {
+                if (_SneakPerformance.IsNullOrEmpty()
+                    || _SneakPerformance.WantSync)
+                {
+                    SyncSneakPerformance();
+                }
+                return _SneakPerformance;
+            }
             protected set => _SneakPerformance = value;
         }
+        protected bool CollectingSneakPerformance;
 
         [SerializeField]
         private Guid _SneakActivatedAbilityID;
@@ -53,19 +61,25 @@ namespace XRL.World.Parts
         public int BaseSneakPerformance => ParentObject.StatMod("Intelligence");
 
         protected List<GameObject> _Witnesses;
+
         protected List<GameObject> Witnesses => _Witnesses ??= The.ActiveZone.GetObjects(GO => GO.WithinAnyPurview(ParentObject));
+
         public bool IsBeingPerceived
-        {
-            get
-            {
-                if (!IsSneaking())
-                    return true;
-
-
-
-                return true;
-            }
-        }
+            => !IsSneaking() // non-sneakers are always perceptable in this system
+            || (Witnesses?.Aggregate( // looping over the witness list
+                seed: false, // return a bool, start with false (if it's empty, then there are no witness to perceive the sneaker)
+                func: (a, n) // (bool a)ccumulator, (GameObject n)ext; a is the returned value (seed) from last iteration, n is the next (current) GameObject
+                    => n.Brain is Brain brain // make sure there's a brain to have opinions in
+                    && brain.TryGetOpinions(ParentObject, out OpinionList opinions) // get opinions on the sneaker
+                    && !opinions // true when all detection opinions about the sneaker are not below "aware"
+                        .Where(o => o is IOpinionDetection) // only detection opinions
+                        .Select(o => o as IOpinionDetection) // cast them
+                        .All(o => o.Level < AwarenessLevel.Aware) // all of them are below "aware"
+                    || a) // if any are true, then the output seed is true.
+                ?? false); // null coalesce to false if the witness list is null.
+        // bit more on func, above: it's a Func<bool, GameObject, out bool> where the first parameter is given the seed on the first
+        // iteration and each return value for every subsequent one. The GameObject parameter is each object in the list.
+        // Come chat to me (UnderDoug) about it if understanding is still eluding you.
 
         [SerializeField]
         private bool _WantRecalc;
@@ -84,6 +98,21 @@ namespace XRL.World.Parts
             WantRecalc = false;
         }
 
+        #region Serialization
+
+        public override void Write(GameObject Basis, SerializationWriter Writer)
+        {
+            base.Write(Basis, Writer);
+            Writer.WriteComposite(SneakPerformance);
+        }
+        public override void Read(GameObject Basis, SerializationReader Reader)
+        {
+            base.Read(Basis, Reader);
+            SneakPerformance = Reader.ReadComposite<SneakPerformance>();
+        }
+
+        #endregion
+
         public override void Remove()
         {
             RemoveMyActivatedAbility(ref _SneakActivatedAbilityID);
@@ -92,20 +121,46 @@ namespace XRL.World.Parts
 
         public UD_Sneak WantsSync()
         {
-            SneakPerformance.WantsSync = true;
+            SneakPerformance.WantSync = true;
             WantRecalc = true;
             return this;
         }
         public static UD_Sneak WantsSync(GameObject Who)
             => Who?.GetPart<UD_Sneak>()?.WantsSync();
 
-        public UD_Sneak SyncAbility(bool Silent = false)
+        public void SyncSneakPerformance()
+        {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(ParentObject?.DebugName ?? "null"),
+                });
+
+            if (!CollectingSneakPerformance)
+            {
+                CollectingSneakPerformance.Toggle();
+
+                GetSneakPerformanceEvent.GetFor(ParentObject, ref _SneakPerformance);
+
+                CollectingSneakPerformance.Toggle();
+            }
+            _SneakPerformance.WantSync = false;
+            PerformRecalc();
+        }
+
+        public void PerformRecalc()
         {
             if (WantRecalc)
             {
                 ParentObject.ForeachEffect((UD_Sneaking fx) => fx.RecalcStatMultipliers());
                 WantRecalc = false;
             }
+        }
+
+        public UD_Sneak SyncAbility(bool Silent = false)
+        {
+            PerformRecalc();
 
             bool removed = false;
             if (ParentObject.GetActivatedAbilityByCommand(COMMAND_SNEAK) is ActivatedAbilityEntry abilityEntry

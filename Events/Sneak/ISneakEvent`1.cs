@@ -75,7 +75,7 @@ namespace StealthSystemPrototype.Events
                 || FromPool(Hider) is not T E)
                 return null;
 
-            E.Performance = (Performance ??= SneakPerformance.DefaultSneakPerformance);
+            E.Performance = (Performance ??= new(E.Hider));
             E.GetStringyEvent();
             return E;
         }
@@ -84,6 +84,14 @@ namespace StealthSystemPrototype.Events
             GameObject Hider,
             SneakPerformance Performance)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(Hider?.MiniDebugName() ?? "null"),
+                    Debug.Arg(nameof(Performance), Performance?.Count ?? -1),
+                });
+
             if (Hider == null
                 || FromPool(Hider) is not T E)
                 return null;
@@ -132,35 +140,74 @@ namespace StealthSystemPrototype.Events
 
         protected static T Process(T E, out bool Success)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E.TypeStringWithGenerics()),
+                    Debug.Arg(E.Hider?.DebugName ?? "null"),
+                    Debug.Arg(nameof(E.Performance), E.Performance?.Count ?? -1),
+                });
+
+            if (E == null)
+            {
+                Success = false;
+                return null;
+            }
+
             Success = true;
             if (GameObject.Validate(ref E.Hider))
             {
+                Debug.YehNah(nameof(GameObject.Validate), Success, Indent: indent[1]);
+
                 if (Success
                     && E.Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
                     Success = E.Hider.FireEvent(E.StringyEvent);
+                Debug.YehNah(nameof(GameObject.FireEvent), Success, Indent: indent[1]);
 
                 E.UpdateFromStringyEvent();
+                Debug.YehNah(nameof(UpdateFromStringyEvent), Success, Indent: indent[1]);
 
                 if (Success
                     && E.Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
                     Success = E.Hider.HandleEvent(E);
+                Debug.YehNah(nameof(GameObject.HandleEvent), Success, Indent: indent[1]);
             }
+            Debug.YehNah(nameof(Process), Success, Indent: indent[0]);
             return E;
         }
 
         protected static T ZoneProcess(T E, out bool Success)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E.TypeStringWithGenerics()),
+                    Debug.Arg(E.Hider?.DebugName ?? "null"),
+                    Debug.Arg(nameof(E.Performance), E.Performance?.Count ?? -1),
+                });
+
+            if (E == null)
+            {
+                Success = false;
+                return null;
+            }
+
             Success = true;
             if (GameObject.Validate(ref E.Hider))
             {
                 if (Success)
                     Success = E.Hider.GetCurrentZone().FireEvent(E.StringyEvent);
+                Debug.YehNah(nameof(Zone.FireEvent), Success, Indent: indent[1]);
 
                 if (Success)
                     E.UpdateFromStringyEvent();
+                Debug.YehNah(nameof(UpdateFromStringyEvent), Success, Indent: indent[1]);
 
                 if (Success)
                     Success = E.Hider.GetCurrentZone().HandleEvent(E);
+                Debug.YehNah(nameof(Zone.HandleEvent), Success, Indent: indent[1]);
             }
             return E;
         }

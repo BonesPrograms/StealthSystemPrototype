@@ -5,18 +5,19 @@ using System.Text;
 using System.Linq;
 
 using XRL;
-using XRL.World.Parts.Skill;
-using XRL.World.Parts.Mutation;
+using XRL.Language;
 using XRL.Collections;
 using XRL.World;
+using XRL.World.Parts.Skill;
+using XRL.World.Parts.Mutation;
+
+using SerializeField = UnityEngine.SerializeField;
 
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
-using static StealthSystemPrototype.Utils;
+using StealthSystemPrototype.Logging;
 
-using SerializeField = UnityEngine.SerializeField;
-using System.Diagnostics;
-using XRL.Language;
+using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.AlertExtensions;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
@@ -28,10 +29,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     {
         #region Const & Static
 
-        public static SneakPerformance DefaultSneakPerformance => new(BaseAlert.Alerts);
-
         public static string MS_MULTI => "MoveSpeed_Multiplier";
         public static string QN_MULTI => "Quickness_Multiplier";
+
+        public static SneakPerformance DefaultSneakPerformance => new(BaseAlert.Alerts);
+
+        public static StringMap<List<StatCollectorEntry>> DefaultCollectedStats => new()
+        {
+            { MS_MULTI, new() },
+            { QN_MULTI, new() },
+        };
 
         #endregion
         #region Helpers
@@ -66,12 +73,14 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
+        #region Instance Fields & Props
 
-        public static StringMap<List<StatCollectorEntry>> DefaultCollectedStats => new()
+        protected GameObject _Owner = null;
+        public GameObject Owner
         {
-            { MS_MULTI, new() },
-            { QN_MULTI, new() },
-        };
+            get => _Owner;
+            protected set => _Owner = value;
+        }
 
         public override CoalesceMethod DefaultCoalesceMethod => CoalesceMethod.Lowest;
 
@@ -80,9 +89,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public float MoveSpeedMultiplier => (GetCollectedStats(MS_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
         public float QuicknessMultiplier => (GetCollectedStats(QN_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
 
-        [SerializeField]
-        private bool _WantsSync;
-        public bool WantsSync
+        protected bool _WantsSync = false;
+        public bool WantSync
         {
             get => _WantsSync;
             set
@@ -96,14 +104,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
+        #endregion
+
         public SneakPerformance()
-            : base()
+            : base(DefaultSneakPerformance)
         { }
+        public SneakPerformance(GameObject Owner)
+            : base(DefaultSneakPerformance)
+        {
+            this.Owner = Owner;
+        }
         public SneakPerformance(IReadOnlyList<BaseAlert> SourceList)
             : base(SourceList)
-        { }
+        {
+        }
+        public SneakPerformance(GameObject Owner, IReadOnlyList<BaseAlert> SourceList)
+            : this(SourceList)
+        {
+            this.Owner = Owner;
+        }
         public SneakPerformance(SneakPerformance Source)
-            : this(Source as IReadOnlyList<BaseAlert>)
+            : this(Source.Owner, Source)
         {
             CollectedStats = Source.CollectedStats;
         }
@@ -113,12 +134,36 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public override void Write(SerializationWriter Writer)
         {
             base.Write(Writer);
+            Writer.WriteGameObject(Owner);
             Writer.WriteOptimized(Variant);
+
+            bool wantWriteCollectedStats = CollectedStats != null;
+            Writer.Write(wantWriteCollectedStats);
+            if (wantWriteCollectedStats)
+            {
+                Writer.WriteOptimized(CollectedStats.Count);
+                foreach ((string key, List<StatCollectorEntry> entryList) in CollectedStats)
+                {
+                    Writer.WriteOptimized(key);
+                    Writer.WriteComposite(entryList);
+                }
+            }
+
         }
         public override void Read(SerializationReader Reader)
         {
             base.Read(Reader);
+            Owner = Reader.ReadGameObject();
             Variant = Reader.ReadOptimizedInt32();
+            if (Reader.ReadBoolean())
+            {
+                CollectedStats = new();
+                int count = Reader.ReadOptimizedInt32();
+                for (int i = 0; i < count; i++)
+                {
+                    CollectedStats[Reader.ReadOptimizedString()] = Reader.ReadCompositeList<StatCollectorEntry>();
+                }
+            }
         }
 
         #endregion
@@ -130,9 +175,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             CollectedStats = DefaultCollectedStats;
         }
 
-        public BaseAlert this[BaseAlert Alert] => GetByType(Alert.Type);
+        public BaseAlert this[BaseAlert Alert]
+            => GetByType(Alert.Type)?.Copy(Degrade: false);
 
-        public BaseAlert this[string AlertName] => Items?.FirstOrDefault(a => a.Name == AlertName);
+        public BaseAlert this[string AlertName]
+            => Items?.FirstOrDefault(a => a.Name == AlertName);
 
         public string EntriesDebugString(out string Contents, string Delimiter = "\n")
         {

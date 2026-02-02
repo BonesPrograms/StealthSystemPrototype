@@ -44,11 +44,10 @@ namespace StealthSystemPrototype.Events
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(Hider?.DebugName ?? "null"),
+                    Debug.Arg(Hider?.MiniDebugName() ?? "null"),
                 });
 
-            if (!GameObject.Validate(ref Hider)
-                || FromPool(Hider, Performance: ref Performance) is not TryConcealActionEvent E)
+            if (FromPool(Hider, Performance: Performance) is not TryConcealActionEvent E)
                 return;
 
             E.ConcealedAction = ConcealedAction;
@@ -56,15 +55,10 @@ namespace StealthSystemPrototype.Events
             E.GetStringyEvent();
 
             Process(E, Success: out bool success);
+            Debug.YehNah(nameof(Process), success, Indent: indent[1]);
 
-            if (success)
-                success = E.Hider.GetCurrentZone().FireEvent(E.StringyEvent);
-
-            if (success)
-                E.UpdateFromStringyEvent();
-
-            if (success)
-                success = E.Hider.GetCurrentZone().HandleEvent(E);
+            ZoneProcess(E, out success);
+            Debug.YehNah(nameof(ZoneProcess), success, Indent: indent[1]);
         }
     }
 }

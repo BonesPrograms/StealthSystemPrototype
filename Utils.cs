@@ -6,20 +6,22 @@ using System.Reflection;
 using System.Diagnostics;
 
 using XRL;
+using XRL.UI;
+using XRL.World;
+using XRL.Language;
 using XRL.World.Anatomy;
 using XRL.World.Parts.Mutation;
 
+using static XRL.UI.Sidebar;
+
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Const;
 
 using Debug = StealthSystemPrototype.Logging.Debug;
-using XRL.Language;
-using XRL.World;
-using StealthSystemPrototype.Capabilities.Stealth;
-using XRL.UI;
 
 namespace StealthSystemPrototype
 {
@@ -280,17 +282,28 @@ namespace StealthSystemPrototype
             get
             {
                 if (_CP437Chars.IsNullOrEmpty())
-                    _CP437Chars = CharCache.Values.Select(c => Sidebar.ToCP437(c)).ToList();
+                {
+                    if (Codepage437Inverse.IsNullOrEmpty())
+                        _ = ToCP437(" ");
 
+                    char[] chars = Codepage437Inverse.Keys.ToArray();
+                    foreach (int Index in (0, byte.MaxValue + 1).IntsTwixt())
+                        if (Index == 0)
+                            _CP437Chars.Add(null);
+                        else
+                            _CP437Chars.Add(chars[Index - 1].ToString());
+                }
                 return _CP437Chars;
             }
         }
 
-        public static string GetCP437Char(byte Index)
-            => CP437Chars[Index];
+        public static char GetCP437Char(byte Index)
+            => CP437Chars[Index] is string value
+            ? value[0]
+            : '\0';
 
         public static string CP437(byte Index)
-            => GetCP437Char(Index);
+            => CP437Chars[Index];
 
         public static string CallChain(params string[] Strings)
             => Strings
@@ -469,5 +482,12 @@ namespace StealthSystemPrototype
 
         public static Type GetMinEventType(int ID)
             => MinEvent.EventTypes[ID];
+
+        public static IEnumerable<int> IntsTwixt(int Low, int High, bool InclusiveStart = true, bool InclusiveEnd = true)
+            => (new int[High + (InclusiveEnd ? 1 : 0)])
+                .Select((o, i) => i + Low + (!InclusiveStart ? 1 : 0));
+
+        public static IEnumerable<int> IntsUpto(int High, bool InclusiveEnd = false)
+            => IntsTwixt(0, High, true, InclusiveEnd);
     }
 }

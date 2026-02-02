@@ -14,6 +14,7 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
+using HarmonyLib;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
@@ -23,6 +24,40 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         : IPurview
         , IComparable<BasePurview>
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Capabilities.Stealth.Perception.BasePurview),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(Configure), false },
+                    { nameof(SetParentPerception), false },
+                });
+
+            Registry.Register(new MethodRegistryEntry(
+                MethodBase: AccessTools.PropertySetter(typeof(BasePurview), nameof(ParentPerception)),
+                Value: false));
+
+            Registry.Register(new MethodRegistryEntry(
+                MethodBase: AccessTools.Constructor(typeof(BasePurview), 
+                    parameters: new Type[]
+                    {
+                        typeof(BasePerception),
+                    }),
+                Value: false));
+
+            Registry.Register(new MethodRegistryEntry(
+                MethodBase: AccessTools.Constructor(typeof(BasePurview), 
+                    parameters: new Type[]
+                    {
+                        typeof(BasePurview),
+                    }),
+                Value: false));
+        }
+        #endregion
+
         protected BasePerception _ParentPerception;
         public BasePerception ParentPerception
         {

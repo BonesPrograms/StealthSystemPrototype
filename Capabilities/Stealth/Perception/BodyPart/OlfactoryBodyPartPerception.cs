@@ -31,6 +31,18 @@ namespace StealthSystemPrototype.Perceptions
         : BaseBodyPartPerception
         , IOlfactoryPerception
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public new static void doDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Perceptions.OlfactoryBodyPartPerception),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(ConfigurePurview), false },
+                });
+        }
+        #endregion
         #region Static Cache
 
         private static List<string> _DefaultInsensitiveLiquidTypeNames => new()

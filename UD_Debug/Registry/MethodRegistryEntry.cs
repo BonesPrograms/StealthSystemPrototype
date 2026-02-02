@@ -120,7 +120,7 @@ namespace StealthSystemPrototype.Logging
 
 
         bool IEquatable<MethodBase>.Equals(MethodBase other)
-            => throw new NotImplementedException("Use Generic " + nameof(Equals) + "<T> where T : " + nameof(System.Reflection.MethodBase));
+            => Equals(other);
 
         public override readonly int GetHashCode()
         {

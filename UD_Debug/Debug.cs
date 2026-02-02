@@ -487,6 +487,8 @@ namespace StealthSystemPrototype.Logging
 
             string genericsString = null;
             if (!MethodBase.IsConstructor
+                && !MethodBase.Name.StartsWith("get_")
+                && !MethodBase.Name.StartsWith("set_")
                 && MethodBase.IsGenericMethod)
                 genericsString = MethodBase.GetGenericArguments().GenericsString();
 
