@@ -78,7 +78,7 @@ namespace StealthSystemPrototype.Alerts
 
         #region Constructors
 
-        protected AlertContext()
+        public AlertContext()
         {
             ParentAction = null;
             Perception = null;
@@ -133,11 +133,6 @@ namespace StealthSystemPrototype.Alerts
                   AlertObject: Source.AlertObject,
                   AlertLocation:Source.AlertLocation)
         {
-        }
-        public AlertContext(SerializationReader Reader)
-            : this()
-        {
-            Read(Reader);
         }
 
         #endregion

@@ -40,15 +40,8 @@ namespace StealthSystemPrototype.Events
                     Success: out bool success) is not GetSneakPerformanceEvent E
                 || !success)
                 return null;
-;
-            if (success)
-                success = E.Witnesses.FireEvent(E.StringyEvent, true);
 
-            if (success)
-                E.UpdateFromStringyEvent();
-
-            if (success)
-                success = E.Witnesses.HandleEvent(E, true);
+            WitnessesProcess(E, out success);
 
             E.Performance.WantSync = false;
             return E.Performance;

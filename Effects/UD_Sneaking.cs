@@ -400,7 +400,7 @@ namespace XRL.World.Effects
                 else
                     E.ApplyColors("&K", "W", int.MaxValue, int.MaxValue);
 
-                E.RenderEffectIndicator(168.CP437(), null, "&K", "K", 35);
+                E.RenderEffectIndicator("\u0001", null, "&K", "K", 35);
             }
             return base.Render(E);
         }

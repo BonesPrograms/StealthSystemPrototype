@@ -53,12 +53,22 @@ namespace StealthSystemPrototype
         public static A Coalesce<A>(this A Alert, A OtherAlert, CoalesceMethod Method)
             where A : IAlert
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(Alert), Alert.ToString()),
+                    Debug.Arg(nameof(OtherAlert), OtherAlert.ToString()),
+                    Debug.Arg(nameof(Method), Method.ToStringWithNum()),
+                });
+
             GetMinMax(out A lowestAlert, out A highestAlert,
                 Alerts: new A[]
                 {
                     Alert,
                     OtherAlert,
                 });
+
             A replacementVessel = Method switch
             {
                 CoalesceMethod.Lowest => lowestAlert,

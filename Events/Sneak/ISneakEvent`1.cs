@@ -177,6 +177,41 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
+        protected static T WitnessesProcess(T E, out bool Success)
+        {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(E.TypeStringWithGenerics()),
+                    Debug.Arg(E.Hider?.DebugName ?? "null"),
+                    Debug.Arg(nameof(E.Performance), E.Performance?.Count ?? -1),
+                });
+
+            if (E == null)
+            {
+                Success = false;
+                return null;
+            }
+
+            Success = true;
+            if (!E.Witnesses.IsNullOrEmpty())
+            {
+                if (Success)
+                    Success = E.Witnesses.FireEvent(E.StringyEvent, RegisteredOnly: true);
+                Debug.YehNah(nameof(Zone.FireEvent), Success, Indent: indent[1]);
+
+                if (Success)
+                    E.UpdateFromStringyEvent();
+                Debug.YehNah(nameof(UpdateFromStringyEvent), Success, Indent: indent[1]);
+
+                if (Success)
+                    Success = E.Witnesses.HandleEvent(E, WantOnly: true);
+                Debug.YehNah(nameof(Zone.HandleEvent), Success, Indent: indent[1]);
+            }
+            return E;
+        }
+
         protected static T ZoneProcess(T E, out bool Success)
         {
             using Indent indent = new(1);

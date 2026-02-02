@@ -45,13 +45,13 @@ namespace StealthSystemPrototype.Detetection.Opinions
 
         public override void Write(SerializationWriter Writer)
         {
-            Writer.Write(AlertContext);
+            Writer.WriteComposite(AlertContext);
             Writer.WriteOptimized((int)Level);
         }
 
         public override void Read(SerializationReader Reader)
         {
-            AlertContext = new(Reader);
+            AlertContext = Reader.ReadComposite<AlertContext>();
             Level = (AwarenessLevel)Reader.ReadOptimizedInt32();
         }
 

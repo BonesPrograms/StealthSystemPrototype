@@ -21,12 +21,10 @@ namespace StealthSystemPrototype.Detetection.ResponseGoals
 
         public Investigate()
             : base()
-        {
-        }
+        { }
         public Investigate(IOpinionDetection SourceOpinion)
             : base(SourceOpinion)
-        {
-        }
+        { }
 
         #endregion
 
@@ -39,8 +37,6 @@ namespace StealthSystemPrototype.Detetection.ResponseGoals
             };
 
         public override void Create()
-        {
-            base.Create();
-        }
+            => base.Create();
     }
 }

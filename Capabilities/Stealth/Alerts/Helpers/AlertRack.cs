@@ -85,13 +85,22 @@ namespace StealthSystemPrototype.Alerts
 
         public AlertRack Coalesce(CoalesceMethod? Method = null)
         {
+            _DefaultCoalesceMethod ??= CoalesceMethod.Merge;
+            CoalesceMethod method = Method ?? DefaultCoalesceMethod;
+
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(method), method.ToStringWithNum()),
+                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
+                });
+
             if (!IsCoalescing)
             {
                 IsCoalescing.Toggle();
 
-                _DefaultCoalesceMethod ??= CoalesceMethod.Merge;
-
-                CoalesceMethod method = Method ?? DefaultCoalesceMethod;
+                Debug.Log("Coalescing Alerts...", Indent: indent[1]);
                 Dictionary<string, BaseAlert> coalescedList = new();
                 for (int i = 0; i < Count; i++)
                 {
@@ -103,12 +112,23 @@ namespace StealthSystemPrototype.Alerts
                             if (coalescedList[currentAlert.Name] is BaseAlert storedAlert)
                                 newAlert = storedAlert.Coalesce(newAlert, method);
                         }
+                        Debug.Log(currentAlert.ToString() + " -> " + newAlert.ToString(), Indent: indent[2]);
                         coalescedList[currentAlert.Name] = newAlert;
                     }
                 }
                 Clear();
-                AddRange(coalescedList.Values);
-                Variant++;
+                Debug.Log("Re-racking Alerts...", Indent: indent[1]);
+                if (!coalescedList.Values.IsNullOrEmpty()
+                    && new List<BaseAlert>(coalescedList.Values) is var newAlerts)
+                {
+                    EnsureCapacity(newAlerts.Count);
+                    for (Length = 0; Length < newAlerts.Count; Length++)
+                    {
+                        Items[Length] = newAlerts[Length];
+                        Debug.Log(Items[Length].ToString(), Indent: indent[2]);
+                    }
+                    Variant++;
+                }
 
                 IsCoalescing.Toggle();
             }
@@ -117,23 +137,26 @@ namespace StealthSystemPrototype.Alerts
 
         public override void Add(BaseAlert Alert)
         {
-            List<int> indicesToRemove = new();
-            for (int i = 0; i < Coalesce().Count; i++)
-            {
-                if (Items[i].IsSame(Alert))
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
                 {
-                    Alert = Alert.Coalesce(Items[i], Method: DefaultCoalesceMethod);
-                    indicesToRemove.Add(i);
-                }
-            }
-            foreach (int index in indicesToRemove)
-                RemoveAt(index);
+                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
+                });
 
             base.Add(Alert);
+            Coalesce();
         }
 
         public override void Insert(int Index, BaseAlert Item)
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
+                });
+
             base.Insert(Index, Item);
             Coalesce();
         }
@@ -145,6 +168,13 @@ namespace StealthSystemPrototype.Alerts
         public A GetCoalesce<A>(A Alert, CoalesceMethod? Method = null)
             where A : BaseAlert, new()
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
+                });
+
             CoalesceMethod method = Method ?? DefaultCoalesceMethod;
             if (Coalesce(method).TryGet(out A existingAlert))
                 return Alert.Coalesce(existingAlert, method);
@@ -154,6 +184,13 @@ namespace StealthSystemPrototype.Alerts
         public bool TryGet<A>(out A Value)
             where A : BaseAlert, new()
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
+                });
+
             Value = null;
             Coalesce();
             for (int i = 0; i < Count; i++)
@@ -168,6 +205,13 @@ namespace StealthSystemPrototype.Alerts
         public bool RemoveType<A>(A Alert = null)
             where A : BaseAlert, new()
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
+                });
+
             int itemsCount = Coalesce().Count;
             Items.GetIndices(Where: a => a.IsSame(Alert) || a.IsType<A>()).ToList().ForEach(i => RemoveAt(i));
             return itemsCount != Count;
@@ -176,6 +220,13 @@ namespace StealthSystemPrototype.Alerts
         public int IndexOf<A>(A Alert = null)
             where A : BaseAlert, new()
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
+                });
+
             Coalesce();
             for (int i = 0; i < Count; i++)
                 if (Items[i] is BaseAlert storedAlert
@@ -185,17 +236,22 @@ namespace StealthSystemPrototype.Alerts
             return -1;
         }
 
-        public new Enumerator GetEnumerator()
-            => ((Container<BaseAlert>)Coalesce()).GetEnumerator();
-
         public virtual string DebugString(string Header = null)
             => (Header.IsNullOrEmpty() ? null : Header + ":\n") +
                 Coalesce().AggregateNewLineDelimited();
 
         public virtual void Dispose()
         {
+            using Indent indent = new(1);
+            Debug.LogMethod(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
+                });
+
             Clear();
             _DefaultCoalesceMethod = null;
+            IsCoalescing = false;
         }
     }
 }

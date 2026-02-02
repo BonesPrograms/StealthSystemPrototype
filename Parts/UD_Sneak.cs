@@ -145,7 +145,6 @@ namespace XRL.World.Parts
 
                 CollectingSneakPerformance.Toggle();
             }
-            _SneakPerformance.WantSync = false;
             PerformRecalc();
         }
 

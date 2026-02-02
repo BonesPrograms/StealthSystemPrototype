@@ -22,11 +22,13 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Const;
 
 using Debug = StealthSystemPrototype.Logging.Debug;
+using XRL.Wish;
 
 namespace StealthSystemPrototype
 {
     [HasModSensitiveStaticCache]
     [HasGameBasedStaticCache]
+    [HasWishCommand]
     public static class Utils
     {
         #region Debug
@@ -287,7 +289,7 @@ namespace StealthSystemPrototype
                         _ = ToCP437(" ");
 
                     char[] chars = Codepage437Inverse.Keys.ToArray();
-                    foreach (int Index in (0, byte.MaxValue + 1).IntsTwixt())
+                    foreach (int Index in (0, chars.Length).IntsTwixt())
                         if (Index == 0)
                             _CP437Chars.Add(null);
                         else
@@ -489,5 +491,26 @@ namespace StealthSystemPrototype
 
         public static IEnumerable<int> IntsUpto(int High, bool InclusiveEnd = false)
             => IntsTwixt(0, High, true, InclusiveEnd);
+
+        #region Wishes!
+
+        [WishCommand(Command = "debug CP437")]
+        public static bool CP437_WishHandler()
+        {
+            if (CP437Chars.IsNullOrEmpty())
+            {
+                Popup.Show("Cache is empty!\n\nThat's no good!");
+                return false;
+            }
+
+            Encoding cp437 = Encoding.GetEncoding(437);
+            Popup.Show(cp437.GetString(new byte[] { 1, 2, 3, 4 , 5 }));
+
+            Popup.Show(CP437Chars.Select((s, i) => i + ": " + s).Aggregate("", NewLineDelimitedAggregator));
+
+            return true;
+        }
+
+        #endregion
     }
 }
