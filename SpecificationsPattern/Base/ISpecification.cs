@@ -7,7 +7,7 @@ using XRL.World;
 namespace StealthSystemPrototype
 {
     /// <summary>
-    /// Defines a property that a value type or class implements to refine the determination of whether a specification is met.
+    /// Defines a method that a value type or class implements to determinate whether a specification is met.
     /// </summary>
     public interface ISpecification : IComposite, IDisposable
     {

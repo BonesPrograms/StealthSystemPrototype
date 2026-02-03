@@ -10,9 +10,7 @@ namespace StealthSystemPrototype
     public abstract class GameObjectSpecification : Specification<GameObject>
     {
         public GameObjectSpecification(GameObject Subject)
-            : base(Subject)
-        {
-        }
+            : base(Subject) { }
 
         public override void Dispose()
         {

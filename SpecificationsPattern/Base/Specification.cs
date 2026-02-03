@@ -19,7 +19,7 @@ namespace StealthSystemPrototype
         {
         }
 
-        public static implicit operator bool(Specification Operand)
-            => Operand.Check();
+        public static implicit operator bool(Specification Spec)
+            => Spec.Check();
     }
 }

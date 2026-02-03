@@ -8,17 +8,17 @@ using XRL.World;
 namespace StealthSystemPrototype
 {
     // [Serializable]
-    public partial class Specifications : Specification, IEnumerable<Specification>
+    public abstract partial class Specifications : ISpecification, IEnumerable<ISpecification>
     {
         [Serializable]
-        public struct Enumerator : IEnumerator<Specification>, IEnumerator, IDisposable
+        public struct Enumerator : IEnumerator<ISpecification>, IEnumerator, IDisposable
         {
             private readonly Specifications Specs;
-            private readonly Specification[] Items;
+            private readonly ISpecification[] Items;
             private int Index;
             private int Variant;
 
-            public readonly Specification Current => Items[Index];
+            public readonly ISpecification Current => Items[Index];
             readonly object IEnumerator.Current => Current;
 
             public Enumerator(Specifications Specs)
@@ -49,7 +49,7 @@ namespace StealthSystemPrototype
             }
         }
 
-        public virtual IEnumerator<Specification> GetEnumerator()
+        public virtual IEnumerator<ISpecification> GetEnumerator()
             => new Enumerator(this);
 
         IEnumerator IEnumerable.GetEnumerator()

@@ -12,8 +12,13 @@ namespace StealthSystemPrototype
     public class AllSpecs : Specifications
     {
         public AllSpecs()
-        {
-        }
+            : base () { }
+
+        public AllSpecs(IReadOnlyList<Specification> List)
+            : base(List) { }
+
+        public AllSpecs(Specifications Source)
+            : base(Source as IReadOnlyList<Specification>) { }
 
         public override bool Check()
             => this.All(s => s.Check());

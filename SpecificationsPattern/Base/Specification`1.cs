@@ -10,20 +10,21 @@ namespace StealthSystemPrototype
     public abstract class Specification<T> : Specification, ISpecification<T>
     {
         protected T _Subject;
-        public T Subject
+        public virtual T Subject
         {
             get => _Subject;
             set => _Subject = value;
         }
 
         protected Specification()
+            : base()
         {
-            _Subject = default;
+            Subject = default;
         }
         public Specification(T Subject)
             : this()
         {
-            _Subject = Subject;
+            this.Subject = Subject;
         }
 
         #region Serialization
@@ -34,18 +35,23 @@ namespace StealthSystemPrototype
 
         #endregion
 
+        public override bool Check()
+            => Check(Subject);
+
         public abstract bool Check(T Subject);
 
         public override void Dispose()
         {
-            base.Dispose();
-            _Subject = default;
+            Subject = default;
         }
 
         public static implicit operator bool(Specification<T> Operand)
             => Operand.Check();
 
         public static implicit operator Predicate<T>(Specification<T> Operand)
+            => Operand.Check;
+
+        public static implicit operator Func<T, bool>(Specification<T> Operand)
             => Operand.Check;
     }
 }

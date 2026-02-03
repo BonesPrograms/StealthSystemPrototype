@@ -33,9 +33,6 @@ namespace StealthSystemPrototype.Perceptions.Specs
             this.Hider = Hider;
         }
 
-        public override bool Check()
-            => Check(Perceiver);
-
         public override bool Check(GameObject Subject)
             => Subject != null
             && Hider != null

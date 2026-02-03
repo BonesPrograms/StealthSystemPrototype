@@ -105,19 +105,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                         "verbose",
                         "-v",
                     }))
+            {
+                string beingPerceived = (IsBeingPerceived(player) ? null : "not ") + "being perceived.";
+                string perceivedMsg = ("=subject.Refname= is " + beingPerceived)
+                    .StartReplace()
+                    .AddObject(player)
+                    .ToString();
+
                 return true
-                    .PopupBeforeReturn(("=subject.Refname= is " + (IsBeingPerceived(player) ? null : "not ") + "being perceived.").StartReplace().AddObject(player).ToString());
+                    .PopupBeforeReturn(perceivedMsg);
+            }
 
             string messageStart = "=subject.Refname= is being perceived by:\n".StartReplace().AddObject(player).ToString();
             string nooneString = "no one!";
 
-            using IsPerceivingSpec isPerceiving = new(player);
+            using IsPerceivingSpec isPerceivingPlayer = new(player);
 
             string stringGameObjectDetectionOpinionLevel(GameObject Perceiver)
                 => StringGameObjectDetectionOpinionLevel(Perceiver, player);
 
             string perceiverList = player.CurrentZone
-                .GetObjects(isPerceiving)
+                .GetObjects(isPerceivingPlayer)
                 .Select(stringGameObjectDetectionOpinionLevel)
                 .Aggregate("", NewLineDelimitedAggregator);
 

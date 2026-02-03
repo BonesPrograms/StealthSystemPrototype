@@ -9,18 +9,18 @@ using XRL.World;
 namespace StealthSystemPrototype
 {
     [Serializable]
-    public class AnySpecs : Specifications
+    public class NotAnySpecs : AnySpecs
     {
-        public AnySpecs()
+        public NotAnySpecs()
             : base() { }
 
-        public AnySpecs(IReadOnlyList<Specification> List)
+        public NotAnySpecs(IReadOnlyList<Specification> List)
             : base(List) { }
 
-        public AnySpecs(Specifications Source)
+        public NotAnySpecs(Specifications Source)
             : base(Source as IReadOnlyList<Specification>) { }
 
         public override bool Check()
-            => this.Any(s => s.Check());
+            => !base.Check();
     }
 }

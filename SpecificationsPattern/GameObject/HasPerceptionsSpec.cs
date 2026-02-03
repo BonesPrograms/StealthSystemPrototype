@@ -12,9 +12,6 @@ namespace StealthSystemPrototype.Perceptions.Specs
         public HasPerceptionsSpec(GameObject Subject)
             : base(Subject) { }
 
-        public override bool Check()
-            => Check(Subject);
-
         public override bool Check(GameObject Subject)
             => Subject != null
             && Subject.HasAnyPerceptions();

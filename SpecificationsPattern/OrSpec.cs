@@ -2,20 +2,18 @@
 using System.Collections.Generic;
 using System.Text;
 
+using XRL.World;
+
 namespace StealthSystemPrototype
 {
     [Serializable]
-    public class OrSpec : Specification
+    public class OrSpec : BinarySpecification
     {
-        protected Specification SpecX;
-        protected Specification SpecY;
+        public OrSpec(ISpecification SpecX, ISpecification SpecY)
+            : base(SpecX, SpecY) { }
 
-        public OrSpec(Specification SpecX, Specification SpecY)
-            : base()
-        {
-            this.SpecX = SpecX;
-            this.SpecY = SpecY;
-        }
+        public OrSpec(BinarySpecification Source)
+            : base(Source.SpecX, Source.SpecY) { }
 
         public override bool Check()
             => SpecX.Check()

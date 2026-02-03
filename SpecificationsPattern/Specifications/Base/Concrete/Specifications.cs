@@ -8,9 +8,9 @@ using XRL.World;
 namespace StealthSystemPrototype
 {
     [Serializable]
-    public abstract partial class Specifications : Specification
+    public abstract partial class Specifications : ISpecification
     {
-        protected Specification[] Items = Array.Empty<Specification>();
+        protected ISpecification[] Items = Array.Empty<ISpecification>();
 
         protected int Size;
 
@@ -27,8 +27,20 @@ namespace StealthSystemPrototype
         public int Version => Variant;
 
         public Specifications()
+            : base()
         {
+            Size = 0;
+            Length = 0;
+            Variant = 0;
         }
+        public Specifications(IReadOnlyList<ISpecification> List)
+            : this()
+        {
+            if (List != null)
+                AddRange(List);
+        }
+        public Specifications(Specifications Source)
+            : this(Source as IReadOnlyList<ISpecification>) { }
 
         #region Serialization
 
@@ -41,14 +53,16 @@ namespace StealthSystemPrototype
         public virtual void Read(SerializationReader Reader)
         {
             Size = Length = Reader.ReadOptimizedInt32();
-            Items = new Specifications[Size];
+            Items = new Specification[Size];
             for (int i = 0; i < Length; i++)
                 Items[i] = Reader.ReadComposite() as Specification;
         }
 
         #endregion
 
-        public override void Dispose()
+        public abstract bool Check();
+
+        public virtual void Dispose()
         {
             Clear();
         }
@@ -59,7 +73,7 @@ namespace StealthSystemPrototype
             {
                 Capacity = DefaultCapacity;
             }
-            Specification[] array = new Specification[Capacity];
+            ISpecification[] array = new ISpecification[Capacity];
             Array.Copy(Items, 0, array, 0, Length);
             Items = array;
             Size = Capacity;
@@ -71,28 +85,38 @@ namespace StealthSystemPrototype
                 Resize(Capacity);
             }
         }
-
-        public virtual Specification[] ToArray()
+        public virtual void AddRange(IReadOnlyList<ISpecification> Items)
         {
-            Specification[] array = new Specification[Length];
+            if (Items == null)
+                throw new ArgumentNullException(nameof(Items));
+
+            int count = Items.Count;
+            EnsureCapacity(Length + count);
+            for (int i = 0; i < count; i++)
+                Add(Items[i]);
+        }
+
+        public virtual ISpecification[] ToArray()
+        {
+            ISpecification[] array = new ISpecification[Length];
             Array.Copy(Items, 0, array, 0, Length);
             return array;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual ReadOnlySpan<Specification> AsSpan(int Start, int Length)
+        public virtual ReadOnlySpan<ISpecification> AsSpan(int Start, int Length)
             => (uint)(Start + Length) > (uint)this.Length
             ? throw new ArgumentOutOfRangeException("Length")
             : new(Items, Start, Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual ReadOnlySpan<Specification> AsSpan(int Start)
+        public virtual ReadOnlySpan<ISpecification> AsSpan(int Start)
             => (uint)Start > (uint)Length
             ? throw new ArgumentOutOfRangeException("Start")
             : AsSpan(Start, Length - Start);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public virtual ReadOnlySpan<Specification> AsSpan()
+        public virtual ReadOnlySpan<ISpecification> AsSpan()
             => AsSpan(0, Length);
 
         public static implicit operator bool(Specifications Operand)

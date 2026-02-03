@@ -2,18 +2,18 @@
 using System.Collections.Generic;
 using System.Text;
 
+using XRL.World;
+
 namespace StealthSystemPrototype
 {
     [Serializable]
-    public class NotSpec : Specification
+    public class NotSpec : UnarySpecification
     {
-        protected Specification Spec;
+        public NotSpec(ISpecification Spec)
+            : base(Spec) { }
 
-        public NotSpec(Specification Spec)
-            : base()
-        {
-            this.Spec = Spec;
-        }
+        public NotSpec(UnarySpecification Source)
+            : base(Source.Spec) { }
 
         public override bool Check()
             => !Spec.Check();

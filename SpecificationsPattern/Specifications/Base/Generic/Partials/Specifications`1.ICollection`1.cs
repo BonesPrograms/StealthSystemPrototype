@@ -8,25 +8,25 @@ using XRL.World;
 namespace StealthSystemPrototype
 {
     // [Serializable]
-    public partial class Specifications : Specification, ICollection<Specification>, IReadOnlyCollection<Specification>
+    public abstract partial class Specifications<T> : ISpecification<T>, ICollection<ISpecification<T>>, IReadOnlyCollection<ISpecification<T>>
     {
         public int Count => Length;
 
         public virtual bool IsReadOnly => false;
 
-        public virtual void Add(Specification Item)
+        public virtual void Add(ISpecification<T> Item)
             => throw new NotImplementedException();
 
         public virtual void Clear()
             => throw new NotImplementedException();
 
-        public virtual bool Contains(Specification Item)
+        public virtual bool Contains(ISpecification<T> Item)
             => IndexOf(Item) >= 0;
 
-        public void CopyTo(Specification[] Array, int ArrayIndex)
+        public void CopyTo(ISpecification<T>[] Array, int ArrayIndex)
             => System.Array.Copy(Items, 0, Array, ArrayIndex, Length);
 
-        public virtual bool Remove(Specification Item)
+        public virtual bool Remove(ISpecification<T> Item)
             => throw new NotImplementedException();
     }
 }

@@ -12,10 +12,24 @@ namespace StealthSystemPrototype
     public class AllSpecs<T> : Specifications<T>
     {
         public AllSpecs()
-        {
-        }
+            : base() { }
 
-        public override bool Check()
-            => this.All(s => s.Check());
+        public AllSpecs(T Subject, IReadOnlyList<ISpecification<T>> List)
+            : base(Subject, List) { }
+
+        public AllSpecs(T Subject)
+            : base(Subject) { }
+
+        public AllSpecs(IReadOnlyList<ISpecification<T>> List)
+            : base(List) { }
+
+        public AllSpecs(Specifications<T> Source)
+            : base(Source) { }
+
+        public override bool Check(T Subject)
+            => this.All(s => s.Check(Subject));
+
+        public static explicit operator AllSpecs(AllSpecs<T> Operand)
+            => (AllSpecs)Operand.Select(s => s as ISpecification);
     }
 }

@@ -7,11 +7,11 @@ using XRL.World;
 namespace StealthSystemPrototype
 {
     /// <summary>
-    /// Defines a property that a value type or class implements to refine the determination of whether a specification is met.
+    /// Defines a property and method that a value type or class implements to refine the determination of whether a specification is met.
     /// </summary>
     public interface ISpecification<T> : ISpecification
     {
-        T Subject { get; }
+        T Subject { get; set; }
 
         bool Check(T Subject);
     }
