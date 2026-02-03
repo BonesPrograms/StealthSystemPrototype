@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Const;

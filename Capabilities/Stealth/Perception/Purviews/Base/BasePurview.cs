@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using HarmonyLib;
+
 using XRL.World;
 
 using StealthSystemPrototype;
@@ -14,7 +16,6 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Capabilities.Stealth.DelayedLinearDoubleDiffuser;
-using HarmonyLib;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
@@ -292,6 +293,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         #endregion
         #region Comparable
 
+        public int CompareValueTo(BasePurview Other)
+            => Value - Other.Value;
+
+        public int CompareEffectiveValueTo(BasePurview Other)
+            => EffectiveValue - Other.EffectiveValue;
+
+        public virtual int CompareTo(BasePurview Other)
+            => EitherNull(this, Other, out int comparison)
+            ? comparison
+            : CompareValueTo(Other) + CompareEffectiveValueTo(Other);
+
         public int CompareValueTo(IPurview Other)
             => GetValue() - Other.GetValue();
 
@@ -302,9 +314,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             => EitherNull(this, Other, out int comparison)
             ? comparison
             : CompareValueTo(Other) + CompareEffectiveValueTo(Other);
-
-        public virtual int CompareTo(BasePurview Other)
-            => CompareTo(Other as IPurview);
 
         #endregion
         #region Conversion

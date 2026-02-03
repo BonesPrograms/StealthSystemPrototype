@@ -4,10 +4,10 @@ using XRL.World;
 using XRL.World.Anatomy;
 
 using StealthSystemPrototype.Capabilities.Stealth;
-
-using static StealthSystemPrototype.Utils;
 using StealthSystemPrototype.Logging;
 
+
+using static StealthSystemPrototype.Utils;
 namespace StealthSystemPrototype.Perceptions
 {
     /// <summary>

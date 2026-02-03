@@ -28,6 +28,20 @@ namespace StealthSystemPrototype.Alerts
     [Serializable]
     public class AlertRack : Rack<BaseAlert>, IDisposable
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public static void AlertRack_DoDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Alerts.AlertRack),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(Add), false },
+                    { nameof(Coalesce), false },
+                });
+        }
+        #endregion
+
         private CoalesceMethod? _DefaultCoalesceMethod;
         public virtual CoalesceMethod DefaultCoalesceMethod { get; }
 

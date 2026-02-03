@@ -5,14 +5,14 @@ using System.Linq;
 using XRL;
 using XRL.World;
 
-using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Alerts.AlertRack;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+namespace StealthSystemPrototype.Alerts
 {
     /// <summary>
     /// Contracts a type as being representative of the obviousness of one aspect of an <see cref="IConcealedAction"/> to an appropriate <see cref="IPerception"/>.

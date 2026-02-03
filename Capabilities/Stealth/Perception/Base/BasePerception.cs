@@ -32,6 +32,7 @@ namespace StealthSystemPrototype.Perceptions
     public class BasePerception
         : IComponent<GameObject>
         , IPerception
+        , IComparable<BasePerception>
         , IWitnessEventHandler
         , IPerceptionEventHandler
         , ISneakEventHandler
@@ -72,39 +73,6 @@ namespace StealthSystemPrototype.Perceptions
                     && GetHandler(owner, type) is IEventHandler handler
                 ? handler
                 : null;
-        }
-
-        public class PerceptionComparer : IComparer<IPerception>
-        {
-            public enum ComparisonType
-            {
-                None,
-                Level,
-                EffectiveLevel,
-                Purview,
-            }
-            protected ComparisonType Type;
-
-            public PerceptionComparer()
-            {
-                Type = ComparisonType.None;
-            }
-            public PerceptionComparer(ComparisonType Type)
-                : this()
-            {
-                this.Type = Type;
-            }
-            public virtual int Compare(IPerception x, IPerception y)
-                => EitherNull(x, y, out int comparison)
-                ? comparison
-                : Type switch
-                {
-                    ComparisonType.Level => x.CompareLevelTo(y),
-                    ComparisonType.EffectiveLevel => x.CompareEffectiveLevelTo(y),
-                    ComparisonType.Purview => x.ComparePurviewTo(y),
-                    ComparisonType.None or
-                    _ => x.CompareTo(y),
-                };
         }
 
         #endregion
@@ -540,28 +508,28 @@ namespace StealthSystemPrototype.Perceptions
         #region Base Methods
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as initial.
+        /// Called once by a <see cref="PerceptionRack"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as initial.
         /// </summary>
         public virtual void Initialize()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack.
+        /// Called once by a <see cref="PerceptionRack"/> when this <see cref="BasePerception"/> is first added into the rack.
         /// </summary>
         public virtual void Attach()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as not creation.
+        /// Called once by a <see cref="PerceptionRack"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as not creation.
         /// </summary>
         public virtual void AddedAfterCreation()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is removed from the rack.
+        /// Called once by a <see cref="PerceptionRack"/> when this <see cref="BasePerception"/> is removed from the rack.
         /// </summary>
         public virtual void Remove()
         {
@@ -913,17 +881,55 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Comparison
 
-        public virtual int CompareLevelTo(IPerception Other)
-            => ((IPerception)this).CompareLevelTo(Other);
+        public int CompareLevelTo(BasePerception Other)
+            => Level - Other.Level;
 
-        public virtual int CompareEffectiveLevelTo(IPerception Other)
-            => ((IPerception)this).CompareEffectiveLevelTo(Other);
+        public int CompareEffectiveLevelTo(BasePerception Other)
+            => EffectiveLevel - Other.EffectiveLevel;
 
-        public virtual int ComparePurviewTo(IPerception Other)
-            => ((IPerception)this).ComparePurviewTo(Other);
+        public int ComparePurviewTo(BasePerception Other)
+            => Purview.CompareTo(Other.Purview);
+
+        public virtual int CompareTo(BasePerception Other)
+        {
+            if (EitherNull(this, Other, out int comparison))
+                return comparison;
+
+            int levelComp = CompareLevelTo(Other);
+            if (levelComp != 0)
+                return levelComp;
+
+            int effectiveLevelComp = CompareEffectiveLevelTo(Other);
+            if (effectiveLevelComp != 0)
+                return effectiveLevelComp;
+
+            return ComparePurviewTo(Other);
+        }
+
+        public int CompareLevelTo(IPerception Other)
+            => GetLevel() - Other.GetLevel();
+
+        public int CompareEffectiveLevelTo(IPerception Other)
+            => GetEffectiveLevel() - Other.GetEffectiveLevel();
+
+        public int ComparePurviewTo(IPerception Other)
+            => GetPurview().CompareTo(Other.GetPurview());
 
         public virtual int CompareTo(IPerception Other)
-            => ((IPerception)this).CompareLevelTo(Other);
+        {
+            if (EitherNull(this, Other, out int comparison))
+                return comparison;
+
+            int levelComp = CompareLevelTo(Other);
+            if (levelComp != 0)
+                return levelComp;
+
+            int effectiveLevelComp = CompareEffectiveLevelTo(Other);
+            if (effectiveLevelComp != 0)
+                return effectiveLevelComp;
+
+            return ComparePurviewTo(Other);
+        }
 
         #endregion
     }

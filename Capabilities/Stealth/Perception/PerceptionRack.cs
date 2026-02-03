@@ -476,17 +476,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return perceptionsList
                 ?.Where(Filter.ToFunc());
         }
+
+        public static int BestForThisAlert<A>(A Alert, BasePerception x, BasePerception y)
+            where A : BaseAlert, new()
+        {
+            if (EitherNull(x, y, out int nullComp))
+                return nullComp;
+
+            int canPerceiveComp = x.CanPerceiveAlert(Alert).CompareTo(y.CanPerceiveAlert(Alert));
+            if (canPerceiveComp != 0)
+                return canPerceiveComp;
+            return x.CompareTo(y);
+        }
+
         public IEnumerable<BasePerception> GetPerceptionsBestFirst<A>(bool ClearFirst, A Alert = null)
             where A : BaseAlert, new()
             => GetPerceptionsBestFirst(
-                Comparison: delegate (BasePerception x, BasePerception y)
-                {
-                    Alert ??= new A();
-                    int canPerceiveComp = x.CanPerceiveAlert(Alert).CompareTo(y.CanPerceiveAlert(Alert));
-                    if (canPerceiveComp != 0)
-                        return canPerceiveComp;
-                    return x.CompareTo(y);
-                },
+                Comparison: new PerceptionAlertComparer<A>(Alert).Compare,
                 Filter: p => p.CanPerceiveAlert(Alert ??= new A()),
                 ClearFirst: ClearFirst);
 
@@ -496,14 +502,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public IEnumerable<BasePerception> GetPerceptionsBestFirst(AlertContext Context, bool ClearFirst)
             => GetPerceptionsBestFirst(
-                Comparison: delegate (BasePerception x, BasePerception y)
-                {
-                    int canPerceiveComp = x.CanPerceive(Context).CompareTo(y.CanPerceive(Context));
-                    if (canPerceiveComp != 0)
-                        return canPerceiveComp;
-                    return x.CompareTo(y);
-                },
-                Filter: p => p.CanPerceive(Context),
+                Comparison: new PerceptionAlertContextComparer(Context).Compare,
+                Filter: p => p?.CanPerceive(Context) ?? false,
                 ClearFirst: ClearFirst);
 
         public IEnumerable<BasePerception> GetPerceptionsBestFirst(AlertContext Context)
@@ -877,27 +877,19 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     Debug.Arg(nameof(ConcealedAction.Hider), ConcealedAction.Hider?.DebugName ?? "NO_HIDER"),
                 });
 
-            SneakPerformance sneakPerformance = ConcealedAction.SneakPerformance;
-            Debug.YehNah(nameof(sneakPerformance), sneakPerformance?.Count ?? -1, !sneakPerformance.IsNullOrEmpty(), Indent: indent[1]);
-
             GameObject alertObject = ConcealedAction.AlertObject ?? ConcealedAction.Hider;
-            Debug.YehNah(nameof(alertObject), alertObject?.DebugName ?? "NO_ALERT_OBJECT", alertObject != null, Indent: indent[1]);
-
             Cell alertLocation = ConcealedAction.AlertLocation ?? ConcealedAction.Hider?.CurrentCell;
-            Debug.YehNah(nameof(alertLocation), "[" + (alertLocation?.Location ?? new(0, 0)) + "]", alertLocation != null, Indent: indent[1]);
 
             // iterate all the alerts in the concealed action.
             // these represent how obvious the action was to this type of sense.
             foreach (BaseAlert actionAlert in ConcealedAction)
-            {
                 yield return new AlertContext(
                     ParentAction: ConcealedAction,
                     ActionAlert: actionAlert.Copy(Degrade: false),
-                    SneakAlert: sneakPerformance[actionAlert],
+                    SneakAlert: ConcealedAction.SneakPerformance[actionAlert],
                     Hider: ConcealedAction.Hider,
-                    AlertObject: ConcealedAction.AlertObject ?? ConcealedAction.Hider,
-                    AlertLocation: ConcealedAction.AlertLocation ?? ConcealedAction.Hider?.CurrentCell);
-            }
+                    AlertObject: alertObject,
+                    AlertLocation: alertLocation);
         }
 
         #endregion

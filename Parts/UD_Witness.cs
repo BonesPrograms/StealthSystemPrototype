@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL.World.AI;
 using XRL.World.AI.Pathfinding;
+using XRL.World.Effects;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
-using XRL.World.Effects;
-using XRL.World.AI;
-using StealthSystemPrototype.Detetection.Opinions;
 
 namespace XRL.World.Parts
 {

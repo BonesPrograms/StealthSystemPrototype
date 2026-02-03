@@ -18,10 +18,12 @@ using Range = System.Range;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Capabilities.Stealth.Perception;
+using StealthSystemPrototype.Detetection.Opinions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace StealthSystemPrototype
 {
@@ -29,7 +31,7 @@ namespace StealthSystemPrototype
     {
         #region Debug Registry
         [UD_DebugRegistry]
-        public static void doDebugRegistry(DebugMethodRegistry Registry)
+        public static void GameObjectExtensions_DoDebugRegistry(DebugMethodRegistry Registry)
             => Registry.RegisterEach(
                 Type: typeof(StealthSystemPrototype.GameObjectExtensions),
                 MethodNameValues: new Dictionary<string, bool>()
@@ -37,6 +39,7 @@ namespace StealthSystemPrototype
                     { nameof(GetPerceptions), false },
                 });
         #endregion
+        #region Perceptions
 
         public static PerceptionRack GetPerceptions(this GameObject Object)
             => Object.GetPart<UD_PerceptionHelper>()?.Perceptions;
@@ -44,17 +47,20 @@ namespace StealthSystemPrototype
         public static PerceptionRack RequirePerceptions(this GameObject Object)
             => Object.RequirePart<UD_PerceptionHelper>()?.Perceptions;
 
-        public static bool HasPerceptions(this GameObject Object)
-            => Object.HasPart<UD_PerceptionHelper>();
+        public static bool HasPerceptions([NotNullWhen(true)] this GameObject Object)
+            => Object?.HasPart<UD_PerceptionHelper>() ?? false;
 
-        public static bool HasAnyPerceptions(this GameObject Object)
-            => Object.GetPart<UD_PerceptionHelper>()?.Perceptions is PerceptionRack perceptions
+        public static bool HasAnyPerceptions([NotNullWhen(true)] this GameObject Object)
+            => Object?.GetPart<UD_PerceptionHelper>()?.Perceptions is PerceptionRack perceptions
             && perceptions.Count > 0;
 
-        public static bool HasPerception<A>(this GameObject Object, BasePerception Perception = null)
-            => Object.RequirePerceptions().Has(Perception);
+        public static bool HasPerception<A>([NotNullWhen(true)] this GameObject Object, BasePerception Perception = null)
+            => Object?.RequirePerceptions()?.Has(Perception) ?? false;
 
-        public static bool HasPerception(this GameObject Object, string PerceptionName, bool IncludeShort = false)
+        public static bool HasPerception(
+            [NotNullWhen(true)] this GameObject Object,
+            [NotNullWhen(true)] string PerceptionName,
+            bool IncludeShort = false)
             => Object
                 ?.RequirePerceptions()
                 ?.Has(PerceptionName, IncludeShort)
@@ -75,11 +81,13 @@ namespace StealthSystemPrototype
             where A : class, IAlert, new()
             => Object.RequirePerceptions().GetFirstOfAlert(Alert);
 
-        public static bool TryGetPerception<P>(this GameObject Object, out P Perception)
+        public static bool TryGetPerception<P>(
+            [NotNullWhen(true)] this GameObject Object,
+            [NotNullWhen(true)] out P Perception)
             where P : BasePerception, new()
         {
             Perception = null;
-            return Object.GetPerceptions() is PerceptionRack perceptions
+            return Object?.GetPerceptions() is PerceptionRack perceptions
                 && perceptions.TryGet(out Perception);
         }
 
@@ -132,6 +140,68 @@ namespace StealthSystemPrototype
             => Perceiver?.GetPerceptions() is PerceptionRack perceptions
             && perceptions.Any(p => p.Purview.CheckWithin(Object.CurrentCell));
 
+        #endregion
+        #region OpinionDetections
+
+        public static IEnumerable<IOpinionDetection> GetOpinionDetections(this GameObject Perceiver, Predicate<IOpinionDetection> Filter)
+        {
+            if (Perceiver.Brain is not Brain brain)
+                yield break;
+
+            if (brain.Opinions is not OpinionMap opinionsMap)
+                yield break;
+
+            foreach ((int subjectID, OpinionList subjectOpinions) in opinionsMap)
+                if (subjectOpinions
+                        .Where(o => o is IOpinionDetection)
+                        .Select(o => o as IOpinionDetection)
+                    is not IEnumerable<IOpinionDetection> opinionDetections)
+                    continue;
+                else
+                    foreach (IOpinionDetection opinionDetection in opinionDetections)
+                        if (Filter == null || Filter(opinionDetection))
+                            yield return opinionDetection;
+        }
+
+        public static IEnumerable<IOpinionDetection> GetOpinionDetectionsFor(this GameObject Perceiver, GameObject Hider, Predicate<IOpinionDetection> Filter)
+        {
+            if (Perceiver.Brain is not Brain brain)
+                yield break;
+
+            if (GetOpinionDetections(Perceiver, o => o.AlertContext.Hider == Hider) is not IEnumerable<IOpinionDetection> opinionDetections)
+                yield break;
+
+            foreach (IOpinionDetection opinionDetection in opinionDetections)
+                if (Filter == null || Filter(opinionDetection))
+                    yield return opinionDetection;
+
+            /*
+            if (!brain.TryGetOpinions(Hider, out OpinionList subjectOpinions))
+                yield break;
+
+            if (subjectOpinions
+                    .Where(o => o is IOpinionDetection)
+                    .Select(o => o as IOpinionDetection)
+                is not IEnumerable<IOpinionDetection> opinionDetections)
+                yield break;
+
+            foreach (IOpinionDetection opinionDetection in opinionDetections)
+                if (Filter == null || Filter(opinionDetection))
+                    yield return opinionDetection;
+            */
+        }
+
+        #endregion
+        #region Predicates
+
+        public static bool IsPerceiving(this GameObject Perceiver, GameObject Hider)
+            => Perceiver.Brain is Brain brain
+            && brain.TryGetOpinions(Hider, out OpinionList opinions)
+            && !opinions
+                .Where(o => o is IOpinionDetection)
+                .Select(o => o as IOpinionDetection)
+                .All(o => o.Level < AwarenessLevel.Aware);
+
         public static bool CheckNotOnWorldMap(this GameObject Object, string Verb, bool ShowMessage = false)
         {
             if (Object.OnWorldMap())
@@ -142,18 +212,7 @@ namespace StealthSystemPrototype
             }
             return true;
         }
-
-        public static void ForeachEffect<T>(
-            this GameObject Object,
-            Action<T> Proc)
-            where T : Effect
-        {
-            if (Object._Effects is EffectRack effects)
-                foreach (Effect effect in effects)
-                    if (effect is T tEffect)
-                        Proc(tEffect);
-        }
-
+        
         public static bool HasMentalMutations(this GameObject Object, bool RequireBaseLevels = false)
         {
             if (!Object.TryGetPart(out Mutations mutations))
@@ -183,6 +242,19 @@ namespace StealthSystemPrototype
                 return true;
 
             return Object.HasMentalMutations(true);
+        }
+
+        #endregion
+
+        public static void ForeachEffect<T>(
+            this GameObject Object,
+            Action<T> Proc)
+            where T : Effect
+        {
+            if (Object._Effects is EffectRack effects)
+                foreach (Effect effect in effects)
+                    if (effect is T tEffect)
+                        Proc(tEffect);
         }
     }
 }

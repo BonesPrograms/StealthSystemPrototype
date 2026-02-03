@@ -514,6 +514,9 @@ namespace StealthSystemPrototype.Logging
             if (X.ContainsGenericParameters != Y.ContainsGenericParameters)
                 return false;
 
+            if (X.IsConstructor || Y.IsConstructor)
+                return X.IsConstructor == Y.IsConstructor;
+
             Type[] xGenerics = X.GetGenericArguments();
             Type[] yGenerics = Y.GetGenericArguments();
 

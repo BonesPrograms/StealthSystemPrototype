@@ -5,6 +5,7 @@ using System.Text;
 
 using XRL.Wish;
 using XRL.UI;
+using XRL.World.AI;
 using XRL.World.Effects;
 using XRL.World.Parts.Skill;
 
@@ -12,14 +13,13 @@ using SerializeField = UnityEngine.SerializeField;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
-using StealthSystemPrototype.Detetection.Opinions;
-using StealthSystemPrototype.Alerts;
-using XRL.World.AI;
 
 namespace XRL.World.Parts
 {

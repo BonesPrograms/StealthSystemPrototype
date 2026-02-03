@@ -20,60 +20,61 @@ namespace StealthSystemPrototype.Alerts
     {
         public bool WantFieldReflection => false;
 
+        // change setters back to protected once loop successfully fixed.
         private BaseConcealedAction _ParentAction;
         public BaseConcealedAction ParentAction
         { 
             get => _ParentAction;
-            protected set => _ParentAction = value;
+            set => _ParentAction = value;
         }
 
         private BasePerception _Perception;
         public BasePerception Perception
         {
             get => _Perception;
-            protected set => _Perception = value;
+            set => _Perception = value;
         }
 
         private GameObject _Perceiver;
         public GameObject Perceiver
         {
             get => _Perceiver;
-            protected set => _Perceiver = value;
+            set => _Perceiver = value;
         }
 
         private BaseAlert _ActionAlert;
         public BaseAlert ActionAlert
         {
             get => _ActionAlert;
-            protected set => _ActionAlert = value;
+            set => _ActionAlert = value;
         }
 
         private BaseAlert _SneakAlert;
         public BaseAlert SneakAlert
         {
             get => _SneakAlert;
-            protected set => _SneakAlert = value;
+            set => _SneakAlert = value;
         }
 
         private GameObject _Hider;
         public GameObject Hider
         {
             get => _Hider;
-            protected set => _Hider = value;
+            set => _Hider = value;
         }
 
         private GameObject _AlertObject;
         public GameObject AlertObject
         {
             get => _AlertObject;
-            protected set => _AlertObject = value;
+            set => _AlertObject = value;
         }
 
         private Cell _AlertLocation;
         public Cell AlertLocation
         {
             get => _AlertLocation;
-            protected set => _AlertLocation = value;
+            set => _AlertLocation = value;
         }
 
         #region Constructors
@@ -185,7 +186,7 @@ namespace StealthSystemPrototype.Alerts
             && GameObject.Validate(Perceiver)
             && (Perception == null 
                 || Perception.Validate())
-            && SneakAlert.Intensity > 0;
+            && (ActionAlert?.Intensity ?? 0) > 0;
 
         public static bool Validate(ref AlertContext Context)
         {

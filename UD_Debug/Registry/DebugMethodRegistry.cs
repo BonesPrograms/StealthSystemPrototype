@@ -84,8 +84,8 @@ namespace StealthSystemPrototype.Logging
 
             try
             {
-                if (TryGetCallingTypeAndMethod(out _, out MethodBase callingMethod)
-                    && Instance.TryGetValue(callingMethod, out bool registryMethodValue)
+                if (TryGetCallingTypeAndMethod(out _, out MethodBase callingMethodBase)
+                    && Instance.TryGetValue(callingMethodBase, out bool registryMethodValue)
                     && !registryMethodValue
                     && !DebugEnableAllLogging)
                     return false;

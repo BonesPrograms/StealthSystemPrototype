@@ -3,12 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using StealthSystemPrototype.Events;
-
+using XRL;
 using XRL.World;
+using XRL.World.Parts;
+using XRL.World.AI;
+using XRL.Wish;
+
+using StealthSystemPrototype.Events;
+using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Detetection.Opinions;
+using StealthSystemPrototype.Perceptions.Specs;
+
+using static StealthSystemPrototype.Utils;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
+    [HasWishCommand]
     public static class Sneak
     {
         /// <summary>
@@ -58,5 +68,63 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             return sneakSources[0];
         }
+
+        public static bool IsBeingPerceived(GameObject Hider)
+            => GetSneakSource(Hider) is ISneakSource sneakSource
+            && sneakSource.IsBeingPerceived;
+
+        #region Wishes
+
+
+        private static string StringGameObjectDetectionOpinionLevel(GameObject Perceiver, GameObject Hider)
+            => "=subject.Refname= is "
+                    .StartReplace()
+                    .AddObject(Perceiver)
+                    .ToString()
+            + (Perceiver.GetOpinionDetectionsFor(Hider, null)
+                    .FirstOrDefault()
+                    ?.Level
+                    .ToStringWithNum()
+                ?? "NO_AWARENESS_LEVEL");
+
+        [WishCommand(Command = "SSP_Sneak is player perceived")]
+        public static bool Player_IsBeingPerceived_WishHandler()
+            => Player_IsBeingPerceived_WishHandler(null);
+
+        [WishCommand(Command = "SSP_Sneak is player perceived")]
+        public static bool Player_IsBeingPerceived_WishHandler(string flags)
+        {
+            if (The.Player is not GameObject player)
+                return false
+                    .PopupBeforeReturn("No player? How'd you make this wish???");
+
+            if (flags.IsNullOrEmpty()
+                || !flags.ContainsAnyNoCase(
+                    Strings: new string[]
+                    {
+                        "verbose",
+                        "-v",
+                    }))
+                return true
+                    .PopupBeforeReturn(("=subject.Refname= is " + (IsBeingPerceived(player) ? null : "not ") + "being perceived.").StartReplace().AddObject(player).ToString());
+
+            string messageStart = "=subject.Refname= is being perceived by:\n".StartReplace().AddObject(player).ToString();
+            string nooneString = "no one!";
+
+            using IsPerceivingSpec isPerceiving = new(player);
+
+            string stringGameObjectDetectionOpinionLevel(GameObject Perceiver)
+                => StringGameObjectDetectionOpinionLevel(Perceiver, player);
+
+            string perceiverList = player.CurrentZone
+                .GetObjects(isPerceiving)
+                .Select(stringGameObjectDetectionOpinionLevel)
+                .Aggregate("", NewLineDelimitedAggregator);
+
+            return true
+                .PopupBeforeReturn(messageStart + (!perceiverList.IsNullOrEmpty() ? perceiverList : nooneString));
+        }
+
+        #endregion
     }
 }

@@ -23,6 +23,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         : AlertRack
         , IConcealedAction
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public static void BaseConcealedAction_DoDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Capabilities.Stealth.BaseConcealedAction),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(SetHider), false },
+                    { nameof(SetAlertObject), false },
+                    { nameof(SetAlertLocation), false },
+                    { nameof(Configure), false },
+                });
+        }
+        #endregion
         public override CoalesceMethod DefaultCoalesceMethod => CoalesceMethod.Highest;
 
         private string _ID;
@@ -233,6 +248,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         IConcealedAction IConcealedAction.SetAlertLocation(Cell AlertLocation)
             => SetAlertLocation(AlertLocation);
 
+        public new Enumerator GetEnumerator()
+            => new(Coalesce());
 
         public virtual void Configure()
         {

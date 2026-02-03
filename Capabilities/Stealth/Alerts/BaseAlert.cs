@@ -8,14 +8,15 @@ using XRL;
 using XRL.World;
 
 using StealthSystemPrototype;
-using StealthSystemPrototype.Logging;
+using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Capabilities.Stealth;
+using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using StealthSystemPrototype.Alerts;
 using static StealthSystemPrototype.Alerts.AlertRack;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+namespace StealthSystemPrototype.Alerts
 {
     /// <summary>
     /// Represents the obviousness of an <see cref="IConcealedAction"/> capable of being detected by an appropriate <see cref="IPerception"/>.
@@ -28,6 +29,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [Serializable]
     public class BaseAlert : IAlert
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public static void doDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Alerts.BaseAlert),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(Copy), false },
+                });
+        }
+        #endregion
         #region Static & Cache
 
         [ModSensitiveStaticCache]
@@ -298,7 +311,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             set => _Properties = value;
         }
 
-        public Type Type => ((IAlert)this).Type;
+        public Type Type => GetType();
 
         #endregion
         #region Constructors
@@ -350,7 +363,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #endregion
 
         public override string ToString()
-            => Name + ":(" + Intensity + ")";
+            => "<" + Name + ":" + Intensity + ">";
 
         public virtual void Initialize()
         {
@@ -376,37 +389,51 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public virtual BaseAlert AdjustIntensity(int Amount)
             => new(Intensity + Amount);
 
-        public BaseAlert Copy(bool Degrade)
+        public virtual BaseAlert Copy(bool Degrade)
         {
+            using Indent indent = new(1);
+            Debug.LogCaller(indent,
+                ArgPairs: new Debug.ArgPair[]
+                {
+                    Debug.Arg(GetType().ToStringWithGenerics()),
+                    Debug.Arg(nameof(Degrade), Degrade),
+                });
+
             BaseAlert baseAlert = Activator.CreateInstance(GetType()) as BaseAlert;
-            
+            Debug.YehNah(nameof(Activator.CreateInstance), baseAlert!= null, Indent: indent[1]);
+
             FieldInfo[] fields = GetType().GetFields();
+            Debug.YehNah(nameof(fields), fields?.Length ?? -1, fields.IsNullOrEmpty(), Indent: indent[1]);
 
             foreach (FieldInfo fieldInfo in fields)
                 if ((fieldInfo.Attributes & FieldAttributes.NotSerialized) == 0
                     && !fieldInfo.IsLiteral)
                     fieldInfo.SetValue(baseAlert, fieldInfo.GetValue(this));
+            Debug.YehNah(nameof(FieldInfo.SetValue), true, Indent: indent[1]);
 
             baseAlert.Properties = new();
 
             if (!Properties.IsNullOrEmpty())
                 baseAlert.Properties = new(Properties);
-            else
+            Debug.YehNah(CallChain(nameof(baseAlert), nameof(baseAlert.Properties)), baseAlert.Properties?.Count ?? -1, baseAlert.Properties.IsNullOrEmpty(), Indent: indent[1]);
 
             if (Degrade)
             {
-                if (baseAlert.Intensity > 0)
-                    baseAlert.Intensity--;
-                else
-                if (baseAlert.Intensity < 0)
-                    baseAlert.Intensity++;
+                baseAlert.Degrade();
             }
+            Debug.YehNah(nameof(Degrade), Degrade, true, Indent: indent[1]);
 
             return baseAlert;
         }
 
         public BaseAlert Copy()
             => Copy(false);
+
+        public BaseAlert Degrade(int Amount = 1)
+        {
+            Intensity = Intensity.TowardZero(Amount);
+            return this;
+        }
 
         #region IDisposable
 

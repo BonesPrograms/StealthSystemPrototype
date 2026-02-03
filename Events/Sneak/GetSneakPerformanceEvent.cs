@@ -10,6 +10,7 @@ using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 namespace StealthSystemPrototype.Events

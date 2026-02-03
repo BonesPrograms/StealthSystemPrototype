@@ -105,6 +105,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         #endregion
+        #region Constructors
 
         public SneakPerformance()
             : base(DefaultSneakPerformance)
@@ -129,6 +130,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             CollectedStats = Source.CollectedStats;
         }
 
+        #endregion
         #region Serialization
 
         public override void Write(SerializationWriter Writer)
@@ -176,7 +178,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         public BaseAlert this[BaseAlert Alert]
-            => GetByType(Alert.Type)?.Copy(Degrade: false);
+            => GetMatchingAlert(Alert);
 
         public BaseAlert this[string AlertName]
             => Items?.FirstOrDefault(a => a.Name == AlertName);
@@ -293,11 +295,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public BaseAlert GetByType(Type AlertType)
         {
-            if (Items != null)
-                for (int i = 0; i < Count; i++)
-                    if (Items[i] is BaseAlert alert
-                        && alert.IsType(AlertType))
-                        return alert;
+            if (Items == null)
+                throw new InnerArrayNullException(nameof(Items));
+
+            for (int i = 0; i < Length; i++)
+                if (Items[i] is BaseAlert alert
+                    && alert.IsType(AlertType))
+                    return alert;
 
             throw new ArgumentOutOfRangeException(
                 paramName: nameof(AlertType),
@@ -309,7 +313,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => GetByType(Alert.Type);
 
         public bool Contains<A>(A Alert)
-            where A : IAlert
+            where A : BaseAlert, new()
             => Items?.Any(a => a.IsType(Alert.Type)) ?? false;
 
         public static BaseAlert HigherRated(BaseAlert First, BaseAlert Second)

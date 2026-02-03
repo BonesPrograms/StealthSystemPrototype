@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Alerts;
-
 using XRL.Collections;
 using XRL.World;
+
+using StealthSystemPrototype.Alerts;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+using System.Reflection;
 
 using XRL.World;
 using XRL.World.Parts;
@@ -10,7 +11,6 @@ using XRL.Collections;
 using StealthSystemPrototype.Alerts;
 
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
-using System.Reflection;
 using static StealthSystemPrototype.AlertExtensions;
 
 namespace StealthSystemPrototype.Capabilities.Stealth

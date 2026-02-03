@@ -23,6 +23,8 @@ using static StealthSystemPrototype.Const;
 
 using Debug = StealthSystemPrototype.Logging.Debug;
 using XRL.Wish;
+using Genkit;
+using System.Diagnostics.CodeAnalysis;
 
 namespace StealthSystemPrototype
 {
@@ -74,7 +76,7 @@ namespace StealthSystemPrototype
             }
             return null;
         }
-        public static bool TryGetFirstCallingModNot(ModInfo ThisMod, out ModInfo FirstCallingMod)
+        public static bool TryGetFirstCallingModNot([NotNullWhen(true)] ModInfo ThisMod, out ModInfo FirstCallingMod)
             => (FirstCallingMod = GetFirstCallingModNot(ThisMod)) != null;
 
         #endregion
@@ -269,6 +271,93 @@ namespace StealthSystemPrototype
                 : 0;
         }
 
+        public class PerceptionComparer : IComparer<BasePerception>
+        {
+            public enum ComparisonType
+            {
+                None,
+                Level,
+                EffectiveLevel,
+                Purview,
+            }
+            protected ComparisonType Type;
+
+            public PerceptionComparer()
+            {
+                Type = ComparisonType.None;
+            }
+            public PerceptionComparer(ComparisonType Type)
+                : this()
+            {
+                this.Type = Type;
+            }
+            public virtual int Compare(BasePerception x, BasePerception y)
+                => EitherNull(x, y, out int comparison)
+                ? comparison
+                : Type switch
+                {
+                    ComparisonType.Level => x.CompareLevelTo(y),
+                    ComparisonType.EffectiveLevel => x.CompareEffectiveLevelTo(y),
+                    ComparisonType.Purview => x.ComparePurviewTo(y),
+                    ComparisonType.None or
+                    _ => x.CompareTo(y),
+                };
+        }
+
+        public class PerceptionAlertComparer<A> : IComparer<BasePerception>
+            where A : BaseAlert, new()
+        {
+            protected A Alert;
+
+            protected PerceptionAlertComparer()
+                => Alert = null;
+
+            public PerceptionAlertComparer(A Alert)
+                : this()
+                => this.Alert = Alert;
+
+            public virtual int Compare(BasePerception x, BasePerception y)
+            {
+                if (EitherNull(x, y, out int nullComp))
+                    return nullComp;
+
+                if (Alert != null)
+                {
+                    int canPerceiveComp = x.CanPerceiveAlert(Alert).CompareTo(y.CanPerceiveAlert(Alert));
+                    if (canPerceiveComp != 0)
+                        return canPerceiveComp;
+                }
+                return x.CompareTo(y);
+            }
+        }
+
+        public class PerceptionAlertContextComparer : IComparer<BasePerception>
+        {
+            protected AlertContext Context;
+
+            protected PerceptionAlertContextComparer()
+                => Context = null;
+
+            public PerceptionAlertContextComparer(AlertContext Context)
+                : this()
+                => this.Context = Context;
+
+            public virtual int Compare(BasePerception x, BasePerception y)
+            {
+                if (EitherNull(x, y, out int nullComp))
+                    return nullComp;
+
+                if (Context != null)
+                {
+                    int canPerceiveComp = x.CanPerceive(Context).CompareTo(y.CanPerceive(Context));
+                    if (canPerceiveComp != 0)
+                        return canPerceiveComp;
+                }
+
+                return x.CompareTo(y);
+            }
+        }
+
         public static string GetCloserMatch(string Search, string Current, string Next)
             => Grammar.LevenshteinDistance(Search, Current).CompareTo(Grammar.LevenshteinDistance(Search, Next)) < 0
             ? Current
@@ -342,15 +431,22 @@ namespace StealthSystemPrototype
 
         #endregion
         #region Generic Conditionals
+        #nullable enable
 
-        public static bool EitherNull<Tx, Ty>(Tx X, Ty Y, out bool AreEqual)
+        public static bool EitherNull<Tx, Ty>(
+            [NotNullWhen(false)] Tx X,
+            [NotNullWhen(false)] Ty Y,
+            out bool AreEqual)
         {
             AreEqual = (X is null) == (Y is null);
             return X is null 
                 || Y is null;
         }
 
-        public static bool EitherNull<Tx, Ty>(Tx X, Ty Y, out int Comparison)
+        public static bool EitherNull<Tx, Ty>(
+            [NotNullWhen(false)] Tx X,
+            [NotNullWhen(false)] Ty Y,
+            out int Comparison)
         {
             Comparison = 0;
 
@@ -372,7 +468,10 @@ namespace StealthSystemPrototype
             return true;
         }
 
-        public static bool EitherNullOrEmpty<Tx, Ty>(Tx[] X, Ty[] Y, out bool AreEqual)
+        public static bool EitherNullOrEmpty<Tx, Ty>(
+            [NotNullWhen(false)] Tx[] X,
+            [NotNullWhen(false)] Ty[] Y,
+            out bool AreEqual)
         {
             if (EitherNull(X, Y, out AreEqual))
                 return AreEqual;
@@ -382,43 +481,46 @@ namespace StealthSystemPrototype
                 || Y.Length > 0;
         }
 
+        #nullable restore
         #endregion
         #region Predicates
+        #nullable enable
 
-        public static bool HasCustomAttribute<T>(Type Type)
+        public static bool HasCustomAttribute<T>([NotNullWhen(true)] Type Type)
             where T : Attribute
             => Type != null
             && Type.HasCustomAttribute<T>();
 
-        public static bool HasCustomAttribute(Type Type, Type Attribute)
+        public static bool HasCustomAttribute([NotNullWhen(true)] Type Type, Type Attribute)
             => Type != null
             && Type.HasCustomAttribute(Attribute);
 
-        public static bool NotHasCustomAttribute<T>(Type Type)
+        public static bool NotHasCustomAttribute<T>([NotNullWhen(true)] Type Type)
             where T : Attribute
             => Type != null
             && !HasCustomAttribute<T>(Type);
 
-        public static bool NotHasCustomAttribute(Type Type, Type Attribute)
+        public static bool NotHasCustomAttribute([NotNullWhen(true)] Type Type, Type Attribute)
             => Type != null
             && !HasCustomAttribute(Type, Attribute);
 
-        public static bool HasDefaultPublicParameterlessConstructor(Type Type)
-            => Type.HasDefaultPublicParameterlessConstructor();
+        public static bool HasDefaultPublicParameterlessConstructor([NotNullWhen(true)] Type Type)
+            => Type?.HasDefaultPublicParameterlessConstructor() ?? false;
 
-        public static bool IsAbstract(Type Type)
+        public static bool IsAbstract([NotNullWhen(true)] Type Type)
             => Type != null
             && Type.IsAbstract;
 
-        public static bool IsNotAbstract(Type Type)
+        public static bool IsNotAbstract([NotNullWhen(true)] Type Type)
             => Type != null
             && !IsAbstract(Type);
 
-        public static bool IsMentalWithBaseLevels(BaseMutation BaseMutation)
-            => BaseMutation !!= null
+        public static bool IsMentalWithBaseLevels([NotNullWhen(true)] BaseMutation BaseMutation)
+            => BaseMutation != null
             && BaseMutation.IsMental()
             && BaseMutation.BaseLevel > 0;
 
+        #nullable restore
         #endregion
         #region Math?
 
@@ -491,6 +593,69 @@ namespace StealthSystemPrototype
 
         public static IEnumerable<int> IntsUpto(int High, bool InclusiveEnd = false)
             => IntsTwixt(0, High, true, InclusiveEnd);
+
+        public static bool PopupBeforeReturnBool(
+            bool ReturnValue,
+            string Message,
+            string Title = null,
+            string Sound = "Sounds/UI/ui_notification",
+            bool CopyScrap = true,
+            bool Capitalize = true,
+            bool DimBackground = true,
+            bool LogMessage = true,
+            Location2D PopupLocation = null)
+        {
+            Popup.Show(
+                Message: Message,
+                Title: Title,
+                Sound: Sound,
+                CopyScrap: CopyScrap,
+                Capitalize: Capitalize,
+                DimBackground: DimBackground,
+                LogMessage: LogMessage,
+                PopupLocation: PopupLocation);
+            return ReturnValue;
+        }
+
+        public static bool PopupBeforeFalse(
+            string Message,
+            string Title = null,
+            string Sound = "Sounds/UI/ui_notification",
+            bool CopyScrap = true,
+            bool Capitalize = true,
+            bool DimBackground = true,
+            bool LogMessage = true,
+            Location2D PopupLocation = null)
+            => PopupBeforeReturnBool(
+                ReturnValue: false,
+                Message: Message,
+                Title: Title,
+                Sound: Sound,
+                CopyScrap: CopyScrap,
+                Capitalize: Capitalize,
+                DimBackground: DimBackground,
+                LogMessage: LogMessage,
+                PopupLocation: PopupLocation);
+
+        public static bool PopupBeforeTrue(
+            string Message,
+            string Title = null,
+            string Sound = "Sounds/UI/ui_notification",
+            bool CopyScrap = true,
+            bool Capitalize = true,
+            bool DimBackground = true,
+            bool LogMessage = true,
+            Location2D PopupLocation = null)
+            => PopupBeforeReturnBool(
+                ReturnValue: true,
+                Message: Message,
+                Title: Title,
+                Sound: Sound,
+                CopyScrap: CopyScrap,
+                Capitalize: Capitalize,
+                DimBackground: DimBackground,
+                LogMessage: LogMessage,
+                PopupLocation: PopupLocation);
 
         #region Wishes!
 

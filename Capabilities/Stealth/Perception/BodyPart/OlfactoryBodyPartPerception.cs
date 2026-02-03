@@ -3,25 +3,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using XRL;
 using XRL.Rules;
+using XRL.Liquids;
+using XRL.Collections;
 using XRL.World;
 using XRL.World.Anatomy;
+using XRL.World.Parts;
 using XRL.World.Parts.Mutation;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using XRL.Liquids;
-using XRL.World.Parts;
-using XRL.Collections;
-using XRL;
-using StealthSystemPrototype.Detetection.Opinions;
 
 namespace StealthSystemPrototype.Perceptions
 {

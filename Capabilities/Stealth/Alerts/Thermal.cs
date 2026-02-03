@@ -6,7 +6,7 @@ using XRL.World;
 
 using StealthSystemPrototype.Perceptions;
 
-namespace StealthSystemPrototype.Capabilities.Stealth
+namespace StealthSystemPrototype.Alerts
 {
     /// <summary>
     /// Represents the obviousness of a <see cref="IConcealedAction"/> capable of being thermally detected by an appropriate <see cref="IPerception"/>.

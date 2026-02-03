@@ -24,6 +24,8 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using XRL.Collections;
+using Genkit;
+using System.Diagnostics.CodeAnalysis;
 
 namespace StealthSystemPrototype
 {
@@ -189,56 +191,81 @@ namespace StealthSystemPrototype
 
         #endregion
         #region Generic Conditionals
+        #nullable enable
 
         public static bool EqualIncludingBothNull<T>(this T Operand1, T Operand2)
             => (Utils.EitherNull(Operand1, Operand2, out bool areEqual) && areEqual) || (Operand1 != null && Operand1.Equals(Operand2));
-
-        public static bool EqualsAny<T>(this T Value, params T[] args)
-            => !args.IsNullOrEmpty()
+        
+        public static bool EqualsAny<T>(
+            [NotNullWhen(true)] this T Value,
+            [NotNullWhen(true)] params T[] args)
+            => Value != null
+            && !args.IsNullOrEmpty()
             && !args.Where(t => t.EqualIncludingBothNull(Value)).IsNullOrEmpty();
 
-        public static bool EqualsAnyNoCase(this string Value, params string[] args)
-            => !args.IsNullOrEmpty()
+        public static bool EqualsAnyNoCase(
+            [NotNullWhen(true)] this string Value,
+            [NotNullWhen(true)] params string[] args)
+            => !Value.IsNullOrEmpty()
+            && !args.IsNullOrEmpty()
             && !args.Where(t => Value != null && Value.EqualsNoCase(t)).IsNullOrEmpty();
 
-        public static bool EqualsAll<T>(this T Value, params T[] args)
-            => !args.IsNullOrEmpty()
-            && args.Where(t => t.Equals(Value)).Count() == args.Length;
-
-        public static bool EqualsAllNoCase(this string Value, params string[] args)
-            => !args.IsNullOrEmpty()
+        public static bool EqualsAll<T>(
+            [NotNullWhen(true)] this T Value,
+            [NotNullWhen(true)] params T[] args)
+            => Value != null
+            && !args.IsNullOrEmpty()
+            && args.Count(t => t?.Equals(Value) ?? false) == args.Length;
+        
+        public static bool EqualsAllNoCase(
+            [NotNullWhen(true)] this string Value,
+            [NotNullWhen(true)] params string[] args)
+            => !Value.IsNullOrEmpty()
+            && !args.IsNullOrEmpty()
             && args.Where(t => t.EqualsNoCase(Value)).Count() == args.Length;
 
-        public static bool InheritsFrom(this Type Type, Type OtherType, bool IncludeSelf = true)
-            => (IncludeSelf && Type == OtherType)
-            || OtherType.IsSubclassOf(Type)
-            || Type.IsAssignableFrom(OtherType)
-            || (Type.YieldInheritedTypes().ToList() is List<Type> inheritedTypes
-                && inheritedTypes.Contains(OtherType));
+        public static bool InheritsFrom(
+            [NotNullWhen(true)] this Type Type,
+            [NotNullWhen(true)] Type OtherType,
+            bool IncludeSelf = true)
+            => Type != null
+            && OtherType != null
+            && ((IncludeSelf
+                    && Type == OtherType)
+                || OtherType.IsSubclassOf(Type)
+                || Type.IsAssignableFrom(OtherType)
+                || (Type.YieldInheritedTypes().ToList() is List<Type> inheritedTypes
+                    && inheritedTypes.Contains(OtherType)));
 
-        public static bool InheritsFrom<T>(this Type Type, bool IncludeSelf = true)
-            => Type.InheritsFrom(typeof(T), IncludeSelf);
+        public static bool InheritsFrom<T>([NotNullWhen(true)] this Type Type, bool IncludeSelf = true)
+            => Type?.InheritsFrom(typeof(T), IncludeSelf) ?? false;
 
-        public static bool OverlapsWith<T>(this IEnumerable<T> Enumerable1, IEnumerable<T> Enumerable2)
+        public static bool OverlapsWith<T>(
+            [NotNullWhen(true)] this IEnumerable<T> Enumerable1,
+            [NotNullWhen(true)] IEnumerable<T> Enumerable2)
         {
             if (Enumerable1 != null
                 && Enumerable2 != null)
                 foreach (T item1 in Enumerable1)
                     foreach (T item2 in Enumerable2)
-                        if (item1.Equals(item2))
+                        if ((!EitherNull(item1, item2, out bool areEqual)
+                                && item1.Equals(item2))
+                            || areEqual)
                             return true;
 
             return false;
         }
 
         public static bool ContainsAny<T>(this IEnumerable<T> Enumerable, params T[] Items)
-            => Items == null
-                || Enumerable == null
-            ? (Items == null) == (Enumerable == null)
+            => EitherNull(Enumerable, Items, out bool areEqual)
+            ? areEqual
             : Enumerable.OverlapsWith(Items);
 
         public static bool ContainsAll<T>(this ICollection<T> Collection1, ICollection<T> Collection2)
         {
+            if (EitherNull(Collection1, Collection2, out bool areEqual))
+                return areEqual;
+
             int matches = 0;
             int targetNumMatches = Collection2.Count;
 
@@ -247,22 +274,23 @@ namespace StealthSystemPrototype
 
             foreach (T item2 in Collection2)
                 foreach (T item1 in Collection1)
-                    if (item1.Equals(item2)
+                    if (((!EitherNull(item1, item2, out bool itemsAreEqual)
+                                && item1.Equals(item2))
+                            || itemsAreEqual)
                         && targetNumMatches == ++matches)
                         break;
 
             return targetNumMatches >= matches;
         }
         public static bool ContainsAll<T>(this ICollection<T> Collection, params T[] Items)
-            => (Items == null
-                || Collection == null)
-            ? (Items == null) == (Collection == null)
+            => EitherNull(Collection, Items, out bool areEqual)
+            ? areEqual
             : Collection.ContainsAll((ICollection<T>)Items);
 
         public static bool ContainsAll(this string String, params string[] Strings)
         {
-            if (Strings == null || String == null)
-                return (Strings == null) == (String == null);
+            if (EitherNull(Strings, String, out bool areEqual))
+                return areEqual;
 
             foreach (string item in Strings)
                 if (!String.Contains(item))
@@ -273,8 +301,8 @@ namespace StealthSystemPrototype
 
         public static bool ContainsAny(this string String, params string[] Strings)
         {
-            if (Strings == null || String == null)
-                return (Strings == null) == (String == null);
+            if (EitherNull(Strings, String, out bool areEqual))
+                return areEqual;
 
             foreach (string item in Strings)
                 if (String.Contains(item))
@@ -285,9 +313,8 @@ namespace StealthSystemPrototype
 
         public static bool ContainsNoCase(this string String, string Value)
         {
-            if (String.IsNullOrEmpty()
-                || Value.IsNullOrEmpty())
-                return false;
+            if (EitherNull(Value, String, out bool areEqual))
+                return areEqual;
 
             int valueIndex = Value.Length - 1;
             string testString = String;
@@ -302,8 +329,8 @@ namespace StealthSystemPrototype
 
         public static bool ContainsAllNoCase(this string String, params string[] Strings)
         {
-            if (Strings == null || String == null)
-                return (Strings == null) == (String == null);
+            if (EitherNull(Strings, String, out bool areEqual))
+                return areEqual;
 
             foreach (string item in Strings)
                 if (!String.ContainsNoCase(item))
@@ -314,8 +341,8 @@ namespace StealthSystemPrototype
 
         public static bool ContainsAnyNoCase(this string String, params string[] Strings)
         {
-            if (Strings == null || String == null)
-                return (Strings == null) == (String == null);
+            if (EitherNull(Strings, String, out bool areEqual))
+                return areEqual;
 
             foreach (string item in Strings)
                 if (String.ContainsNoCase(item))
@@ -343,8 +370,14 @@ namespace StealthSystemPrototype
                 return false;
 
             for (int i = 0; i < X.Length; i++)
-                if (!X[i].Equals(Y[i]))
+            {
+                Tx x = X[i];
+                Ty y = Y[i];
+                if ((!EitherNull(x, y, out bool iAreEqual)
+                        && !x.Equals(y))
+                    || iAreEqual)
                     return false;
+            }
 
             return true;
         }
@@ -352,6 +385,7 @@ namespace StealthSystemPrototype
         public static IEnumerable<TSource> WhereNot<TSource>(this IEnumerable<TSource> Source, Func<TSource, bool> Predicate)
             => Source.Where(t => !Predicate(t));
 
+        #nullable restore
         #endregion
         #region Strings
 
@@ -917,8 +951,21 @@ namespace StealthSystemPrototype
             ? Values.Aggregate(0, (a, n) => a + n) / Values.Length
             : 0;
 
+        public static int TowardZero(this int Int, int Amount = 1)
+        {
+            if (Int > 0)
+                return Int -= Amount;
+            else
+                if (Int < 0)
+                return Int += Amount;
+            return Int;
+        }
+
         #endregion
         #region Serialization
+
+        public static T ReadObject<T>(this SerializationReader Reader)
+            => (T)Reader.ReadObject();
 
         public static void WriteOptimized(this SerializationWriter Writer, Range Range)
         {
@@ -1024,12 +1071,33 @@ namespace StealthSystemPrototype
         public static bool Toggle(this ref bool Boolean)
             => Boolean = !Boolean;
 
+        public static bool PopupBeforeReturn(
+            this bool Bool,
+            string Message,
+            string Title = null,
+            string Sound = "Sounds/UI/ui_notification",
+            bool CopyScrap = true,
+            bool Capitalize = true,
+            bool DimBackground = true,
+            bool LogMessage = true,
+            Location2D PopupLocation = null)
+            => PopupBeforeReturnBool(
+                ReturnValue: Bool,
+                Message: Message,
+                Title: Title,
+                Sound: Sound,
+                CopyScrap: CopyScrap,
+                Capitalize: Capitalize,
+                DimBackground: DimBackground,
+                LogMessage: LogMessage,
+                PopupLocation: PopupLocation);
+
+        #endregion
+
         public static IEnumerable<int> IntsTwixt(this (int Low, int High) Tuple, bool InclusiveStart = true, bool InclusiveEnd = true)
             => Utils.IntsTwixt(Tuple.Low, Tuple.High, InclusiveStart, InclusiveEnd);
 
         public static IEnumerable<int> IntsUpto(this int High, bool InclusiveEnd = false)
             => Utils.IntsUpto(High, InclusiveEnd);
-
-        #endregion
     }
 }

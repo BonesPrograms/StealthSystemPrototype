@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Perceptions;
-
 using XRL.World;
+
+using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Perceptions;
 
 using static StealthSystemPrototype.AlertExtensions;
 

@@ -13,13 +13,13 @@ using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
+using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.Perceptions.IPsionicPerception;
-using StealthSystemPrototype.Detetection.Opinions;
 
 namespace StealthSystemPrototype.Perceptions
 {

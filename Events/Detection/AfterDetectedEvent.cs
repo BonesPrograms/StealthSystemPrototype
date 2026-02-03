@@ -11,6 +11,7 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 
 namespace StealthSystemPrototype.Events
