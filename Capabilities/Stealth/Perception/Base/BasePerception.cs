@@ -40,7 +40,7 @@ namespace StealthSystemPrototype.Perceptions
     {
         #region Debug
         [UD_DebugRegistry]
-        public static void doDebugRegistry(DebugMethodRegistry Registry)
+        public static void BasePerception_DoDebugRegistry(DebugMethodRegistry Registry)
         {
             Registry.RegisterEach(
                 Type: typeof(StealthSystemPrototype.Perceptions.BasePerception),
@@ -731,8 +731,7 @@ namespace StealthSystemPrototype.Perceptions
                 GoOnCooldown(FailureMargin);
                 return false;
             }
-            Context.SetPerception(this);
-            RaiseDetection(Context, SuccessMargin);
+            Context.TrySetPerception(this, SuccessMargin);
             return true;
         }
 
@@ -746,6 +745,9 @@ namespace StealthSystemPrototype.Perceptions
                     Debug.Arg(nameof(Context.Perceiver), Context?.Perceiver.MiniDebugName()),
                     Debug.Arg(nameof(Context.Hider), Context?.Hider.MiniDebugName()),
                 });
+
+            if (Context == null)
+                throw new ArgumentNullException(nameof(Context));
 
             AwarenessLevel level = AwarenessLevel.Aware;
 

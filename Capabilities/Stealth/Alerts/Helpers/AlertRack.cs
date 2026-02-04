@@ -38,6 +38,10 @@ namespace StealthSystemPrototype.Alerts
                 {
                     { nameof(Add), false },
                     { nameof(Coalesce), false },
+                    { nameof(IndexOf), false },
+                    { nameof(RemoveType), false },
+                    { nameof(TryGet), false },
+                    { nameof(GetCoalesce), false },
                 });
         }
         #endregion

@@ -24,7 +24,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
     {
         #region Debug
         [UD_DebugRegistry]
-        public new static void doDebugRegistry(DebugMethodRegistry Registry)
+        public static void BasePurview_A_DoDebugRegistry(DebugMethodRegistry Registry)
         {
             Registry.RegisterEach(
                 Type: typeof(StealthSystemPrototype.Capabilities.Stealth.Perception.BasePurview<A>),

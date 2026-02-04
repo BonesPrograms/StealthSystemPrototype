@@ -10,6 +10,7 @@ using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
 
 using static StealthSystemPrototype.Utils;
+using System.Diagnostics.CodeAnalysis;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
@@ -18,7 +19,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
     /// </summary>
     public interface ILinePurview : IPurview
     {
-        public bool CheckWithinLine(Cell PerceiverLocation, Cell AlertLocation, out int Distance)
+        public bool CheckWithinLine(
+            Cell PerceiverLocation,
+            Cell AlertLocation,
+            out int Distance)
         {
             Distance = -1;
             if (PerceiverLocation is not Cell { InActiveZone: true } origin
@@ -34,8 +38,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public bool CheckWithinLine(AlertContext Context, out int Distance)
             => CheckWithinLine(
-                PerceiverLocation: Context.Perceiver.CurrentCell,
-                AlertLocation: Context.AlertLocation,
+                PerceiverLocation: Context?.Perceiver?.CurrentCell,
+                AlertLocation: Context?.AlertLocation,
                 Distance: out Distance);
     }
 }

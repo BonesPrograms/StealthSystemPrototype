@@ -66,8 +66,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public int GetModifedEffectiveLevel(AlertContext Context);
 
-        public bool CheckWithin(Cell AlertLocation);
-
         public bool CheckWithin(AlertContext Context);
 
         public void ClearCaches();

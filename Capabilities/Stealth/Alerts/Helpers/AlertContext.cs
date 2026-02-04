@@ -13,6 +13,7 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using StealthSystemPrototype.Detetection.Opinions;
 
 namespace StealthSystemPrototype.Alerts
 {
@@ -25,57 +26,59 @@ namespace StealthSystemPrototype.Alerts
         public BaseConcealedAction ParentAction
         { 
             get => _ParentAction;
-            set => _ParentAction = value;
+            protected set => _ParentAction = value;
         }
 
         private BasePerception _Perception;
         public BasePerception Perception
         {
             get => _Perception;
-            set => _Perception = value;
+            protected set => _Perception = value;
         }
 
         private GameObject _Perceiver;
         public GameObject Perceiver
         {
             get => _Perceiver;
-            set => _Perceiver = value;
+            protected set => _Perceiver = value;
         }
 
         private BaseAlert _ActionAlert;
         public BaseAlert ActionAlert
         {
             get => _ActionAlert;
-            set => _ActionAlert = value;
+            protected set => _ActionAlert = value;
         }
 
         private BaseAlert _SneakAlert;
         public BaseAlert SneakAlert
         {
             get => _SneakAlert;
-            set => _SneakAlert = value;
+            protected set => _SneakAlert = value;
         }
 
         private GameObject _Hider;
         public GameObject Hider
         {
             get => _Hider;
-            set => _Hider = value;
+            protected set => _Hider = value;
         }
 
         private GameObject _AlertObject;
         public GameObject AlertObject
         {
             get => _AlertObject;
-            set => _AlertObject = value;
+            protected set => _AlertObject = value;
         }
 
         private Cell _AlertLocation;
         public Cell AlertLocation
         {
             get => _AlertLocation;
-            set => _AlertLocation = value;
+            protected set => _AlertLocation = value;
         }
+
+        protected int SuccessMargin; 
 
         #region Constructors
 
@@ -83,15 +86,18 @@ namespace StealthSystemPrototype.Alerts
         {
             ParentAction = null;
             Perception = null;
+            Perceiver = null;
             ActionAlert = null;
             SneakAlert = null;
             Hider = null;
             AlertObject = null;
             AlertLocation = null;
+            SuccessMargin = int.MinValue;
         }
         protected AlertContext(
             BaseConcealedAction ParentAction,
             BasePerception Perception,
+            GameObject Perceiver,
             BaseAlert ActionAlert,
             BaseAlert SneakAlert,
             GameObject Hider,
@@ -101,6 +107,7 @@ namespace StealthSystemPrototype.Alerts
         {
             this.ParentAction = ParentAction;
             this.Perception = Perception;
+            this.Perceiver = Perceiver;
             this.ActionAlert = ActionAlert;
             this.SneakAlert = SneakAlert;
             this.Hider = Hider;
@@ -109,6 +116,7 @@ namespace StealthSystemPrototype.Alerts
         }
         public AlertContext(
             BaseConcealedAction ParentAction,
+            GameObject Perceiver,
             BaseAlert ActionAlert,
             BaseAlert SneakAlert,
             GameObject Hider,
@@ -117,6 +125,7 @@ namespace StealthSystemPrototype.Alerts
             : this(
                   ParentAction: ParentAction,
                   Perception: null,
+                  Perceiver: Perceiver,
                   ActionAlert: ActionAlert,
                   SneakAlert: SneakAlert,
                   Hider: Hider,
@@ -128,6 +137,7 @@ namespace StealthSystemPrototype.Alerts
             : this(
                   ParentAction: Source.ParentAction,
                   Perception: Source.Perception,
+                  Perceiver: Source.Perceiver,
                   ActionAlert: Source.ActionAlert.Copy(Degrade: true),
                   SneakAlert: Source.SneakAlert.Copy(),
                   Hider: Source.Hider,
@@ -200,5 +210,18 @@ namespace StealthSystemPrototype.Alerts
         {
             this.Perception = Perception;
         }
+        public bool TrySetPerception(BasePerception Perception, int SuccessMargin)
+        {
+            if (SuccessMargin > this.SuccessMargin)
+            {
+                this.SuccessMargin = SuccessMargin;
+                SetPerception(Perception);
+                return true;
+            }
+            return false;
+        }
+
+        public virtual IOpinionDetection RaiseDetection()
+            => Perception.RaiseDetection(this, SuccessMargin);
     }
 }

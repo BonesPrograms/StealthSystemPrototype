@@ -136,9 +136,10 @@ namespace StealthSystemPrototype
             where P : BasePerception, new()
             => Object.RequirePerceptions()?.Require<P>(Creation);
 
+        // re-write this. it's hacky.
         public static bool WithinAnyPurview(this GameObject Object, GameObject Perceiver)
             => Perceiver?.GetPerceptions() is PerceptionRack perceptions
-            && perceptions.Any(p => p.Purview.CheckWithin(Object.CurrentCell));
+            && perceptions.Any(p => Object.CurrentCell.CosmeticDistanceToCell(Perceiver.CurrentCell) >= p.Purview.EffectiveValue);
 
         #endregion
         #region OpinionDetections

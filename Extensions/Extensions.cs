@@ -351,6 +351,9 @@ namespace StealthSystemPrototype
             return false;
         }
 
+        public static bool None<T>([NotNullWhen(true)] this IEnumerable<T> Enumberable, Predicate<T> Where)
+            => !Enumberable.Any(Where?.ToFunc());
+
         public static Func<T, bool> ToFunc<T>(this Predicate<T> Filter, bool ThrowIfNull = false)
         {
             if (Filter == null && ThrowIfNull)

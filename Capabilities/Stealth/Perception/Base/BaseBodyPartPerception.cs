@@ -26,6 +26,19 @@ namespace StealthSystemPrototype.Perceptions
         : BasePerception
         , IBodyPartPerception
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public static void BaseBodyPartPerception_DoDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Perceptions.BaseBodyPartPerception),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(Validate), false },
+                });
+        }
+        #endregion
+
         public override GameObject Owner
         {
             get => base.Owner ??= FindOwner(_Source);

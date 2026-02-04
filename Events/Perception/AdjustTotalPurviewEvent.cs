@@ -18,6 +18,18 @@ namespace StealthSystemPrototype.Events
     [GameEvent(Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
     public class AdjustTotalPurviewEvent : IPerceptionEvent<AdjustTotalPurviewEvent>
     {
+        #region Debug
+        [UD_DebugRegistry]
+        public static void AdjustTotalPurviewEvent_DoDebugRegistry(DebugMethodRegistry Registry)
+        {
+            Registry.RegisterEach(
+                Type: typeof(StealthSystemPrototype.Events.AdjustTotalPurviewEvent),
+                MethodNameValues: new Dictionary<string, bool>()
+                {
+                    { nameof(GetFor), false },
+                });
+        }
+        #endregion
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
         public string Name;

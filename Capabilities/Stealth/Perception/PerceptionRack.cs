@@ -28,7 +28,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     {
         #region Debug
         [UD_DebugRegistry]
-        public static void doDebugRegistry(DebugMethodRegistry Registry)
+        public static void PerceptionRack_DoDebugRegistry(DebugMethodRegistry Registry)
             => Registry.RegisterEach(
                 Type: typeof(StealthSystemPrototype.Capabilities.Stealth.PerceptionRack),
                 MethodNameValues: new Dictionary<string, bool>()
@@ -38,6 +38,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     { nameof(PerceptionWantsEvent), false },
                     { nameof(DelegateHandleEvent), false },
                     { nameof(FireEvent), false },
+                    { nameof(GetPerceptionsBestFirst), false },
+                    { nameof(GetAlertContexts), false },
                 });
         #endregion
 
@@ -598,7 +600,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return false;
         }
 
-        public virtual bool TryPerceive(AlertContext Context)
+        public virtual bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -606,13 +608,24 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 {
                     Debug.Arg(Context?.ActionAlert?.ToString() ?? "NO_CONTEXT"),
                 });
+            SuccessMargin = 0;
+            FailureMargin = 0;
 
             bool any = false;
-            List<BasePerception> highestFirst = GetPerceptionsBestFirst(Context)?.ToList() ?? new();
-            foreach (BasePerception perception in highestFirst)
+            foreach (BasePerception perception in GetPerceptionsBestFirst(Context) ?? new BasePerception[0])
             {
-                any = perception.TryPerceive(Context, out int SuccessMargin, out int FailureMargin) || any;
+                any = perception.TryPerceive(Context, out int successMargin, out int failureMargin)
+                    || any;
+
+                GetMinMax(out _, out SuccessMargin, SuccessMargin, successMargin);
+                GetMinMax(out FailureMargin, out _, FailureMargin, failureMargin);
             }
+
+            if (any)
+                FailureMargin = 0;
+            else
+                SuccessMargin = 0;
+
             return any;
         }
 
@@ -632,9 +645,12 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 Debug.CheckYeh(nameof(alertContexts), alertContexts.Count(), Indent: indent[1]);
                 foreach (AlertContext context in alertContexts)
                 {
-                    bool didPercieve = TryPerceive(context);
+                    bool didPercieve = TryPerceive(context, out int SuccessMargin, out int FailureMargin);
                     any = didPercieve || any;
                     Debug.YehNah(context.ActionAlert.ToString() ?? "NO_CONTEXT", didPercieve, Indent: indent[2]);
+
+                    if (didPercieve)
+                        context.RaiseDetection();
                 }
             }
             else
@@ -885,6 +901,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             foreach (BaseAlert actionAlert in ConcealedAction)
                 yield return new AlertContext(
                     ParentAction: ConcealedAction,
+                    Perceiver: Owner,
                     ActionAlert: actionAlert.Copy(Degrade: false),
                     SneakAlert: ConcealedAction.SneakPerformance[actionAlert],
                     Hider: ConcealedAction.Hider,

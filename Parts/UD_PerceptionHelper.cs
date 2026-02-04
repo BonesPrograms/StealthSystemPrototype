@@ -305,13 +305,13 @@ namespace XRL.World.Parts
 
             if (ParentObject.GetFirstBodyPart("Face") is BodyPart facePart)
             {
-                E.RequireBodyPartPerception<VisualBodyPartPerception>(facePart, Level: 3, PurviewValue: 5);
-                E.RequireBodyPartPerception<AuditoryBodyPartPerception>(facePart, Level: 3, PurviewValue: 4);
-                E.RequireBodyPartPerception<OlfactoryBodyPartPerception>(facePart, Level: 3, PurviewValue: 3);
+                E.RequireBodyPartPerception<VisualBodyPartPerception>(facePart, Level: 10, PurviewValue: 10);
+                E.RequireBodyPartPerception<AuditoryBodyPartPerception>(facePart, Level: 10, PurviewValue: 8);
+                E.RequireBodyPartPerception<OlfactoryBodyPartPerception>(facePart, Level: 10, PurviewValue: 5);
             }
 
             if (ParentObject.TryGetPart(out Esper esper))
-                E.RequirePerception(new EsperPsionicPerception(esper, 1, new EsperPurview(4)));
+                E.RequirePerception(new EsperPsionicPerception(esper, 1, new EsperPurview(8)));
 
             /*
             E.RequirePerception(new SimpleVisualPerception(ParentObject));

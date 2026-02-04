@@ -43,22 +43,45 @@ namespace StealthSystemPrototype.Logging
             if (_GotRegistry)
                 return Registry;
 
-            try
+            if (ModManager.GetMethodsWithAttribute(typeof(UD_DebugRegistryAttribute))
+                    //.Where(m => !m.ContainsGenericParameters).ToList() 
+                    is not List<MethodInfo> debugRegistryMethods
+                || debugRegistryMethods.IsNullOrEmpty())
             {
-                List<MethodInfo> debugRegistryMethods = ModManager.GetMethodsWithAttribute(typeof(UD_DebugRegistryAttribute)) ?? new();
+                MetricsManager.LogModError(
+                    mod: ThisMod,
+                    Message: CallChain(nameof(DebugMethodRegistry), nameof(GetRegistry)) + " failed to retrieve any " +
+                        nameof(UD_DebugRegistryAttribute) + " decorated methods");
 
-                if (debugRegistryMethods.IsNullOrEmpty())
-                    MetricsManager.LogModError(
-                        mod: ThisMod,
-                        Message: CallChain(nameof(DebugMethodRegistry), nameof(GetRegistry)) + " failed to retrieve any " +
-                            nameof(UD_DebugRegistryAttribute) + " decorated methods");
-
-                foreach (MethodInfo debugRegistryMethod in debugRegistryMethods)
-                    debugRegistryMethod.Invoke(null, new object[] { Registry });
+                return Registry;
             }
-            catch (Exception x)
+            foreach (MethodInfo debugRegistryMethod in debugRegistryMethods)
             {
-                MetricsManager.LogException(CallChain(typeof(DebugMethodRegistry).ToString(), nameof(GetRegistry)), x, GAME_MOD_EXCEPTION);
+                try
+                {
+                    MethodInfo methodToInvoke = debugRegistryMethod;
+                    if (methodToInvoke.ContainsGenericParameters)
+                    {
+                        if (debugRegistryMethod.GetGenericArguments() is not Type[] genericArgs
+                            || debugRegistryMethod.MakeGenericMethod(genericArgs) is not MethodInfo madeMethod)
+                        {
+                            string fullMethod = CallChain(
+                                debugRegistryMethod.DeclaringType.ToStringWithGenerics(),
+                                debugRegistryMethod.MethodSignature(true));
+                            MetricsManager.LogModWarning(
+                                    mod: ModManager.GetMod(debugRegistryMethod.DeclaringType.Assembly),
+                                    Message: "Generic method " + fullMethod + " found during " +
+                                        CallChain(nameof(DebugMethodRegistry), nameof(GetRegistry)));
+                            continue;
+                        }
+                        methodToInvoke = madeMethod;
+                    }
+                    methodToInvoke.Invoke(null, new object[] { Registry });
+                }
+                catch (Exception x)
+                {
+                    MetricsManager.LogException(CallChain(nameof(DebugMethodRegistry), nameof(GetRegistry)), x, GAME_MOD_EXCEPTION);
+                }
             }
             return Registry;
         }
@@ -76,10 +99,9 @@ namespace StealthSystemPrototype.Logging
             if (!DoDebugSetting)
                 return false;
 
-            if (CallingMethod.IsNullOrEmpty())
-                return DoDebugSetting;
-
-            if (Instance.IsNullOrEmpty())
+            if (CallingMethod.IsNullOrEmpty()
+                || Instance.IsNullOrEmpty()
+                || Instance.None(m => m.MethodName == CallingMethod))
                 return DoDebugSetting;
 
             try
@@ -92,7 +114,7 @@ namespace StealthSystemPrototype.Logging
             }
             catch (Exception x)
             {
-                MetricsManager.LogException(CallChain(typeof(DebugMethodRegistry).ToString(), nameof(GetDoDebug)), x, GAME_MOD_EXCEPTION);
+                MetricsManager.LogException(CallChain(nameof(DebugMethodRegistry), nameof(GetDoDebug)), x, GAME_MOD_EXCEPTION);
             }
             return DoDebugSetting;
         }
@@ -117,7 +139,7 @@ namespace StealthSystemPrototype.Logging
         public DebugMethodRegistry Register(MethodRegistryEntry RegisterEntry)
         {
             MethodBase methodBase = RegisterEntry.GetMethod();
-            string thisMethodName = CallChain(nameof(DebugMethodRegistry), nameof(Register));
+            string thisMethodName = CallChain(GetType().ToStringWithGenerics(), nameof(Register));
             string declaringType = methodBase?.DeclaringType?.Name;
             bool value = RegisterEntry.GetValue();
 
@@ -127,7 +149,6 @@ namespace StealthSystemPrototype.Logging
                     Message: thisMethodName + " passed null " + nameof(MethodBase));
 
             Add(RegisterEntry);
-            // UnityEngine.Debug.Log(thisMethodName + "(" + RegisterEntry.ToString() + ")");
             return this;
         }
 
@@ -175,12 +196,36 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachValue)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEachValue)));
                 return this;
             }
-            foreach (MethodBase typeMethod in Type.GetMethods() ?? new MethodBase[0])
-                if (Methods.Contains(typeMethod.Name))
-                    Register(typeMethod, Value);
+            try
+            {
+                foreach (MethodBase typeMethod in Type.GetMethods())
+                    if (Methods.Contains(typeMethod.Name))
+                    {
+                        MethodBase methodToRegister = typeMethod;
+                        if (typeMethod.ContainsGenericParameters)
+                        {
+                            if (typeMethod is not MethodInfo typeMethodInfo
+                                || typeMethodInfo.GetGenericArguments() is not Type[] genericArgs
+                                || typeMethodInfo.MakeGenericMethod(genericArgs) is not MethodInfo madeMethod)
+                            {
+                                MetricsManager.LogModWarning(
+                                    mod: ModManager.GetMod(Type.Assembly),
+                                    Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " failed to make non-generic " + typeMethod.MethodSignature(true) + " for " +
+                                        CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEachValue)));
+                                continue;
+                            }
+                            methodToRegister = madeMethod;
+                        }
+                        Register(methodToRegister, Value);
+                    }
+            }
+            catch (Exception x)
+            {
+                MetricsManager.LogException(CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEachValue)), x, GAME_MOD_EXCEPTION);
+            }
 
             return this;
         }
@@ -196,7 +241,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachValue)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEachValue)));
                 return this;
             }
             foreach (MethodBase typeMethod in Type.GetMethods() ?? new MethodBase[0])
@@ -215,7 +260,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(MethodNameValues) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEach)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEach)));
                 return this;
             }
             if (MethodNameValues.Values.Any(v => v))
@@ -237,7 +282,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(MethodValues) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEach)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEach)));
                 return this;
             }
             if (MethodValues.Values.Any(v => v))
@@ -258,7 +303,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachFalse)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEachFalse)));
                 return this;
             }
             return RegisterEachValue(Type, false, Methods);
@@ -274,7 +319,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachFalse)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEachFalse)));
                 return this;
             }
             return RegisterEachValue(Type, false, Methods);
@@ -289,7 +334,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachTrue)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEachTrue)));
                 return this;
             }
             return RegisterEachValue(Type, true, Methods);
@@ -305,7 +350,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(Methods) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterEachTrue)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterEachTrue)));
                 return this;
             }
             return RegisterEachValue(Type, true, Methods);
@@ -320,7 +365,7 @@ namespace StealthSystemPrototype.Logging
                 MetricsManager.LogModWarning(
                     mod: ModManager.GetMod(Type.Assembly),
                     Message: CallingTypeAndMethodNames(ConvertGenerics: true) + " passed empty " + nameof(MinEventTypeValues) + " to " +
-                    CallChain(nameof(DebugMethodRegistry), nameof(RegisterHandleEventVariants)));
+                    CallChain(GetType().ToStringWithGenerics(), nameof(RegisterHandleEventVariants)));
                 return this;
             }
             return RegisterEach(

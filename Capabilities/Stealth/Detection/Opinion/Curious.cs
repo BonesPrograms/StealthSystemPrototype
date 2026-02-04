@@ -18,7 +18,8 @@ namespace StealthSystemPrototype.Detetection.Opinions
     [Serializable]
     public class Curious : IOpinionDetection
     {
-        public override IDetectionResponseGoal Response => new Investigate();
+        protected IDetectionResponseGoal _Response;
+        public override IDetectionResponseGoal Response => _Response ??= new Investigate(this);
 
         public override int BaseValue => 0;
         #region Constructors
@@ -26,6 +27,7 @@ namespace StealthSystemPrototype.Detetection.Opinions
         public Curious()
             : base()
         {
+            _Response = null;
         }
 
         #endregion

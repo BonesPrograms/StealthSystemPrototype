@@ -278,7 +278,7 @@ namespace StealthSystemPrototype.Alerts
         }
 
         [ModSensitiveCacheInit]
-        public void InitAlertCache()
+        public static void InitAlertCache()
         {
             _AlertTypes = CacheAlertTypes(true) as List<Type>;
             _Alerts = CacheAlerts(true) as List<BaseAlert>;

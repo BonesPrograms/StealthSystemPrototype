@@ -269,9 +269,8 @@ namespace StealthSystemPrototype.Logging
             params ArgPair[] ArgPairs)
         {
             if (!DebugMethodRegistry.GetDoDebug(CallingMethod))
-            {
                 return Indent;
-            }
+
             string output = "";
             if (!ArgPairs.IsNullOrEmpty())
             {

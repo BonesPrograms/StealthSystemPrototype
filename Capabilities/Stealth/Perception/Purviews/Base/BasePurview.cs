@@ -78,6 +78,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             }
         }
 
+        public virtual GameObject Perceiver => ParentPerception?.Owner;
+
         protected int _Value;
         public int Value
         {
@@ -269,12 +271,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public virtual int GetModifedEffectiveLevel(AlertContext Context)
             => ParentPerception?.EffectiveLevel ?? 0;
 
-        public virtual bool CheckWithin(Cell AlertLocation)
-            => false;
-
         public virtual bool CheckWithin(AlertContext Context)
-            => CheckWithin(Context.AlertLocation)
-            && GetModifedEffectiveLevel(Context) > 0;
+            => GetModifedEffectiveLevel(Context) > 0;
 
         public virtual void ClearCaches()
         {
