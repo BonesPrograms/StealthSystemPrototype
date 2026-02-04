@@ -4,22 +4,34 @@ using System.Text;
 
 using StealthSystemPrototype.Events;
 
+using XRL.World;
+
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public interface ISneakSource : ISneakEventHandler
     {
-        public Guid SneakActivatedAbilityID { get; set; }
-            
-        public string SneakActivatedAbilityClass { get; }
-
         public int BaseSneakPerformance { get; }
 
         public SneakPerformance SneakPerformance { get; }
 
-        public bool IsBeingPerceived { get; }
+        public List<GameObject> SneakWitnesses { get; }
 
-        public bool WantRecalc { get; set; }
+        public Guid SneakActivatedAbilityID { get; set; }
 
-        public bool IsSneaking { get; }
+        public string SneakActivatedAbilityName { get; }
+
+        public string SneakActivatedAbilityCommand { get; }
+
+        public string SneakSourceDescription { get; }
+            
+        public string SneakActivatedAbilityClass { get; }
+            
+        public bool SneakActivatedAbilityIsRealityDistortionBased { get; }
+
+        public bool SneakBeingPerceived { get; }
+
+        public bool SneakWantRecalc { get; set; }
+
+        public bool SneakSneaking { get; set; }
     }
 }

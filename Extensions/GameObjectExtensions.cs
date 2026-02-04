@@ -24,6 +24,7 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 using StealthSystemPrototype.Detetection.Opinions;
 using System.Diagnostics.CodeAnalysis;
+using XRL.World.Effects;
 
 namespace StealthSystemPrototype
 {
@@ -246,6 +247,45 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+        #region Sneak
+
+        public static ISneakSource GetFirstSneakSource(this GameObject Object, Predicate<ISneakSource> Filter)
+            => Object.GetPartsDescendedFrom(Filter).FirstOrDefault()
+            ?? Object.GetEffectsDescendedFrom(Filter).FirstOrDefault()
+            ?? Object.GetPerceptionsDescendedFrom(Filter).FirstOrDefault();
+
+        public static ISneakSource GetFirstSneakSource(this GameObject Object)
+            => Object.GetFirstSneakSource(null);
+
+        public static bool IsSneaking([NotNullWhen(true)] this GameObject Object)
+            => (Object?.HasEffect<UD_Sneaking>() ?? false)
+            && Object.GetIntProperty("Suspend_UD_Sneak") <= 0;
+
+        #endregion
+
+        public static List<T> GetEffectsDescendedFrom<T>(this GameObject Object, Predicate<T> Filter)
+            where T : class
+            => Object.Effects
+                .Where(fx => fx is T)
+                .Select(fx => fx as T)
+                .Where(t => Filter?.Invoke(t) ?? true)
+                .ToList()
+            ;
+        public static List<T> GetEffectsDescendedFrom<T>(this GameObject Object)
+            where T : class
+            => Object.GetEffectsDescendedFrom<T>(null);
+
+        public static List<T> GetPerceptionsDescendedFrom<T>(this GameObject Object, Predicate<T> Filter)
+            where T : class
+            => Object.GetPerceptions()
+                .Where(p => p is T)
+                .Select(p => p as T)
+                .Where(t => Filter?.Invoke(t) ?? true)
+                .ToList()
+            ;
+        public static List<T> GetPerceptionsDescendedFrom<T>(this GameObject Object)
+            where T : class
+            => Object.GetPerceptionsDescendedFrom<T>(null);
 
         public static void ForeachEffect<T>(
             this GameObject Object,

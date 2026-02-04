@@ -23,7 +23,7 @@ using StealthSystemPrototype.Logging;
 namespace StealthSystemPrototype.Detetection.Opinions
 {
     /// <summary>
-    /// Represents the record of a <see cref="BasePerception"/> having successfully detected a <see cref="BaseAlert"/> within an <see cref="IConcealedAction"/>, and handles the pushing of .
+    /// Represents the record of a <see cref="BasePerception"/> having successfully detected a <see cref="BaseAlert"/> within an <see cref="IConcealedAction"/>, and handles the pushing of its <see cref="IDetectionResponseGoal"/>.
     /// </summary>
     [StealthSystemBaseClass]
     public abstract class IOpinionDetection : IOpinion
@@ -34,11 +34,22 @@ namespace StealthSystemPrototype.Detetection.Opinions
 
         public AwarenessLevel Level;
 
+        public abstract int BaseDuration { get; }
+
+        protected int _Duration;
+        public override int Duration => _Duration;
+
+        public long RemainingTime
+            => Duration > 0
+            ? Duration - (The.Game.TimeTicks - Time)
+            : 0L;
+
         public IOpinionDetection()
             : base()
         {
             AlertContext = null;
             Level = AwarenessLevel.None;
+            _Duration = BaseDuration;
         }
 
         #region Serialization

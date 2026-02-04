@@ -711,7 +711,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             if (!Owner.TryGetPart(out UD_Witness witness)
                 || witness.ZoneSneakers.IsNullOrEmpty()
-                || witness.ZoneSneakers.All(s => !s.IsSneaking))
+                || witness.ZoneSneakers.All(s => !s.SneakSneaking))
                 return false;
 
             return Perception.WantEvent(ID, Cascade)

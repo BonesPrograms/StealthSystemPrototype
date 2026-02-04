@@ -406,7 +406,13 @@ namespace StealthSystemPrototype.Perceptions
 
         public PerceptionRack Rack => Owner?.GetPerceptions();
 
-        public int Level;
+        protected int _Level;
+
+        public virtual int Level
+        {
+            get => _Level;
+            protected set => _Level = value; 
+        }
 
         [NonSerialized]
         protected int? _EffectiveLevel;

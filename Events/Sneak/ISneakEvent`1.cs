@@ -118,6 +118,19 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
+        public static T FromPool(
+            GameObject Hider,
+            List<GameObject> Witnesses)
+        {
+            if (Hider == null
+                || FromPool(Hider) is not T E)
+                return null;
+
+            E.Witnesses = Witnesses;
+            E.GetStringyEvent();
+            return E;
+        }
+
         public static Event GetStringyEvent(ISneakEvent<T> ForEvent, ref Event ExistingEvent)
             => ForEvent == null
             ? ExistingEvent = Event.New(RegisteredEventID)

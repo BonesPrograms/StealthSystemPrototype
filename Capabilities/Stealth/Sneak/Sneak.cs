@@ -15,12 +15,17 @@ using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Perceptions.Specs;
 
 using static StealthSystemPrototype.Utils;
+using XRL.World.Effects;
+using System.Diagnostics.CodeAnalysis;
+using XRL.Messages;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [HasWishCommand]
     public static class Sneak
     {
+        public static string VERBING => "sneaking";
+
         /// <summary>
         /// Prepares the supplied <paramref name="ConcealedAction"/> and then passes it to <see cref="TryConcealActionEvent.Send"/>.
         /// </summary>
@@ -48,33 +53,127 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return false;
         }
 
-        public static ISneakSource GetSneakSource(GameObject Sneaker)
+        public static bool IsBeingPerceived(GameObject Hider)
+            => SneakSource(Hider) is ISneakSource sneakSource
+            && sneakSource.SneakBeingPerceived;
+
+
+        private static ISneakSource SneakSource(GameObject Source, Predicate<ISneakSource> Filter)
+            => Source?.GetFirstSneakSource(Filter);
+
+        private static ISneakSource SneakSource(GameObject Sneaker)
+            => SneakSource(Sneaker, null);
+
+        private static bool HasSource(UD_Sneaking FX)
+            => FX.Source != null;
+
+        private static bool HasActivatedAbilityID(ISneakSource SS)
+            => SS.SneakActivatedAbilityID != Guid.Empty;
+
+        public static bool AbilitySetup(GameObject Source, GameObject Object, ISneakSource SS = null)
         {
-            List<ISneakSource> sneakSources = new();
-            if (Sneaker.PartsList
-                .Where(p => typeof(ISneakSource).IsAssignableFrom(p.GetType()))
-                .Select(p => p as ISneakSource).ToList() is List<ISneakSource> iPartSneakSources)
-                sneakSources.AddRange(iPartSneakSources);
+            if ((SS ??= SneakSource(Source)) == null)
+                return false;
 
-            if (Sneaker.Effects
-                .Where(p => typeof(ISneakSource).IsAssignableFrom(p.GetType()))
-                .Select(p => p as ISneakSource).ToList() is List<ISneakSource> fxSneakSources)
-                sneakSources.AddRange(fxSneakSources);
+            string abilityName = SS.SneakActivatedAbilityName ?? "Sneak";
 
-            sneakSources.OrderInPlace((x, y) => -x.BaseSneakPerformance.CompareTo(y.BaseSneakPerformance));
+            if (SS.SneakSourceDescription != null)
+                abilityName += " (" + SS.SneakSourceDescription + ")";
 
-            if (sneakSources.IsNullOrEmpty())
-                return null;
+            SS.SneakActivatedAbilityID = Object.AddActivatedAbility(
+                Name: abilityName,
+                SS.SneakActivatedAbilityCommand,
+                SS.SneakActivatedAbilityClass,
+                Description: null, // explicitly null. This should take from the xmls.
+                Icon: "\u0001",
+                Toggleable: true,
+                DefaultToggleState: SS.SneakSneaking,
+                ActiveToggle: true,
+                IsRealityDistortionBased: SS.SneakActivatedAbilityIsRealityDistortionBased,
+                CommandForDescription: "Command_UD_SneakToggle");
 
-            return sneakSources[0];
+            return true;
         }
 
-        public static bool IsBeingPerceived(GameObject Hider)
-            => GetSneakSource(Hider) is ISneakSource sneakSource
-            && sneakSource.IsBeingPerceived;
+        public static bool AbilityTeardown(GameObject Source, GameObject Object, ISneakSource SS = null)
+        {
+            if ((SS ??= SneakSource(Source)) != null)
+            {
+                Guid ID = SS.SneakActivatedAbilityID;
+                Object.RemoveActivatedAbility(ref ID);
+                SS.SneakActivatedAbilityID = ID;
+            }
+            return true;
+        }
+
+        public static UD_Sneaking GetSneakingEffectFromSource(GameObject Source, GameObject Object)
+        {
+            if (GameObject.Validate(ref Source) && GameObject.Validate(ref Object))
+                foreach (UD_Sneaking fx in Object.YieldEffects<UD_Sneaking>())
+                    if (fx is UD_Sneaking sneaking
+                        && sneaking.Source == Source)
+                        return sneaking;
+            return null;
+        }
+
+        public static bool IsSneaking(GameObject Object)
+            => Object?.IsSneaking() ?? false;
+
+        public static bool StartSneaking(GameObject Source, GameObject Object, ISneakSource SS = null)
+        {
+            if ((SS ??= SneakSource(Source)) == null)
+                return false;
+
+            if (SS.SneakSneaking)
+                return false;
+
+            if (!Object.CheckFrozen())
+                return false;
+
+            if (!Object.CanChangeMovementMode(VERBING.Capitalize(), ShowMessage: true))
+                return false;
+
+            string abortedByEventMessage = null;
+
+            if (!BeforeSneakEvent.Check(Object, SS.SneakPerformance, SS.SneakWitnesses, ref abortedByEventMessage))
+                return !abortedByEventMessage.IsNullOrEmpty()
+                    && Object.ShowFailure(abortedByEventMessage);
+
+            Object.PlayWorldSound("Sounds/Abilities/sfx_ability_mutation_wings_fly_move");
+            if (Object.GetEffectCount(typeof(UD_Sneaking)) == 0)
+            {
+                if (Object.IsVisible()) // this should mention vanishing if it's a non-player who the player can no longer detect.
+                    ("=subject.T= =subject.verb:begin= " + VERBING + "!")
+                        .StartReplace()
+                        .AddObject(Object)
+                        .EmitMessage();
+
+                Object.MovementModeChanged("Sneaking");
+            }
+            else
+            if (Object.IsPlayer())
+                ("=subject.T= =subject.verb:begin= employing an additional means of " + VERBING + "!")
+                        .StartReplace()
+                        .AddObject(Object)
+                        .EmitMessage();
+
+            SS.SneakSneaking = true;
+            Object.ApplyEffect(new UD_Sneaking(Source));
+            Object.ToggleActivatedAbility(SS.SneakActivatedAbilityID);
+            Object.FireEvent("SneakStarted");
+            ObjectStartedFlyingEvent.SendFor(Object);
+            return true;
+        }
+        /*
+        => !IsSneaking(Object)
+        && Object.CheckFrozen()
+        && Object.CanChangeMovementMode("sneak", ShowMessage: true)
+        && Object.CheckNotOnWorldMap("sneak", ShowMessage: true)
+        && Object.ApplyEffect(new UD_Sneaking())
+        && ToggleMyActivatedAbility(SneakActivatedAbilityID, SetState: true);
+        */
 
         #region Wishes
-
 
         private static string StringGameObjectDetectionOpinionLevel(GameObject Perceiver, GameObject Hider)
             => "=subject.Refname= is "

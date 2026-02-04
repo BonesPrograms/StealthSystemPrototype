@@ -41,24 +41,26 @@ namespace StealthSystemPrototype.Perceptions
             => IPerception is IAlertTypedPerception<A>;
 
         #endregion
+
+        int Level { get; }
+
         #region Serialization
 
-        public void FinalizeRead(SerializationReader Reader);
+        void FinalizeRead(SerializationReader Reader);
 
         #endregion
         #region Contracts
-
         #region Event Registration
 
-        public void ApplyRegistrar(GameObject Object, bool Active = false);
+        void ApplyRegistrar(GameObject Object, bool Active = false);
 
-        public void ApplyUnregistrar(GameObject Object, bool Active = false);
+        void ApplyUnregistrar(GameObject Object, bool Active = false);
 
-        public void RegisterActive(GameObject Object, IEventRegistrar Registrar);
+        void RegisterActive(GameObject Object, IEventRegistrar Registrar);
 
-        public void Register(GameObject Object, IEventRegistrar Registrar);
+        void Register(GameObject Object, IEventRegistrar Registrar);
 
-        public bool FireEvent(Event E);
+        bool FireEvent(Event E);
 
         #endregion
         #region Object Life-cycle
@@ -66,22 +68,22 @@ namespace StealthSystemPrototype.Perceptions
         /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as initial.
         /// </summary>
-        public void Initialize();
+        void Initialize();
 
         /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack.
         /// </summary>
-        public void Attach();
+        void Attach();
 
         /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as not creation.
         /// </summary>
-        public void AddedAfterCreation();
+        void AddedAfterCreation();
 
         /// <summary>
         /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is removed from the rack.
         /// </summary>
-        public void Remove();
+        void Remove();
 
         /// <summary>
         /// Creates a deep copy of an <see cref="IPerception"/>, with all the same values as the original.
@@ -91,7 +93,7 @@ namespace StealthSystemPrototype.Perceptions
         /// </remarks>
         /// <param name="Owner">The new <see cref="GameObject"/> for whom the deep copy is intended.</param>
         /// <returns>A new <see cref="IPerception"/> with values matching the original, and reassigned reference members.</returns>
-        public IPerception DeepCopy(GameObject Owner);
+        IPerception DeepCopy(GameObject Owner);
 
         #endregion
         #region Field Accessors
@@ -101,43 +103,43 @@ namespace StealthSystemPrototype.Perceptions
         /// </summary>
         /// <param name="Short">Indicates an alternate shorter version of the output.<br/><br/>A good option is to use <see cref="Extensions.Acronymize(string)"/> to get an acronym.</param>
         /// <returns>The ID-like name of the <see cref="IPerception"/>.</returns>
-        public string GetName(bool Short = false);
+        string GetName(bool Short = false);
 
-        public GameObject GetOwner();
+        GameObject GetOwner();
 
         /// <summary>
         /// Get the <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.
         /// </summary>
         /// <returns>The <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.</returns>
-        public Type GetAlertType();
+        Type GetAlertType();
 
         /// <summary>
         /// Get the <see cref="IPurview"/> used by this <see cref="IPerception"/> to determine whether an <see cref="IConcealedAction"/> is in proximity enough to be detected.
         /// </summary>
         /// <returns>The <see cref="IPurview"/> used by this <see cref="IPerception"/> to determine whether an <see cref="IConcealedAction"/> is in proximity enough to be detected.</returns>
-        public IPurview GetPurview();
+        IPurview GetPurview();
 
-        public int GetLevel();
+        int GetLevel();
 
-        public int GetLevelAdjustment(int Level = 0);
+        int GetLevelAdjustment(int Level = 0);
 
-        public int GetEffectiveLevel();
+        int GetEffectiveLevel();
 
-        public int GetCooldown();
+        int GetCooldown();
 
-        public int GetMaxCoolDown();
+        int GetMaxCoolDown();
 
         #endregion
 
-        public string ToString(bool Short);
+        string ToString(bool Short);
 
         #region Compatibility
 
-        public bool SameAs(IPerception Other);
+        bool SameAs(IPerception Other);
 
-        public bool SameAlertAs(IPerception Other);
+        bool SameAlertAs(IPerception Other);
 
-        public bool IsCompatibleWith(IPurview Purview);
+        bool IsCompatibleWith(IPurview Purview);
 
         #endregion
         #region Purview
@@ -147,53 +149,53 @@ namespace StealthSystemPrototype.Perceptions
         /// </summary>
         /// <param name="Value">The value to which the <see cref="IPurview.Value"/> should be set.</param>
         /// <param name="args">An optional set of string &amp; object pairs that represent named values to pass on to <see cref="IPurview.Configure(Dictionary{string, object})"/>.</param>
-        public void ConfigurePurview(int Value, Dictionary<string, object> args = null);
+        void ConfigurePurview(int Value, Dictionary<string, object> args = null);
 
-        public bool CheckInPurview(AlertContext Context);
+        bool CheckInPurview(AlertContext Context);
 
         #endregion
         #region Cooldown
 
-        public bool IsOnCooldown();
+        bool IsOnCooldown();
 
-        public void TickCooldown();
+        void TickCooldown();
 
-        public void GoOnCooldown(int Cooldown);
+        void GoOnCooldown(int Cooldown);
 
-        public void GoOnCooldown();
+        void GoOnCooldown();
 
-        public void GoOffCooldown();
+        void GoOffCooldown();
 
         #endregion
         #region Perceive
 
-        public bool CanPerceiveAlert(IAlert Alert);
+        bool CanPerceiveAlert(IAlert Alert);
 
-        public bool CanPerceive(AlertContext Context);
+        bool CanPerceive(AlertContext Context);
 
-        public bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin);
+        bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin);
 
-        public IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin);
+        IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin);
 
         #endregion
 
-        public void ClearCaches();
+        void ClearCaches();
 
-        public bool Validate();
+        bool Validate();
 
         #endregion
         #region Comparison
 
-        public int CompareLevelTo(IPerception Other)
+        int CompareLevelTo(IPerception Other)
             => GetLevel() - Other.GetLevel();
 
-        public int CompareEffectiveLevelTo(IPerception Other)
+        int CompareEffectiveLevelTo(IPerception Other)
             => GetEffectiveLevel() - Other.GetEffectiveLevel();
 
-        public int ComparePurviewTo(IPerception Other)
+        int ComparePurviewTo(IPerception Other)
             => GetPurview().CompareTo(Other.GetPurview());
 
-        public new int CompareTo(IPerception Other)
+        new int CompareTo(IPerception Other)
         {
             if (EitherNull(this, Other, out int comparison))
                 return comparison;

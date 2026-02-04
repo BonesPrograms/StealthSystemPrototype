@@ -38,7 +38,7 @@ namespace StealthSystemPrototype.Detetection.ResponseGoals
 
         public GameObject Perciever => AlertContext?.Perceiver;
 
-        public GameObject Actor => AlertContext?.Hider;
+        public GameObject Hider => AlertContext?.Hider;
 
         public GameObject AlertObject => AlertContext?.AlertObject;
 
@@ -56,8 +56,9 @@ namespace StealthSystemPrototype.Detetection.ResponseGoals
         public bool IsValid => Level > AwarenessLevel.None
             && Perciever == ParentObject
             && GameObject.Validate(Perciever)
-            && GameObject.Validate(Actor)
-            && GameObject.Validate(AlertObject);
+            && GameObject.Validate(Hider)
+            && GameObject.Validate(AlertObject)
+            && SourceOpinion.RemainingTime > 0;
 
         #region Constructors
 
@@ -112,7 +113,7 @@ namespace StealthSystemPrototype.Detetection.ResponseGoals
             => !OverridesCombat;
 
         public override bool Finished()
-            => !IsValid;
+            => Level > AwarenessLevel.Suspect;
 
         public override void TakeAction()
         {

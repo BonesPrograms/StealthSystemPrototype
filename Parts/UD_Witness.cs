@@ -110,22 +110,26 @@ namespace XRL.World.Parts
             if (ParentObject != E.Hider
                 && !ParentObject.InSamePartyAs(E.Hider))
             {
-                if (ZoneSneakers != null
-                    && Sneak.GetSneakSource(E.Hider) is ISneakSource hiderSneakSource
-                    && !ZoneSneakers.Contains(hiderSneakSource))
-                    ZoneSneakers.Add(hiderSneakSource);
-
                 E.AddWitness(this);
 
                 using Indent indent = new(1);
-                Debug.CheckYeh(Name, ParentObject?.DebugName ?? "null", Indent: indent);
-                /*
-                if (Perceptions.Sense(E.Hider, out IPerception perception) > AwarenessLevel.None)
-                {
-                    Debug.Log(perception.ToString(Short: true), Indent: indent[1]);
-                    E.AddWitness(perception);
-                }
-                */
+                Debug.CheckYeh(Name, ParentObject?.DebugName ?? "NO_WITNESS", Indent: indent);
+            }
+                
+            return base.HandleEvent(E);
+        }
+        public bool HandleEvent(IsSneakingEvent E)
+        {
+            if (ParentObject != E.Hider
+                && !ParentObject.InSamePartyAs(E.Hider))
+            {
+                if (ZoneSneakers != null
+                    && E.Hider is ISneakSource hiderSneakSource
+                    && !ZoneSneakers.Contains(hiderSneakSource))
+                    ZoneSneakers.Add(hiderSneakSource);
+
+                using Indent indent = new(1);
+                Debug.CheckYeh(Name, ParentObject?.DebugName ?? "NO_WITNESS", Indent: indent);
             }
                 
             return base.HandleEvent(E);

@@ -23,7 +23,6 @@ namespace XRL.World.Effects
     public class UD_Sneaking : IScribedEffect, ITierInitialized, ISneakEventHandler
     {
         public const string DISPLAY_NAME = "{{K|light footed}}";
-        public const string VERBING = "sneaking";
 
         public const string MS_NAME = "MoveSpeed";
         public const string QN_NAME = "Speed";
@@ -120,21 +119,21 @@ namespace XRL.World.Effects
             stealthHelperPart.Witnesses = witnesses;
 
             if (Object.HasEffect<UD_Sneaking>()
-                && !Object.CanChangeMovementMode(VERBING)
+                && !Object.CanChangeMovementMode(Sneak.VERBING)
                 && !Object.FireEvent(Event.New(nameof(Apply) + nameof(UD_Sneaking), "Effect", this)))
                 return false;
 
             Object?.PlayWorldSound("Sounds/StatusEffects/sfx_statusEffect_movementBuff");
             StatShifter.DefaultDisplayName = DisplayName;
-            Object.MovementModeChanged(VERBING);
-            DidX("begin", VERBING, "!");
+            Object.MovementModeChanged(Sneak.VERBING);
+            DidX("begin", Sneak.VERBING, "!");
             RecalcStatMultipliers();
             return true;
         }
 
         public override void Remove(GameObject Object)
         {
-            DidX("stop", VERBING);
+            DidX("stop", Sneak.VERBING);
             StatShifter.RemoveStatShifts(Object);
             base.Remove(Object);
         }

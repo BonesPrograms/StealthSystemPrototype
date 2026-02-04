@@ -64,7 +64,7 @@ namespace XRL.World.Parts
 
         protected List<GameObject> Witnesses => _Witnesses ??= The.ActiveZone.GetObjects(GO => GO.WithinAnyPurview(ParentObject));
 
-        public bool IsBeingPerceived
+        public bool SneakBeingPerceived
             => !IsSneaking() // non-sneakers are always perceptable in this system
             || (Witnesses?.Aggregate( // looping over the witness list
                 seed: false, // return a bool, start with false (if it's empty, then there are no witness to perceive the sneaker)
@@ -83,19 +83,33 @@ namespace XRL.World.Parts
 
         [SerializeField]
         private bool _WantRecalc;
-        public bool WantRecalc
+        public bool SneakWantRecalc
         {
             get => _WantRecalc;
             set => _WantRecalc = value;
         }
 
-        bool ISneakSource.IsSneaking => IsSneaking();
+        public List<GameObject> SneakWitnesses => throw new NotImplementedException();
+
+        public string SneakActivatedAbilityName => "Sneak";
+
+        public string SneakActivatedAbilityCommand => COMMAND_SNEAK;
+
+        public string SneakSourceDescription => ParentObject?.GetPart<UD_Stealth_LightFooted>()?.DisplayName;
+
+        public bool SneakActivatedAbilityIsRealityDistortionBased => false;
+
+        public bool SneakSneaking
+        {
+            get => IsSneaking();
+            set => throw new NotImplementedException();
+        }
 
         public UD_Sneak()
         {
             SneakPerformance = null;
             _SneakActivatedAbilityID = Guid.Empty;
-            WantRecalc = false;
+            SneakWantRecalc = false;
         }
 
         #region Serialization
@@ -113,16 +127,22 @@ namespace XRL.World.Parts
 
         #endregion
 
+        public override void Attach()
+        {
+            AbilitySetup(ParentObject, ParentObject, this);
+            base.Remove();
+        }
+
         public override void Remove()
         {
-            RemoveMyActivatedAbility(ref _SneakActivatedAbilityID);
+            AbilityTeardown(ParentObject, ParentObject, this);
             base.Remove();
         }
 
         public UD_Sneak WantsSync()
         {
             SneakPerformance.WantSync = true;
-            WantRecalc = true;
+            SneakWantRecalc = true;
             return this;
         }
         public static UD_Sneak WantsSync(GameObject Who)
@@ -150,10 +170,10 @@ namespace XRL.World.Parts
 
         public void PerformRecalc()
         {
-            if (WantRecalc)
+            if (SneakWantRecalc)
             {
                 ParentObject.ForeachEffect((UD_Sneaking fx) => fx.RecalcStatMultipliers());
-                WantRecalc = false;
+                SneakWantRecalc = false;
             }
         }
 
@@ -196,7 +216,7 @@ namespace XRL.World.Parts
             && ParentObject.CheckFrozen()
             && ParentObject.CanChangeMovementMode("sneak", ShowMessage: true)
             && ParentObject.CheckNotOnWorldMap("sneak", ShowMessage: true)
-            && ParentObject.ApplyEffect(new UD_Sneaking())
+            && ParentObject.ApplyEffect(new UD_Sneaking(ParentObject))
             && ToggleMyActivatedAbility(SneakActivatedAbilityID, SetState: true);
             // CooldownMyActivatedAbility(ActivatedAbilityID, 100, null, "Intelligence");
 
