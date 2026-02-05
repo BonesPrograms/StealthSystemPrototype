@@ -16,16 +16,17 @@ using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public class IsSneakingEvent : ISneakEvent<IsSneakingEvent>
+    public abstract class IIsSneakingEvent<T> : ISneakEvent<T>
+        where T : IIsSneakingEvent<T>, new()
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
-        public IsSneakingEvent()
+        public IIsSneakingEvent()
             : base()
         {
         }
 
-        public static void Send(GameObject Hider, List<GameObject> Witnesses)
+        public static void Send(GameObject Hider, SneakPerformance Performance, List<GameObject> Witnesses)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -39,32 +40,14 @@ namespace StealthSystemPrototype.Events
                     Hider: Hider,
                     Performance: Performance,
                     Witnesses: ref Witnesses,
-                    CollectWitnesses: true) is not IsSneakingEvent E)
-                return false;
+                    CollectWitnesses: false) is not T E)
+                return;
 
-            E.Message = Message;
             E.GetStringyEvent();
 
-            Process(E, Success: out bool success);
-            if (!success)
-            {
-                Message = E.Message;
-                return false;
-            }
-            else
-            if (!E.Witnesses.IsNullOrEmpty())
-            {
-                if (success)
-                    success = E.Witnesses.FireEvent(E.StringyEvent, true);
+            Process(E, Success: out bool _);
 
-                if (success)
-                    E.UpdateFromStringyEvent();
-
-                if (success)
-                    success = E.Witnesses.HandleEvent(E, true);
-            }
-            Message = E.Message;
-            return success;
+            ZoneProcess(E, out bool _);
         }
     }
 }

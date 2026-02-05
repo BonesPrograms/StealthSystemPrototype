@@ -17,7 +17,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
     public class ConcealedActionData
-        : AlertRack
+        : AlertSet
         , IConcealedAction
     {
         public static string METHOD_GET_TYPE => "Method_" + nameof(GetType);

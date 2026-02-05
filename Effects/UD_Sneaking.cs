@@ -56,6 +56,8 @@ namespace XRL.World.Effects
         [SerializeField]
         private int AppliedQuicknessMultiplierAmount;
 
+        public Dictionary<GameObject, object>.KeyCollection 
+
         public bool IsBeingPerceived;
 
         public UD_Sneaking()
@@ -219,8 +221,8 @@ namespace XRL.World.Effects
         }
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
-            // || ID == GetSneakDetailsEvent.ID
             || ID == EndTurnEvent.ID
+            // || ID == GetSneakDetailsEvent.ID
             || ID == EnteredCellEvent.ID
             || ID == GetAttackerHitDiceEvent.ID
             || ID == GetDebugInternalsEvent.ID
@@ -314,6 +316,11 @@ namespace XRL.World.Effects
                     E.Add(this, SB.ToString());
                 }
             }
+            return base.HandleEvent(E);
+        }
+        public override bool HandleEvent(EndTurnEvent E)
+        {
+            ObjectIsSneakingEvent.Send(Object, SneakPerformance, Witnesses)
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(CommandEvent E)

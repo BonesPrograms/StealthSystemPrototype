@@ -245,8 +245,10 @@ namespace StealthSystemPrototype.Events
             Success = true;
             if (GameObject.Validate(ref E.Hider))
             {
+                Zone zone = E.Hider.GetCurrentZone();
+
                 if (Success)
-                    Success = E.Hider.GetCurrentZone().FireEvent(E.StringyEvent);
+                    Success = zone.FireEvent(E.StringyEvent);
                 Debug.YehNah(nameof(Zone.FireEvent), Success, Indent: indent[1]);
 
                 if (Success)
@@ -254,7 +256,8 @@ namespace StealthSystemPrototype.Events
                 Debug.YehNah(nameof(UpdateFromStringyEvent), Success, Indent: indent[1]);
 
                 if (Success)
-                    Success = E.Hider.GetCurrentZone().HandleEvent(E);
+                    Success = !zone.WantEvent(E.GetID(), E.GetCascadeLevel())
+                        || zone.HandleEvent(E);
                 Debug.YehNah(nameof(Zone.HandleEvent), Success, Indent: indent[1]);
             }
             return E;

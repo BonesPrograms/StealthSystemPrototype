@@ -14,7 +14,7 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using static StealthSystemPrototype.Alerts.AlertRack;
+using static StealthSystemPrototype.Alerts.AlertSet;
 
 namespace StealthSystemPrototype.Alerts
 {

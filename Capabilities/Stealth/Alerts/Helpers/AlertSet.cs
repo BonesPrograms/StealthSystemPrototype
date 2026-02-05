@@ -26,14 +26,14 @@ using static StealthSystemPrototype.AlertExtensions;
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public class AlertRack : Rack<BaseAlert>, IDisposable
+    public abstract class AlertSet : CoalescibleSet<IAlert>
     {
         #region Debug
         [UD_DebugRegistry]
-        public static void AlertRack_DoDebugRegistry(DebugMethodRegistry Registry)
+        public static void AlertSet_DoDebugRegistry(DebugMethodRegistry Registry)
         {
             Registry.RegisterEach(
-                Type: typeof(StealthSystemPrototype.Alerts.AlertRack),
+                Type: typeof(StealthSystemPrototype.Alerts.AlertSet),
                 MethodNameValues: new Dictionary<string, bool>()
                 {
                     { nameof(Add), false },
@@ -53,29 +53,29 @@ namespace StealthSystemPrototype.Alerts
 
         #region Constructors
 
-        public AlertRack()
+        public AlertSet()
             : base()
         { }
-        public AlertRack(int Capacity)
+        public AlertSet(int Capacity)
             : base(Capacity)
         { }
-        public AlertRack(IReadOnlyList<BaseAlert> List, CoalesceMethod DefaultCoalesceMethod)
+        public AlertSet(IReadOnlyList<IAlert> List, CoalesceMethod DefaultCoalesceMethod)
             : base(List.Select(a => a.Copy()).ToList())
         {
             _DefaultCoalesceMethod = DefaultCoalesceMethod;
             Coalesce();
         }
-        public AlertRack(CoalesceMethod DefaultCoalesceMethod)
+        public AlertSet(CoalesceMethod DefaultCoalesceMethod)
             : base()
         {
             _DefaultCoalesceMethod = DefaultCoalesceMethod;
         }
-        public AlertRack(IReadOnlyList<BaseAlert> List)
+        public AlertSet(IReadOnlyList<IAlert> List)
             : this(List, CoalesceMethod.Merge)
         {
         }
-        public AlertRack(AlertRack Source)
-            : this(Source as IReadOnlyList<BaseAlert>)
+        public AlertSet(AlertSet Source)
+            : this(Source as IReadOnlyList<IAlert>)
         { }
 
         #endregion
@@ -83,8 +83,6 @@ namespace StealthSystemPrototype.Alerts
 
         public override void Write(SerializationWriter Writer)
         {
-            Coalesce();
-
             base.Write(Writer);
 
             Writer.Write(_DefaultCoalesceMethod != null);
@@ -101,7 +99,7 @@ namespace StealthSystemPrototype.Alerts
 
         #endregion
 
-        public AlertRack Coalesce(CoalesceMethod? Method = null)
+        public AlertSet Coalesce(CoalesceMethod? Method = null)
         {
             _DefaultCoalesceMethod ??= CoalesceMethod.Merge;
             CoalesceMethod method = Method ?? DefaultCoalesceMethod;
@@ -258,7 +256,7 @@ namespace StealthSystemPrototype.Alerts
             => (Header.IsNullOrEmpty() ? null : Header + ":\n") +
                 Coalesce().AggregateNewLineDelimited();
 
-        public virtual void Dispose()
+        public override void Dispose()
         {
             using Indent indent = new(1);
             Debug.LogMethod(indent,

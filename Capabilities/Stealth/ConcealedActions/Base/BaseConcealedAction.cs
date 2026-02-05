@@ -20,7 +20,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [StealthSystemBaseClass]
     [Serializable]
     public class BaseConcealedAction
-        : AlertRack
+        : AlertSet
         , IConcealedAction
     {
         #region Debug

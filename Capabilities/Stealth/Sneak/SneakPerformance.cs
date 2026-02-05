@@ -25,7 +25,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     [HasModSensitiveStaticCache]
     [HasGameBasedStaticCache]
     [Serializable]
-    public class SneakPerformance : AlertRack
+    public class SneakPerformance : AlertSet
     {
         #region Const & Static
 

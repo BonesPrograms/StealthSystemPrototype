@@ -212,13 +212,7 @@ namespace XRL.World.Parts
             => ParentObject.HasEffect<UD_Sneaking>();
 
         public bool StartSneaking()
-            => !IsSneaking()
-            && ParentObject.CheckFrozen()
-            && ParentObject.CanChangeMovementMode("sneak", ShowMessage: true)
-            && ParentObject.CheckNotOnWorldMap("sneak", ShowMessage: true)
-            && ParentObject.ApplyEffect(new UD_Sneaking(ParentObject))
-            && ToggleMyActivatedAbility(SneakActivatedAbilityID, SetState: true);
-            // CooldownMyActivatedAbility(ActivatedAbilityID, 100, null, "Intelligence");
+            => Sneak.StartSneaking(ParentObject, ParentObject, this);
 
         public bool StopSneaking()
             => IsSneaking()

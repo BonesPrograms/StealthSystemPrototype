@@ -30,9 +30,9 @@ namespace StealthSystemPrototype.Events
         public string ActionName => ConcealedAction?.Name;
         public string Action => ConcealedAction?.Action;
 
-        protected AlertRack ActionAlerts;
+        protected AlertSet ActionAlerts;
 
-        protected AlertRack RemovedActionAlerts;
+        protected AlertSet RemovedActionAlerts;
 
         protected Dictionary<string, int> AdjustByPercent;
 

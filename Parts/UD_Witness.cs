@@ -118,7 +118,7 @@ namespace XRL.World.Parts
                 
             return base.HandleEvent(E);
         }
-        public bool HandleEvent(IsSneakingEvent E)
+        public bool HandleEvent(IIsSneakingEvent E)
         {
             if (ParentObject != E.Hider
                 && !ParentObject.InSamePartyAs(E.Hider))

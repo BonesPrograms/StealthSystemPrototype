@@ -64,6 +64,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         private static ISneakSource SneakSource(GameObject Sneaker)
             => SneakSource(Sneaker, null);
 
+        private static bool TryGetSneakSource(GameObject Source, ref ISneakSource SS)
+            => (SS ??= SneakSource(Source)) != null;
+
         private static bool HasSource(UD_Sneaking FX)
             => FX.Source != null;
 
@@ -97,7 +100,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public static bool AbilityTeardown(GameObject Source, GameObject Object, ISneakSource SS = null)
         {
-            if ((SS ??= SneakSource(Source)) != null)
+            if (TryGetSneakSource(Source, ref SS))
             {
                 Guid ID = SS.SneakActivatedAbilityID;
                 Object.RemoveActivatedAbility(ref ID);
@@ -121,7 +124,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public static bool StartSneaking(GameObject Source, GameObject Object, ISneakSource SS = null)
         {
-            if ((SS ??= SneakSource(Source)) == null)
+            if (!TryGetSneakSource(Source, ref SS))
                 return false;
 
             if (SS.SneakSneaking)
@@ -153,9 +156,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             else
             if (Object.IsPlayer())
                 ("=subject.T= =subject.verb:begin= employing an additional means of " + VERBING + "!")
-                        .StartReplace()
-                        .AddObject(Object)
-                        .EmitMessage();
+                    .StartReplace()
+                    .AddObject(Object)
+                    .EmitMessage();
 
             SS.SneakSneaking = true;
             Object.ApplyEffect(new UD_Sneaking(Source));
@@ -164,14 +167,63 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             ObjectStartedFlyingEvent.SendFor(Object);
             return true;
         }
-        /*
-        => !IsSneaking(Object)
-        && Object.CheckFrozen()
-        && Object.CanChangeMovementMode("sneak", ShowMessage: true)
-        && Object.CheckNotOnWorldMap("sneak", ShowMessage: true)
-        && Object.ApplyEffect(new UD_Sneaking())
-        && ToggleMyActivatedAbility(SneakActivatedAbilityID, SetState: true);
-        */
+
+        public static bool StopFlying(GameObject Source, GameObject Object, ISneakSource SS = null, bool Silent = false, bool FromFail = false)
+        {
+            if (!TryGetSneakSource(Source, ref SS))
+                return false;
+
+            if (!SS.SneakSneaking)
+                return false;
+
+            if (Object == null)
+            {
+                SS.SneakSneaking = false;
+                return false;
+            }
+
+            int effectCount = Object.GetEffectCount(typeof(UD_Sneaking));
+            Object.GetCurrentCell();
+            if (!Silent)
+            {
+                if (effectCount <= 1)
+                {
+                    if (Object.IsVisible()) // this should mention appearing if it's a non-player who the player can now detect.
+                        ("=subject.T= =subject.verb:stop= " + VERBING + ".")
+                            .StartReplace()
+                            .AddObject(Object)
+                            .EmitMessage();
+                }
+                else
+                if (Object.IsPlayer())
+                    ("=subject.T= =subject.verb:cease= employing one of your means of " + VERBING + ".")
+                        .StartReplace()
+                        .AddObject(Object)
+                        .EmitMessage();
+            }
+            SS.SneakSneaking = false;
+            if (!Object.RemoveEffect(typeof(Flying), (Effect FX) => (FX as Flying).Source == Source))
+            {
+                Object.RemoveEffect<Flying>();
+            }
+            Object.ToggleActivatedAbility(SS.SneakActivatedAbilityID, Silent: false);
+            Object.FireEvent(nameof(UD_Sneaking) + "StoppedFromOneSource");
+            if (effectCount <= 1)
+            {
+                Object.FireEvent(nameof(UD_Sneaking) + "Stopped");
+                if (!FromFail)
+                {
+                    NoLongerSneaking(Object);
+                    Object.MovementModeChanged("Not" + nameof(UD_Sneaking));
+                }
+                ObjectStoppedFlyingEvent.SendFor(Object);
+            }
+            return true;
+        }
+        private static void NoLongerSneaking(GameObject Object)
+        {
+            // do clean-up here.
+        }
 
         #region Wishes
 

@@ -10,7 +10,7 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
-using static StealthSystemPrototype.Alerts.AlertRack;
+using static StealthSystemPrototype.Alerts.AlertSet;
 
 namespace StealthSystemPrototype.Alerts
 {
@@ -20,7 +20,7 @@ namespace StealthSystemPrototype.Alerts
     /// <remarks>
     /// This serves as a non-generic base which should typically not be derived from directly.
     /// </remarks>
-    public interface IAlert : IDisposable, IComposite
+    public interface IAlert : ICoalescible<IAlert>, IDisposable, IComposite
     {
         #region Static & Cache
 
