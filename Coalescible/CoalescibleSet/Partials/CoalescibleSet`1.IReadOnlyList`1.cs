@@ -31,27 +31,11 @@ namespace StealthSystemPrototype
     //  , ICollection<T>
     //  , IReadOnlyCollection<T>
     //  , ISet<T>
-        , IList<T>
         , IReadOnlyList<T>
         where T
         : ICoalescible
         , IComposite
     {
-        public T this[int Index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-        public int IndexOf(T Item)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Insert(int Index, T Item)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RemoveAt(int Index)
-        {
-            throw new NotImplementedException();
-        }
+        public T this[int Index] => Items[Index];
     }
 }

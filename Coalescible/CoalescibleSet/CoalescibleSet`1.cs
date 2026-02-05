@@ -19,6 +19,7 @@ using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.AlertExtensions;
 
 using Debug = StealthSystemPrototype.Logging.Debug;
+using System.Runtime.CompilerServices;
 
 namespace StealthSystemPrototype
 {
@@ -32,11 +33,11 @@ namespace StealthSystemPrototype
         : IComposite
         , IDisposable
     //  , IEnumerable<T>
-    //  , ICollection<IAlert>
-    //  , IReadOnlyCollection<IAlert>
-    //  , ISet<IAlert>
-    //  , IList<IAlert>
-    //  , IReadOnlyList<IAlert>
+    //  , ICollection
+    //  , ICollection<T>
+    //  , IReadOnlyCollection<T>
+    //  , ISet<T>
+    //  , IReadOnlyList<T>
         where T : ICoalescible, IComposite
     {
         #region Debug
@@ -64,6 +65,8 @@ namespace StealthSystemPrototype
         public int Capacity => Size;
         public virtual int DefaultCapacity => 4;
         public int Version => Variant;
+
+        public bool WantFieldReflection => false;
 
         #endregion
         #region Constructors
@@ -95,8 +98,86 @@ namespace StealthSystemPrototype
 
         #endregion
 
-        // resize, ensure capacity, etc.
+        public virtual bool this[T Item]
+            => Items.Any(e => e.Equals(Item));
 
+        #region Collection Helpers
+
+        protected void Resize(int Capacity)
+        {
+            if (Capacity == 0)
+                Capacity = DefaultCapacity;
+
+            T[] array = new T[Capacity];
+            Array.Copy(Items, 0, array, 0, Length);
+            Items = array;
+            Size = Capacity;
+        }
+        public void EnsureCapacity(int Capacity)
+        {
+            if (Size < Capacity)
+                Resize(Capacity);
+        }
+
+        public void AddRange(IEnumerable<T> Items)
+        {
+            int count = Items.Count();
+            EnsureCapacity(Length + count);
+            Items.ForEach(e => Add(e));
+        }
+
+        public void AddRange(IReadOnlyCollection<T> Items)
+            => AddRange(Items as IEnumerable<T>);
+
+        public void AddRange(IReadOnlyList<T> Items)
+            => AddRange(Items as IReadOnlyCollection<T>);
+
+        public void AddRange(ReadOnlySpan<T> Items)
+        {
+            if (Items.GetEnumerator() is ReadOnlySpan<T>.Enumerator enumerator)
+            {
+                EnsureCapacity(Length + Items.Length);
+                while (enumerator.MoveNext())
+                    Add(enumerator.Current);
+            }
+        }
+
+        public Span<T> FillSpan(int Length)
+        {
+            EnsureCapacity(this.Length + Length);
+            Span<T> result = new(Items, this.Length, Length);
+            this.Length += Length;
+            Variant++;
+            return result;
+        }
+
+        public virtual T[] ToArray()
+        {
+            T[] array = new T[Length];
+            Array.Copy(Items, 0, array, 0, Length);
+            return array;
+        }
+
+        #endregion
+        #region ReadOnlySpan
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual ReadOnlySpan<T> AsSpan(int Start, int Length)
+            => (uint)(Start + Length) > (uint)this.Length
+            ? throw new ArgumentOutOfRangeException("Length")
+            : new(Items, Start, Length);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual ReadOnlySpan<T> AsSpan(int Start)
+            => (uint)Start > (uint)Length
+            ? throw new ArgumentOutOfRangeException("Start")
+            : AsSpan(Start, Length - Start);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public virtual ReadOnlySpan<T> AsSpan()
+            => AsSpan(0, Length);
+
+        #endregion
         #region Disposable
 
         public virtual void Dispose()
@@ -106,6 +187,12 @@ namespace StealthSystemPrototype
             Size = 0;
             Variant = 0;
         }
+
+        #endregion
+        #region User-defined Conversions
+
+        public static implicit operator ReadOnlySpan<T>(CoalescibleSet<T> CoalescibleSet)
+            => CoalescibleSet.AsSpan();
 
         #endregion
     }

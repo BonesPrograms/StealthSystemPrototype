@@ -28,11 +28,10 @@ namespace StealthSystemPrototype
         : IComposite
     //  , IDisposable
         , IEnumerable<T>
-    //  , ICollection<IAlert>
-    //  , IReadOnlyCollection<IAlert>
-    //  , ISet<IAlert>
-    //  , IList<IAlert>
-    //  , IReadOnlyList<IAlert>
+    //  , ICollection<T>
+    //  , IReadOnlyCollection<T>
+    //  , ISet<T>
+    //  , IReadOnlyList<T>
         where T
         : ICoalescible
         , IComposite

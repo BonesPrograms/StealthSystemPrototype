@@ -847,6 +847,12 @@ namespace StealthSystemPrototype
             return List;
         }
 
+        public static void ForEach<T>(this IEnumerable<T> Items, Action<T> Proc)
+        {
+            foreach (T item in Items)
+                Proc(item);
+        }
+
         public static void ForEach<K, V>(
             this IDictionary<K, V> Dictionary,
             Action<KeyValuePair<K, V>> Proc)

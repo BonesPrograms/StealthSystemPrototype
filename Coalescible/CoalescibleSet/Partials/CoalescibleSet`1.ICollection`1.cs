@@ -28,10 +28,10 @@ namespace StealthSystemPrototype
         : IComposite
     //  , IDisposable
     //  , IEnumerable<T>
+        , ICollection
         , ICollection<T>
         , IReadOnlyCollection<T>
     //  , ISet<T>
-    //  , IList<T>
     //  , IReadOnlyList<T>
         where T
         : ICoalescible
@@ -41,27 +41,30 @@ namespace StealthSystemPrototype
 
         public virtual bool IsReadOnly => false;
 
+        bool ICollection.IsSynchronized => false;
+        object ICollection.SyncRoot => this;
+
         public void Clear()
         {
             throw new NotImplementedException();
         }
 
-        public bool Contains(T Item)
+        public bool Contains(T item)
         {
             throw new NotImplementedException();
         }
 
-        public void CopyTo(T[] Array, int ArrayIndex)
+        public void CopyTo(T[] array, int arrayIndex)
         {
             throw new NotImplementedException();
         }
 
-        public bool Remove(T Item)
+        public void CopyTo(Array array, int index)
         {
             throw new NotImplementedException();
         }
 
-        void ICollection<T>.Add(T Item)
+        public bool Remove(T item)
         {
             throw new NotImplementedException();
         }

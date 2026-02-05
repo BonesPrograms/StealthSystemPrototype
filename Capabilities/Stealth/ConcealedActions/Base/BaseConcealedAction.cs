@@ -125,8 +125,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             : this()
         {
             Items = Source.ToArray();
-            Length = ((ICollection<BaseAlert>)Source).Count;
-            Size = ((ICollection<BaseAlert>)Source).Count;
+            Length = ((ICollection<IAlert>)Source).Count;
+            Size = ((ICollection<IAlert>)Source).Count;
             ID = Source.GetID();
             Name = Source.GetName();
             Action = Source.GetAction();

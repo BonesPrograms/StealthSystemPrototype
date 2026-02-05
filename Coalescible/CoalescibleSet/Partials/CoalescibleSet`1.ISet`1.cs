@@ -31,63 +31,67 @@ namespace StealthSystemPrototype
     //  , ICollection<T>
     //  , IReadOnlyCollection<T>
         , ISet<T>
-    //  , IList<T>
-    //  , IReadOnlyList<T>
+        //  , IReadOnlyList<T>
         where T
         : ICoalescible
         , IComposite
     {
-        public bool Add(T Item)
+        public bool Add(T item)
         {
             throw new NotImplementedException();
         }
 
-        public void ExceptWith(IEnumerable<T> Other)
+        public void ExceptWith(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public void IntersectWith(IEnumerable<T> Other)
+        public void IntersectWith(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsProperSubsetOf(IEnumerable<T> Other)
+        public bool IsProperSubsetOf(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsProperSupersetOf(IEnumerable<T> Other)
+        public bool IsProperSupersetOf(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsSubsetOf(IEnumerable<T> Other)
+        public bool IsSubsetOf(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsSupersetOf(IEnumerable<T> Other)
+        public bool IsSupersetOf(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public bool Overlaps(IEnumerable<T> Other)
+        public bool Overlaps(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public bool SetEquals(IEnumerable<T> Other)
+        public bool SetEquals(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public void SymmetricExceptWith(IEnumerable<T> Other)
+        public void SymmetricExceptWith(IEnumerable<T> other)
         {
             throw new NotImplementedException();
         }
 
-        public void UnionWith(IEnumerable<T> Other)
+        public void UnionWith(IEnumerable<T> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        void ICollection<T>.Add(T item)
         {
             throw new NotImplementedException();
         }

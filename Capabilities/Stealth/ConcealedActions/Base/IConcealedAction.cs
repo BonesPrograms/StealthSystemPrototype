@@ -16,12 +16,13 @@ namespace StealthSystemPrototype.Capabilities.Stealth
     /// </summary>
     public interface IConcealedAction
         : IComposite
-    // Below this is to functionally require that the implementing class inherit from a Rack<IAlert>
-        , IList<BaseAlert>
-        , ICollection<BaseAlert>
-        , IEnumerable<BaseAlert>
-        , IReadOnlyList<BaseAlert>
-        , IReadOnlyCollection<BaseAlert>
+    // Below this is to functionally require that the implementing class inherit from a CoalescibleSet<IAlert>
+        , IEnumerable<IAlert>
+        , ICollection<IAlert>
+        , IReadOnlyCollection<IAlert>
+        , ISet<IAlert>
+        , IList<IAlert>
+        , IReadOnlyList<IAlert>
     {
         public CoalesceMethod DefaultCoalesceMethod { get; }
 
