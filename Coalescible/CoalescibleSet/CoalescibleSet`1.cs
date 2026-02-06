@@ -37,8 +37,12 @@ namespace StealthSystemPrototype
     //  , ICollection<T>
     //  , IReadOnlyCollection<T>
     //  , ISet<T>
+    //  , IList
+    //  , IList<T>
     //  , IReadOnlyList<T>
-        where T : ICoalescible, IComposite
+        where T
+        : ICoalescible<T>
+        , IComposite
     {
         #region Debug
         /*
@@ -97,10 +101,6 @@ namespace StealthSystemPrototype
         }
 
         #endregion
-
-        public virtual bool this[T Item]
-            => Items.Any(e => e.Equals(Item));
-
         #region Collection Helpers
 
         protected void Resize(int Capacity)
@@ -142,6 +142,9 @@ namespace StealthSystemPrototype
             }
         }
 
+        public bool TryGetIndexOf(T Value, out int Index)
+            => (Index = IndexOf(Value)) >= 0;
+
         public Span<T> FillSpan(int Length)
         {
             EnsureCapacity(this.Length + Length);
@@ -157,6 +160,37 @@ namespace StealthSystemPrototype
             Array.Copy(Items, 0, array, 0, Length);
             return array;
         }
+
+        #endregion
+        #region Coalesce
+
+        /// <summary>
+        /// Gets the stored <typeparamref name="T"/> Item matching <paramref name="Value"/>, if it exists, and calls its <see cref="ICoalescible{T}.Coalesce(T)"/> on <paramref name="Value"/>, returning the result, or returning <paramref name="Value"/> if it doesn't.
+        /// </summary>
+        /// <param name="Value">The object to <see cref="ICoalescible{T}.Coalesce(T)"/> with an equal entry in this <see cref="CoalescibleSet{T}"/> if one exists.</param>
+        /// <returns>The result of the stored <typeparamref name="T"/> Item matching <paramref name="Value"/>, if it exists, calling <see cref="ICoalescible{T}.Coalesce(T)"/> on <paramref name="Value"/>;<br/><paramref name="Value"/>, otherwise.</returns>
+        public T GetCoalesceWith(T Value)
+            => TryGetIndexOf(Value, out int index)
+                && this[index] is T itemAtIndex
+            ? itemAtIndex.Coalesce(Value)
+            : Value;
+
+        /// <summary>
+        /// Gets the stored <typeparamref name="T"/> Item matching <paramref name="Value"/>, if it exists, and calls the passed <paramref name="Value"/>'s <see cref="ICoalescible{T}.Coalesce(T)"/> on it, returning the result, or returning <paramref name="Value"/> if it doesn't.
+        /// </summary>
+        /// <param name="Value">The object to have <see cref="ICoalescible{T}.Coalesce(T)"/> an equal entry in this <see cref="CoalescibleSet{T}"/> if one exists.</param>
+        /// <returns>The result of <paramref name="Value"/> calling <see cref="ICoalescible{T}.Coalesce(T)"/> on a stored, matching <typeparamref name="T"/>, if it exists;<br/><paramref name="Value"/>, otherwise.</returns>
+        public T GetCoalescedWith(T Value)
+            => TryGetIndexOf(Value, out int index)
+                && this[index] is T itemAtIndex
+            ? Value.Coalesce(itemAtIndex)
+            : Value;
+
+        public bool TryGetCoalesceWith(T Value, out T CoalescedValue)
+            => !(CoalescedValue = GetCoalesceWith(Value)).Equals(Value);
+
+        public bool TryGetCoalescedWith(T Value, out T CoalescedValue)
+            => !(CoalescedValue = GetCoalescedWith(Value)).Equals(Value);
 
         #endregion
         #region ReadOnlySpan

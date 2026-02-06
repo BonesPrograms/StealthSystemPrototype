@@ -32,9 +32,11 @@ namespace StealthSystemPrototype
         , ICollection<T>
         , IReadOnlyCollection<T>
     //  , ISet<T>
+    //  , IList
+    //  , IList<T>
     //  , IReadOnlyList<T>
         where T
-        : ICoalescible
+        : ICoalescible<T>
         , IComposite
     {
         public int Count => Length;
@@ -44,29 +46,37 @@ namespace StealthSystemPrototype
         bool ICollection.IsSynchronized => false;
         object ICollection.SyncRoot => this;
 
+        void ICollection<T>.Add(T Item)
+            => Add(Item);
+
         public void Clear()
         {
-            throw new NotImplementedException();
+            if (Length > 0)
+            {
+                Array.Clear(Items, 0, Length);
+                Length = 0;
+            }
+            Variant++;
         }
 
-        public bool Contains(T item)
+        public bool Contains(T Item)
+            => IndexOf(Item) >= 0;
+
+        public void CopyTo(T[] Array, int ArrayIndex)
+            => CopyTo(Array as Array, ArrayIndex);
+
+        public void CopyTo(Array Array, int ArrayIndex)
+            => System.Array.Copy(Items, 0, Array, ArrayIndex, Length);
+
+        public bool Remove(T Item)
         {
-            throw new NotImplementedException();
+            if (TryGetIndexOf(Item, out int index))
+            {
+                RemoveAt(index);
+                return true;
+            }
+            return false;
         }
 
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void CopyTo(Array array, int index)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool Remove(T item)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

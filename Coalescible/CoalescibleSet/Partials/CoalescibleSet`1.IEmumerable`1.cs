@@ -31,9 +31,11 @@ namespace StealthSystemPrototype
     //  , ICollection<T>
     //  , IReadOnlyCollection<T>
     //  , ISet<T>
+    //  , IList
+    //  , IList<T>
     //  , IReadOnlyList<T>
         where T
-        : ICoalescible
+        : ICoalescible<T>
         , IComposite
     {
         [Serializable]

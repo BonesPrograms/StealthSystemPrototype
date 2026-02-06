@@ -1063,6 +1063,25 @@ namespace StealthSystemPrototype
         #endregion
         #region Predicates
 
+        public static bool TryGetIndexOf<T>(
+            [NotNullWhen(true)] this T[] Array,
+            [NotNullWhen(true)] T Item,
+            out int Index)
+        {
+            Index = -1;
+            if (Array.IsNullOrEmpty()
+                || Item is null)
+                return false;
+            Index = System.Array.IndexOf(Array, Item, 0, Array.Length);
+            return Index >= 0;
+        }
+
+        public static bool TryGetIndexOf<T>(
+            [NotNullWhen(true)] this IList<T> List,
+            [NotNullWhen(true)] T Element,
+            out int Index)
+            => List.ToArray().TryGetIndexOf(Element, out Index);
+
         public static bool HasCustomAttribute<T>(this Type Type)
             where T : Attribute
             => Type.GetCustomAttribute<T>() != null;

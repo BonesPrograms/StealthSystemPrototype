@@ -20,7 +20,7 @@ namespace StealthSystemPrototype.Alerts
     /// <remarks>
     /// This serves as a non-generic base which should typically not be derived from directly.
     /// </remarks>
-    public interface IAlert : ICoalescible<IAlert>, IDisposable, IComposite
+    public interface IAlert : ICoalescible<IAlert>, ICoalescible<int>, IDisposable, IComposite
     {
         #region Static & Cache
 

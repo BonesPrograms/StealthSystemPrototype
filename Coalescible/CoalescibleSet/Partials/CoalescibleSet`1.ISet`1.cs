@@ -31,67 +31,85 @@ namespace StealthSystemPrototype
     //  , ICollection<T>
     //  , IReadOnlyCollection<T>
         , ISet<T>
-        //  , IReadOnlyList<T>
+    //  , IList
+    //  , IList<T>
+    //  , IReadOnlyList<T>
         where T
-        : ICoalescible
+        : ICoalescible<T>
         , IComposite
     {
-        public bool Add(T item)
+        protected void InternalAdd(T Item)
+        {
+            if (TryGetIndexOf(Item, out int index)
+                && Items[index] is T itemAtIndex)
+                throw new InvalidOperationException(
+                    message: "A " + typeof(CoalescibleSet<T>).ToStringWithGenerics() + " (" +
+                        GetType().ToStringWithGenerics() + ") cannot contain duplicate entries. " +
+                        nameof(Item) + " (" + Item.ToString() + ") already present (" + itemAtIndex.ToString() + ").");
+
+            EnsureCapacity(Length + 1);
+            Items[Length++] = Item;
+            Variant++;
+        }
+        public bool Add(T Item)
+        {
+            T itemToAdd = Item;
+            if (TryGetIndexOf(Item, out int index)
+                && Items[index] is T itemAtIndex)
+            {
+                RemoveAt(index);
+                itemToAdd = itemAtIndex.Coalesce(itemToAdd);
+            }
+            InternalAdd(itemToAdd);
+            return true;
+        }
+
+        public void ExceptWith(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public void ExceptWith(IEnumerable<T> other)
+        public void IntersectWith(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public void IntersectWith(IEnumerable<T> other)
+        public bool IsProperSubsetOf(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsProperSubsetOf(IEnumerable<T> other)
+        public bool IsProperSupersetOf(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsProperSupersetOf(IEnumerable<T> other)
+        public bool IsSubsetOf(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsSubsetOf(IEnumerable<T> other)
+        public bool IsSupersetOf(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public bool IsSupersetOf(IEnumerable<T> other)
+        public bool Overlaps(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public bool Overlaps(IEnumerable<T> other)
+        public bool SetEquals(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public bool SetEquals(IEnumerable<T> other)
+        public void SymmetricExceptWith(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }
 
-        public void SymmetricExceptWith(IEnumerable<T> other)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UnionWith(IEnumerable<T> other)
-        {
-            throw new NotImplementedException();
-        }
-
-        void ICollection<T>.Add(T item)
+        public void UnionWith(IEnumerable<T> Other)
         {
             throw new NotImplementedException();
         }

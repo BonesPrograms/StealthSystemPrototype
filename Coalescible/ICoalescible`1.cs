@@ -8,7 +8,7 @@ namespace StealthSystemPrototype
     /// Defines a generalized coalescence method that a value type or class implements to create a type-specific coalescense method for reducing two its instances into a single one.
     /// </summary>
     /// <typeparam name="T">The type of object to coalesce.</typeparam>
-    public interface ICoalescible<T> : ICoalescible
+    public interface ICoalescible<T> : ICoalescible, IEquatable<T>
     {
         /// <summary>
         /// Coalesces the current instance with another object of the same type and returns the result.
