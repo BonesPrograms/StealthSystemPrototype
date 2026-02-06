@@ -24,7 +24,7 @@ namespace StealthSystemPrototype
 {
     [DebuggerDisplay("Count = {Count}")]
     //[Serializable]
-    public abstract partial class CoalescibleSet<T>
+    public partial class CoalescibleSet<T>
         : IComposite
     //  , IDisposable
         , IEnumerable<T>
@@ -35,8 +35,7 @@ namespace StealthSystemPrototype
     //  , IList<T>
     //  , IReadOnlyList<T>
         where T
-        : ICoalescible<T>
-        , IComposite
+        : IComposite
     {
         [Serializable]
         public struct Enumerator : IEnumerator<T>, IEnumerator, IDisposable

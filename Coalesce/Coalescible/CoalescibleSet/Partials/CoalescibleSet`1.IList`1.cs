@@ -24,7 +24,7 @@ namespace StealthSystemPrototype
 {
     [DebuggerDisplay("Count = {Count}")]
     //[Serializable]
-    public abstract partial class CoalescibleSet<T>
+    public partial class CoalescibleSet<T>
         : IComposite
     //  , IDisposable
     //  , IEnumerable<T>
@@ -35,8 +35,7 @@ namespace StealthSystemPrototype
         , IList<T>
         , IReadOnlyList<T>
         where T
-        : ICoalescible<T>
-        , IComposite
+        : IComposite
     {
         public bool IsFixedSize => false;
 
@@ -65,6 +64,10 @@ namespace StealthSystemPrototype
             }
         }
 
+        public static InvalidCastException New_InvalidCastException(string ParamName, object Value)
+            => new(message: ParamName + ", of " + nameof(Type) + " " + Value.GetType().ToStringWithGenerics() +
+                " could not be cast to T " + nameof(Type) + " " + typeof(T).ToStringWithGenerics());
+
         protected bool CheckValidCastOrThrow(object value, out T TValue)
         {
             TValue = default;
@@ -76,37 +79,61 @@ namespace StealthSystemPrototype
                 TValue = tValue;
                 return true;
             }
-            throw new InvalidCastException(
-                message: nameof(value) + ", of " + nameof(Type) + " " + value.GetType().ToStringWithGenerics() +
-                    " could not be cast to T " + nameof(Type) + " " + typeof(T).ToStringWithGenerics());
+            return false;
         }
 
         int IList.Add(object value)
-            => CheckValidCastOrThrow(value, out T tValue)
-                && Add(tValue)
-            ? IndexOf(tValue)
-            : -1;
+        {
+            if (!CheckValidCastOrThrow(value, out T tValue))
+                throw New_InvalidCastException(nameof(value), value);
+            
+            Add(tValue);
+            return IndexOf(tValue);
+        }
 
         bool IList.Contains(object value)
-            => CheckValidCastOrThrow(value, out T tValue)
-                && Contains(tValue);
+            => !CheckValidCastOrThrow(value, out T tValue)
+            ? throw New_InvalidCastException(nameof(value), value)
+            : Contains(tValue);
 
         public int IndexOf(T item)
             => Items
                 .Select((o, i) => new KeyValuePair<int, T>(i, o)) // convert to IEnumerable of KVP<int, T> where int is Index
                 .Aggregate(-1, (a, n) // start with -1 (no item)
                     => n.Value.Equals(item) // if (n)ext.Value == Item
+                        && a < 0 // but only the first one (should always only be 1)
                     ? n.Key // (a)ccumulator = n.Key (the Index)
                     : a); // otherwise a is unchanged.
 
         int IList.IndexOf(object Value)
-            => CheckValidCastOrThrow(Value, out T tValue)
-            ? IndexOf(tValue)
-            : -1;
+        {
+            if (!CheckValidCastOrThrow(Value, out T tValue))
+                throw New_InvalidCastException(nameof(Value), Value);
 
+            return IndexOf(tValue);
+        }
+
+        /// <summary>
+        /// Inserts an item to the <see cref="IList{T}"/> at the specified index.
+        /// </summary>
+        /// <remarks>
+        /// Due to the arbitrary nature of the order of the elements within the set, this method falls back to the set's implementation of <see cref="Add(T)"/>.<br/>
+        /// <inheritdoc cref="Add(T)"/>
+        /// </remarks>
+        /// <param name="Index">Unused; The position in the set at which to add <paramref name="Item"/></param>
+        /// <param name="Item"><inheritdoc cref="Add(T)"/></param>
         void IList<T>.Insert(int Index, T Item)
             => Add(Item);
 
+        /// <summary>
+        /// Inserts an item to the <see cref="IList"/> at the specified index (provided it can be cast to <typeparamref name="T"/>).
+        /// </summary>
+        /// <remarks>
+        /// Due to the arbitrary nature of the order of the elements within the set, this method falls back to the set's implementation of <see cref="Add(T)"/>.<br/>
+        /// <inheritdoc cref="Add(T)"/>
+        /// </remarks>
+        /// <param name="Index">Unused; The position in the set at which to add <paramref name="Value"/>.</param>
+        /// <param name="Value"><inheritdoc cref="Add(T)"/></param>
         void IList.Insert(int Index, object Value)
         {
             if (CheckValidCastOrThrow(Value, out T tValue))

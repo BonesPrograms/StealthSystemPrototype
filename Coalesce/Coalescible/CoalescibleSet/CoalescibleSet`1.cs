@@ -29,7 +29,7 @@ namespace StealthSystemPrototype
     /// <typeparam name="T"></typeparam>
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    public abstract partial class CoalescibleSet<T>
+    public partial class CoalescibleSet<T>
         : IComposite
         , IDisposable
     //  , IEnumerable<T>
@@ -41,8 +41,7 @@ namespace StealthSystemPrototype
     //  , IList<T>
     //  , IReadOnlyList<T>
         where T
-        : ICoalescible<T>
-        , IComposite
+        : IComposite
     {
         #region Debug
         /*
@@ -66,6 +65,12 @@ namespace StealthSystemPrototype
         protected int Size;
         protected int Variant;
 
+        private EqualityComparer<T> _Comparer;
+        public EqualityComparer<T> Comparer => _Comparer;
+
+        private Coalescer<T> _Coalescer;
+        public Coalescer<T> Coalescer => _Coalescer;
+
         public int Capacity => Size;
         public virtual int DefaultCapacity => 4;
         public int Version => Variant;
@@ -80,6 +85,9 @@ namespace StealthSystemPrototype
             Length = 0;
             Size = 0;
             Variant = 0;
+
+            _Comparer = null;
+            _Coalescer = null;
         }
 
         #endregion
