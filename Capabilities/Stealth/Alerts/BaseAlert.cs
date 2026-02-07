@@ -435,6 +435,24 @@ namespace StealthSystemPrototype.Alerts
             return this;
         }
 
+        public IAlert Coalesce(IAlert Other)
+        {
+            if (!Equals(Other))
+                throw new InvalidCastException();
+
+            Intensity += Other.Intensity;
+            return this;
+        }
+
+        public int Coalesce(int Other)
+            => Intensity + Other;
+
+        public bool Equals(IAlert Other)
+            => IsSame(Other);
+
+        public bool Equals(int Other)
+            => Intensity == Other;
+
         #region IDisposable
 
         public virtual void Dispose()
@@ -450,18 +468,6 @@ namespace StealthSystemPrototype.Alerts
         IAlert IAlert.Copy()
             => Copy();
 
-        public IAlert Coalesce(IAlert Other)
-        {
-            if (!Equals(Other))
-                throw new InvalidCastException();
-
-            Intensity += Other.Intensity;
-            return this;
-        }
-
-        public int Coalesce(int Other)
-            => Intensity + Other;
-
         object ICoalescible.Coalesce(object Other)
         {
             if (Other is IAlert otherAlert)
@@ -470,12 +476,6 @@ namespace StealthSystemPrototype.Alerts
                 return Coalesce(otherInt);
             throw new InvalidCastException();
         }
-
-        public bool Equals(IAlert Other)
-            => IsSame(Other);
-
-        public bool Equals(int Other)
-            => Intensity == Other;
 
         #endregion
     }

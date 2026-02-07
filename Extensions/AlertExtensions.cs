@@ -14,14 +14,6 @@ namespace StealthSystemPrototype
     {
         #region Helpers
 
-        [Serializable]
-        public enum CoalesceMethod : int
-        {
-            Lowest = -1,
-            Merge = 0,
-            Highest = 1,
-        }
-
         #endregion
 
         public static void GetMinMax<A>(out A Min, out A Max, params A[] Alerts)

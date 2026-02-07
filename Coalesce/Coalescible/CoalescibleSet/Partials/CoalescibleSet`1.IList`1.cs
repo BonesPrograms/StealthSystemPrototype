@@ -100,7 +100,7 @@ namespace StealthSystemPrototype
             => Items
                 .Select((o, i) => new KeyValuePair<int, T>(i, o)) // convert to IEnumerable of KVP<int, T> where int is Index
                 .Aggregate(-1, (a, n) // start with -1 (no item)
-                    => n.Value.Equals(item) // if (n)ext.Value == Item
+                    => EqualityComparer.Equals(n.Value, item) // if (n)ext.Value == Item
                         && a < 0 // but only the first one (should always only be 1)
                     ? n.Key // (a)ccumulator = n.Key (the Index)
                     : a); // otherwise a is unchanged.

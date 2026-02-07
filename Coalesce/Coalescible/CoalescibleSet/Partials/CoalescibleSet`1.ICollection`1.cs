@@ -76,6 +76,5 @@ namespace StealthSystemPrototype
             }
             return false;
         }
-
     }
 }

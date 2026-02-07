@@ -110,6 +110,18 @@ namespace StealthSystemPrototype
             }
         }
 
+        public class InvalidEnumValueException<T> : InvalidOperationException
+            where T : struct, Enum
+        {
+            private static string GetUnderlyingValue(T Value)
+                => Convert.ChangeType(Value, Enum.GetUnderlyingType(typeof(T))).ToString();
+
+            public InvalidEnumValueException(T Value)
+                : base(GetUnderlyingValue(Value) + " is not a valid value for " + typeof(T).ToStringWithGenerics() + ".")
+            {
+            }
+        }
+
         #endregion
         #region Comparison
 

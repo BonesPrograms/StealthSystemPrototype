@@ -65,11 +65,11 @@ namespace StealthSystemPrototype
         protected int Size;
         protected int Variant;
 
-        private EqualityComparer<T> _Comparer;
-        public EqualityComparer<T> Comparer => _Comparer;
+        private EqualityComparer<T> _EqualityComparer;
+        public EqualityComparer<T> EqualityComparer => _EqualityComparer ??= EqualityComparer<T>.Default;
 
         private Coalescer<T> _Coalescer;
-        public Coalescer<T> Coalescer => _Coalescer;
+        public Coalescer<T> Coalescer => _Coalescer ??= Coalescer<T>.Default;
 
         public int Capacity => Size;
         public virtual int DefaultCapacity => 4;
@@ -86,26 +86,54 @@ namespace StealthSystemPrototype
             Size = 0;
             Variant = 0;
 
-            _Comparer = null;
+            _EqualityComparer = null;
             _Coalescer = null;
+
+            EnsureCapacity(DefaultCapacity);
         }
+        public CoalescibleSet(int Capacity, EqualityComparer<T> EqualityComparer, Coalescer<T> Coalescer)
+            : this()
+        {
+            EnsureCapacity(Capacity);
+            _EqualityComparer = EqualityComparer;
+            _Coalescer = Coalescer;
+        }
+        public CoalescibleSet(int Capacity)
+            : this(Capacity, null, null)
+        { }
+        public CoalescibleSet(EqualityComparer<T> EqualityComparer, Coalescer<T> Coalescer)
+            : this(0, EqualityComparer, Coalescer)
+        { }
+        public CoalescibleSet(IReadOnlyList<T> List, EqualityComparer<T> EqualityComparer, Coalescer<T> Coalescer)
+            : this(List?.Count ?? 0, EqualityComparer, Coalescer)
+        {
+            AddRange(List);
+        }
+        public CoalescibleSet(IReadOnlyList<T> List)
+            : this(List, null, null)
+        { }
 
         #endregion
         #region Serialization
 
         public virtual void Write(SerializationWriter Writer)
         {
+            Writer.WriteObject(EqualityComparer);
+            Writer.Write(Coalescer);
+
             Writer.WriteOptimized(Length);
             for (int i = 0; i < Length; i++)
                 Writer.Write(Items[i]);
         }
-
         public virtual void Read(SerializationReader Reader)
         {
-            Size = (Length = Reader.ReadOptimizedInt32());
-            Items = new T[Size];
-            for (int i = 0; i < Length; i++)
-                Items[i] = (T)Reader.ReadComposite();
+            _EqualityComparer = Reader.ReadObject() as EqualityComparer<T>;
+            _Coalescer = Reader.ReadComposite() as Coalescer<T>;
+
+            Items = new T[DefaultCapacity];
+            EnsureCapacity(Reader.ReadOptimizedInt32());
+            for (int i = 0; i < Size; i++)
+                Add((T)Reader.ReadComposite());
         }
 
         #endregion
@@ -173,25 +201,31 @@ namespace StealthSystemPrototype
         #region Coalesce
 
         /// <summary>
-        /// Gets the stored <typeparamref name="T"/> Item matching <paramref name="Value"/>, if it exists, and calls its <see cref="ICoalescible{T}.Coalesce(T)"/> on <paramref name="Value"/>, returning the result, or returning <paramref name="Value"/> if it doesn't.
+        /// Gets the stored <typeparamref name="T"/> element matching <paramref name="Value"/>, if it exists, and returns the result of calling <see cref="Coalescer{T}.Coalesce(T,T)"/> on the two objects, or returns <paramref name="Value"/> if it doesn't.
         /// </summary>
-        /// <param name="Value">The object to <see cref="ICoalescible{T}.Coalesce(T)"/> with an equal entry in this <see cref="CoalescibleSet{T}"/> if one exists.</param>
-        /// <returns>The result of the stored <typeparamref name="T"/> Item matching <paramref name="Value"/>, if it exists, calling <see cref="ICoalescible{T}.Coalesce(T)"/> on <paramref name="Value"/>;<br/><paramref name="Value"/>, otherwise.</returns>
+        /// <remarks>
+        /// This method will pass the above two objects with the existing element as the first parameter and <paramref name="Value"/> as the second; the inverse of <see cref="GetCoalescedWith(T)"/>.
+        /// </remarks>
+        /// <param name="Value">The object to <see cref="Coalescer{T}.Coalesce(T,T)"/> with an equal entry in the current set, if one exists.</param>
+        /// <returns>The result of calling <see cref="Coalescer{T}.Coalesce(T,T)"/> on a stored, matching <typeparamref name="T"/> element, if it exists and <paramref name="Value"/>;<br/><paramref name="Value"/>, otherwise.</returns>
         public T GetCoalesceWith(T Value)
             => TryGetIndexOf(Value, out int index)
                 && this[index] is T itemAtIndex
-            ? itemAtIndex.Coalesce(Value)
+            ? Coalescer.Coalesce(itemAtIndex, Value)
             : Value;
 
         /// <summary>
-        /// Gets the stored <typeparamref name="T"/> Item matching <paramref name="Value"/>, if it exists, and calls the passed <paramref name="Value"/>'s <see cref="ICoalescible{T}.Coalesce(T)"/> on it, returning the result, or returning <paramref name="Value"/> if it doesn't.
+        /// Gets the stored <typeparamref name="T"/> element matching <paramref name="Value"/>, if it exists, and returns the result of calling <see cref="Coalescer{T}.Coalesce(T,T)"/> on the two objects, or returns <paramref name="Value"/> if it doesn't.
         /// </summary>
-        /// <param name="Value">The object to have <see cref="ICoalescible{T}.Coalesce(T)"/> an equal entry in this <see cref="CoalescibleSet{T}"/> if one exists.</param>
-        /// <returns>The result of <paramref name="Value"/> calling <see cref="ICoalescible{T}.Coalesce(T)"/> on a stored, matching <typeparamref name="T"/>, if it exists;<br/><paramref name="Value"/>, otherwise.</returns>
+        /// <remarks>
+        /// This method will pass the above two objects with <paramref name="Value"/> as the first parameter and the existing element as the second; the inverse of <see cref="GetCoalesceWith(T)"/>.
+        /// </remarks>
+        /// <param name="Value">The object to have <see cref="Coalescer{T}.Coalesce(T,T)"/> an equal entry in this <see cref="CoalescibleSet{T}"/> if one exists.</param>
+        /// <returns>The result of calling <see cref="Coalescer{T}.Coalesce(T,T)"/> on <paramref name="Value"/> and a stored, matching <typeparamref name="T"/> element, if it exists;<br/><paramref name="Value"/>, otherwise.</returns>
         public T GetCoalescedWith(T Value)
             => TryGetIndexOf(Value, out int index)
                 && this[index] is T itemAtIndex
-            ? Value.Coalesce(itemAtIndex)
+            ? Coalescer.Coalesce(itemAtIndex, Value)
             : Value;
 
         public bool TryGetCoalesceWith(T Value, out T CoalescedValue)

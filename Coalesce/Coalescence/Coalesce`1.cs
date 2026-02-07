@@ -5,9 +5,10 @@ using System.Text;
 namespace StealthSystemPrototype
 {
     /// <summary>Represents the method that coalesces two object instances into a single one.</summary>
-    /// <param name="Object">The first object to coalesce.</param>
-    /// <param name="Other">The other object to coalesce.</param>
-    /// <returns>The result of coalescing the <paramref name="Object"/> with the <paramref name="Other"/>.</returns>
+    /// <typeparam name="T">The type of objects to coalesce.</typeparam>
+    /// <param name="x">The first object to coalesce.</param>
+    /// <param name="y">The other object to coalesce.</param>
+    /// <returns>The result of coalescing the <paramref name="x"/> with the <paramref name="y"/>.</returns>
     /// <example>
     /// Examples of Coalsce:
     ///     strings:
@@ -31,5 +32,5 @@ namespace StealthSystemPrototype
     ///         Coalesce(bool1, bool2) returns false (XOR) reducing them from two instances to one.
     ///         Coalesce(bool1, bool2) returns true (NAND) reducing them from two instances to one.
     /// </example>
-    public delegate object Coalescence(object Object, object Other);
+    public delegate T Coalesce<T>(T x, T y);
 }

@@ -23,6 +23,8 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.AlertExtensions;
 
+using static StealthSystemPrototype.Coalescer<StealthSystemPrototype.Alerts.IAlert>;
+
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
@@ -41,13 +43,16 @@ namespace StealthSystemPrototype.Alerts
                     { nameof(IndexOf), false },
                     { nameof(RemoveType), false },
                     { nameof(TryGet), false },
-                    { nameof(GetCoalesce), false },
                 });
         }
         #endregion
 
-        private CoalesceMethod? _DefaultCoalesceMethod;
-        public virtual CoalesceMethod DefaultCoalesceMethod { get; }
+        protected CoalesceMethod? _DefaultCoalesceMethod;
+        public virtual CoalesceMethod DefaultCoalesceMethod
+        {
+            get => _DefaultCoalesceMethod ??= CoalesceMethod.Combine;
+            protected set => _DefaultCoalesceMethod = value;
+        }
 
         private bool IsCoalescing = false;
 
@@ -71,7 +76,7 @@ namespace StealthSystemPrototype.Alerts
             _DefaultCoalesceMethod = DefaultCoalesceMethod;
         }
         public AlertSet(IReadOnlyList<IAlert> List)
-            : this(List, CoalesceMethod.Merge)
+            : this(List, CoalesceMethod.Combine)
         {
         }
         public AlertSet(AlertSet Source)
@@ -101,7 +106,7 @@ namespace StealthSystemPrototype.Alerts
 
         public AlertSet Coalesce(CoalesceMethod? Method = null)
         {
-            _DefaultCoalesceMethod ??= CoalesceMethod.Merge;
+            _DefaultCoalesceMethod ??= CoalesceMethod.Combine;
             CoalesceMethod method = Method ?? DefaultCoalesceMethod;
 
             using Indent indent = new(1);
@@ -151,51 +156,9 @@ namespace StealthSystemPrototype.Alerts
             return this;
         }
 
-        public override void Add(BaseAlert Alert)
-        {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
-                });
-
-            base.Add(Alert);
-            Coalesce();
-        }
-
-        public override void Insert(int Index, BaseAlert Item)
-        {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
-                });
-
-            base.Insert(Index, Item);
-            Coalesce();
-        }
-
         public bool AnySame<A>(A Alert = null)
             where A : BaseAlert, new()
-            => Coalesce().Any(a => a.IsSame(Alert) || a.IsType(typeof(A)));
-
-        public A GetCoalesce<A>(A Alert, CoalesceMethod? Method = null)
-            where A : BaseAlert, new()
-        {
-            using Indent indent = new(1);
-            Debug.LogMethod(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(nameof(IsCoalescing), IsCoalescing),
-                });
-
-            CoalesceMethod method = Method ?? DefaultCoalesceMethod;
-            if (Coalesce(method).TryGet(out A existingAlert))
-                return Alert.Coalesce(existingAlert, method);
-            return Alert;
-        }
+            => this.Any(a => a.IsSame(Alert) || a.IsType(typeof(A)));
 
         public bool TryGet<A>(out A Value)
             where A : BaseAlert, new()
@@ -208,9 +171,8 @@ namespace StealthSystemPrototype.Alerts
                 });
 
             Value = null;
-            Coalesce();
             for (int i = 0; i < Count; i++)
-                if (Items[i].IsType<A>())
+                if (Items[i].IsType(typeof(A)))
                 {
                     Value = Items[i] as A;
                     return true;

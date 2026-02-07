@@ -1122,6 +1122,14 @@ namespace StealthSystemPrototype
 
         #endregion
 
+        public static T ChangeType<T>(this object Value)
+            => Convert.ChangeType(Value, typeof(T)) is T newValue
+            ? newValue
+            : default;
+
+        public static bool TryChangeType<T>(this object Value, out T NewValue)
+            => !(NewValue = Value.ChangeType<T>()).Equals(default);
+
         public static IEnumerable<int> IntsTwixt(this (int Low, int High) Tuple, bool InclusiveStart = true, bool InclusiveEnd = true)
             => Utils.IntsTwixt(Tuple.Low, Tuple.High, InclusiveStart, InclusiveEnd);
 

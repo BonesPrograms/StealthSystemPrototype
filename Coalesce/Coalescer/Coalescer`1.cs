@@ -1,74 +1,103 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 
+using StealthSystemPrototype.Coalescence;
+
+using XRL.World;
+
+using static StealthSystemPrototype.Utils;
+
 namespace StealthSystemPrototype
 {
     [Serializable]
-    public abstract class Coalescer<T> : ICoalescer, ICoalescer<T>
+    public abstract class Coalescer<T>
+        : ICoalescer
+        , ICoalescer<T>
+        , IComposite
     {
-        [Serializable]
-        public enum CoalesceMethod
-        {
-            First,
-            Second,
-            Greater,
-            Lesser,
-            Combine,
-            Difference,
-        }
-
-        private static volatile Coalescer<T> _DefaultCoalescer;
-
+        private static volatile Coalescer<T> _Default;
         public static Coalescer<T> Default
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                Coalescer<T> coalescer = _DefaultCoalescer;
-                coalescer ??= (_DefaultCoalescer = CreateCoalescer());
-                return coalescer;
+                if (_Default == null)
+                {
+                    _Default = CreateCoalescer(CoalesceMethod.First);
+                }
+                return _Default;
             }
         }
 
-        private CoalesceMethod _Method;
+        public virtual bool WantFieldReflection => false;
 
-        public CoalesceMethod Method => _Method;
+        private CoalesceMethod _CoalesceMethod;
+
+        public CoalesceMethod CoalesceMethod => _CoalesceMethod;
 
         protected Coalescer()
         {
-            _Method = CoalesceMethod.First;
+            _CoalesceMethod = CoalesceMethod.First;
         }
-        public Coalescer(CoalesceMethod Method)
+        public Coalescer(CoalesceMethod CoalesceMethod)
+            : this()
         {
-            _Method = Method;
+            _CoalesceMethod = CoalesceMethod;
         }
+
+        #region Serialization
+
+        public virtual void Write(SerializationWriter Writer)
+        {
+            Writer.WriteOptimized((int)CoalesceMethod);
+        }
+        public virtual void Read(SerializationReader Reader)
+        {
+            _CoalesceMethod = (CoalesceMethod)Reader.ReadOptimizedInt32();
+        }
+
+        #endregion
+
+        private static Coalescer<T> InstantiateCoalescer(
+            Type CoalescerType,
+            CoalesceMethod CoalesceMethod,
+            params Type[] GenericTypeArguments)
+            => Activator.CreateInstance(
+                type: CoalescerType.MakeGenericType(GenericTypeArguments),
+                args: new object[]
+                {
+                    CoalesceMethod,
+                }) as Coalescer<T>;
 
         [SecuritySafeCritical]
-        private static Coalescer<T> CreateCoalescer()
+        private static Coalescer<T> CreateCoalescer(CoalesceMethod CoalesceMethod)
         {
-            Type type = typeof(T);
+            Type typeT = typeof(T);
 
-            if (type == typeof(byte))
-                return new ByteCoalescer() as Coalescer<T>;
+            if (typeT == typeof(byte))
+                return new ByteCoalescer(CoalesceMethod) as Coalescer<T>;
 
-            if (typeof(ICoalescible<T>).IsAssignableFrom(type))
-                return Activator.CreateInstance(typeof(GenericCoalescer<>).MakeGenericType(type)) as Coalescer<T>;
+            if (typeof(ICoalescible<T>).IsAssignableFrom(typeT))
+                return InstantiateCoalescer(typeof(GenericCoalescer<>), CoalesceMethod, typeT);
 
-            if (type.IsGenericType
-                && type.GetGenericTypeDefinition() == typeof(Nullable<>)
-                && type.GetGenericArguments()[0] is Type nullableType
-                && typeof(ICoalescible<>).MakeGenericType(nullableType).IsAssignableFrom(nullableType))
-                return Activator.CreateInstance(typeof(NullableCoalescer<>).MakeGenericType(nullableType)) as Coalescer<T>;
+            if (typeT.IsGenericType
+                && typeT.GetGenericTypeDefinition() == typeof(Nullable<>)
+                && typeT.GetGenericArguments()[0] is Type nullableTypeT
+                && typeof(ICoalescible<>).MakeGenericType(nullableTypeT).IsAssignableFrom(nullableTypeT))
+                return InstantiateCoalescer(typeof(NullableCoalescer<>), CoalesceMethod, nullableTypeT);
 
-            if (type.IsEnum
-                && Type.GetTypeCode(Enum.GetUnderlyingType(type)) is TypeCode typeCode)
-                return Activator.CreateInstance(typeof(EnumCoalescer<,>).MakeGenericType(
-                    typeArguments: new Type[]
+            if (typeT.IsEnum
+                && Type.GetTypeCode(Enum.GetUnderlyingType(typeT)) is TypeCode typeCode)
+                return InstantiateCoalescer(
+                    CoalescerType: typeof(EnumCoalescer<,>),
+                    CoalesceMethod: CoalesceMethod,
+                    GenericTypeArguments: new Type[]
                     {
-                        type,
+                        typeT,
                         typeCode switch
                         {
                             TypeCode.Int16 => typeof(short),
@@ -81,45 +110,106 @@ namespace StealthSystemPrototype
                             TypeCode.UInt64 => typeof(ulong),
                             _ => throw new InvalidCastException((int)typeCode + " is not a valid " + nameof(TypeCode) + "."),
                         }
-                    })) as Coalescer<T>;
+                    });
 
-            return new ObjectCoalescer<T>();
+            return new ObjectCoalescer<T>(CoalesceMethod);
         }
 
-        public virtual T CoalesceFirst(T X, T Y)
-            => X;
+        public abstract T CoalesceFirst(T x, T y);
 
-        public virtual T CoalesceSecond(T X, T Y)
-            => Y;
+        public abstract T CoalesceSecond(T x, T y);
 
-        public abstract T CoalesceGreater(T X, T Y);
+        public abstract T CoalesceGreater(T x, T y);
 
         public abstract T CoalesceLesser(T X, T Y);
 
-        public abstract T CoalesceCombine(T X, T Y);
+        public abstract T CoalesceCombine(T x, T y);
 
-        public abstract T CoalesceDifference(T X, T Y);
+        public abstract T CoalesceDifference(T x, T y);
 
-        public virtual T Coalesce(T X, T Y)
-            => Method switch
+        public virtual T CoalesceTypeDefined(T x, T y)
+            => x is ICoalescible<T> xCoalescible
+            ? xCoalescible.Coalesce(y)
+            : throw NotCoalescible_InvalidCastException();
+
+        public virtual T Coalesce(T x, T y)
+            => CoalesceMethod switch
             {
-                CoalesceMethod.First => CoalesceFirst(X, Y),
-                CoalesceMethod.Second => CoalesceSecond(X, Y),
-                CoalesceMethod.Greater => CoalesceGreater(X, Y),
-                CoalesceMethod.Lesser => CoalesceLesser(X, Y),
-                CoalesceMethod.Combine => CoalesceCombine(X, Y),
-                CoalesceMethod.Difference => CoalesceDifference(X, Y),
-                _ => throw new InvalidOperationException((int)Method + " is not a valid value for " + nameof(Method) + "."),
+                CoalesceMethod.First => CoalesceFirst(x, y),
+                CoalesceMethod.Second => CoalesceSecond(x, y),
+                CoalesceMethod.Greater => CoalesceGreater(x, y),
+                CoalesceMethod.Lesser => CoalesceLesser(x, y),
+                CoalesceMethod.Combine => CoalesceCombine(x, y),
+                CoalesceMethod.Difference => CoalesceDifference(x, y),
+                CoalesceMethod.TypeDefined => CoalesceTypeDefined(x, y),
+                _ => throw new InvalidEnumValueException<CoalesceMethod>(CoalesceMethod),
             };
 
-        object ICoalescer.Coalesce(object X, object Y)
+        object ICoalescer.Coalesce(object x, object y)
         {
-            if (X is not T tObject)
-                throw new ArgumentException("Invalid type  to " + nameof(Coalesce), nameof(X));
-            if (Y is not T tOther)
-                throw new ArgumentException("Invalid type  to " + nameof(Coalesce), nameof(X));
+            if (x is not T xTyped)
+                throw NotTypeT_InvalidCastException(nameof(x), x.GetType());
+            if (y is not T yTyped)
+                throw NotTypeT_InvalidCastException(nameof(y), y.GetType());
 
-            return Coalesce(tObject, tOther);
+            return Coalesce(xTyped, yTyped);
         }
+
+
+        protected T CoalesceGreaterInternal(T x, T y)
+        {
+            if (y is IComparable<T> yComparableT)
+                return yComparableT.CompareTo(x) > 0
+                    ? y
+                    : x;
+
+            if (y is IComparable yComparable)
+                return yComparable.CompareTo(x) > 0
+                    ? y
+                    : x;
+
+            throw NotComparable_InvalidCastException();
+        }
+
+        protected T CoalesceLesserInternal(T x, T y)
+        {
+            if (y is IComparable<T> yComparableT)
+                return yComparableT.CompareTo(x) < 0
+                    ? y
+                    : x;
+
+            if (y is IComparable yComparable)
+                return yComparable.CompareTo(x) < 0
+                    ? y
+                    : x;
+
+            throw NotComparable_InvalidCastException();
+        }
+
+        public override string ToString()
+            => GetType().ToStringWithGenerics() + "(" + CoalesceMethod + ")";
+
+        public override bool Equals(object Other)
+            => GetType() == Other?.GetType()
+            && Other is Coalescer<T> typedOther
+            && CoalesceMethod == typedOther.CoalesceMethod;
+
+        public override int GetHashCode()
+            => base.GetHashCode()
+            + CoalesceMethod.GetHashCode();
+
+        protected InvalidCastException NotCoalescible_InvalidCastException()
+            => new(typeof(T).ToStringWithGenerics() + " cannot be cast to " + nameof(ICoalescible<T>) + ".");
+
+        protected InvalidCastException NotComparable_InvalidCastException()
+            => new(typeof(T).ToStringWithGenerics() + " cannot be cast to " + nameof(IComparable) + " or " + nameof(IComparable<T>) + ".");
+
+        protected InvalidCastException NotTypeT_InvalidCastException(string ParamName, Type InvalidType)
+            => new(
+                message: ParamName + ", of " + nameof(Type) + " " + InvalidType.ToStringWithGenerics() + ", " +
+                    "cannot be cast to " + typeof(T).ToStringWithGenerics() + ".");
+
+        protected NotSupportedException Nonsense_NotSupportedException([CallerMemberName] string MethodName = "")
+            => new("There is no sensical way to " + MethodName + " for objects of " + nameof(Type) + " " + typeof(T).ToStringWithGenerics() + ".");
     }
 }

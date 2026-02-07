@@ -61,15 +61,15 @@ namespace StealthSystemPrototype
         }
 
         /// <summary>
-        /// Adds an element to the current set and returns a value to indicate if the element was successfully added.
+        /// Adds or coalesces an element into the current set and returns a value to indicate if the element was successfully added.
         /// </summary>
         /// <remarks>
-        /// If <paramref name="Item"/> already exists in the set, instead of simply not being added, the existing element is replaced with the result of the existing element calling <see cref="ICoalescible{T}.Coalesce(T)"/> with <paramref name="Item"/> passed as the argument.
+        /// If <paramref name="Item"/> already exists in the set, instead of simply not being added, the existing element is replaced with the result of <see cref="Coalescer{T}.Coalesce(T,T)"/> being called on the existing element and <paramref name="Item" />.
         /// </remarks>
-        /// <param name="Item">The element to add to the set.</param>
+        /// <param name="Item">The element to add or coalesc into the set.</param>
         /// <returns>
         ///   <see langword="true" /> if the element is added to the set;<br/>
-        ///   <see langword="false" /> if the element is already in the set and the existing element is replaced with the result of the existing element calling <see cref="ICoalescible{T}.Coalesce(T)"/> with <paramref name="Item" /> passed as the argument.</returns>
+        ///   <see langword="false" /> if the element is already in the set and the existing element is replaced with the result of <see cref="Coalescer{T}.Coalesce(T,T)"/> being called on the existing element and <paramref name="Item" />.</returns>
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="Item" /> is <see langword="null" />.</exception>
         public virtual bool Add(T Item)
@@ -82,7 +82,7 @@ namespace StealthSystemPrototype
                 && Items[index] is T itemAtIndex)
             {
                 RemoveAt(index);
-                itemToAdd = itemAtIndex.Coalesce(itemToAdd);
+                itemToAdd = Coalescer.Coalesce(itemAtIndex, itemToAdd);
             }
             InternalAdd(itemToAdd);
             return false;
@@ -92,7 +92,7 @@ namespace StealthSystemPrototype
         /// Modifies the current set so that it contains all elements that are present in the current set, in the specified collection, or in both.
         /// </summary>
         /// <remarks>
-        /// Where an element exists in both collections, the existing element will call <see cref="ICoalescible{T}.Coalesce(T)"/>, with the element in <paramref name="Other"/> passed as the argument.
+        /// Where an element exists in both collections, <see cref="Coalescer{T}.Coalesce(T,T)"/> will be called on the existing element the matching one in <paramref name="Other"/>.
         /// </remarks>
         /// <param name="Other">The collection to compare to the current set.</param>
         /// <exception cref="ArgumentNullException">

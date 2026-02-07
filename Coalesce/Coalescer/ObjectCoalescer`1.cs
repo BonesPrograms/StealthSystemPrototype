@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 
+using StealthSystemPrototype.Coalescence;
+
 namespace StealthSystemPrototype
 {
     [Serializable]
@@ -11,41 +13,26 @@ namespace StealthSystemPrototype
         public ObjectCoalescer()
             : base()
         { }
+        public ObjectCoalescer(CoalesceMethod CoalesceMethod)
+            : base(CoalesceMethod)
+        { }
 
-        public override T CoalesceCombine(T X, T Y)
-            => throw new NotSupportedException();
+        public override T CoalesceFirst(T x, T y)
+            => x;
 
-        public override T CoalesceDifference(T X, T Y)
-            => throw new NotSupportedException();
+        public override T CoalesceSecond(T x, T y)
+            => y;
 
-        public override T CoalesceGreater(T X, T Y)
-        {
-            if (Y is IComparable<T> yComparableT)
-                return yComparableT.CompareTo(X) > 0
-                    ? Y
-                    : X;
+        public override T CoalesceGreater(T x, T y)
+            => CoalesceGreaterInternal(x, y);
 
-            if (Y is IComparable yComparable)
-                return yComparable.CompareTo(X) > 0
-                    ? Y
-                    : X;
+        public override T CoalesceLesser(T x, T y)
+            => CoalesceLesserInternal(x, y);
 
-            throw new InvalidOperationException(typeof(T).Name + " is neither an " + nameof(IComparable) + " or " + nameof(IComparable<T>) + ".");
-        }
+        public override T CoalesceCombine(T x, T y)
+            => throw Nonsense_NotSupportedException();
 
-        public override T CoalesceLesser(T X, T Y)
-        {
-            if (Y is IComparable<T> yComparableT)
-                return yComparableT.CompareTo(X) < 0
-                    ? Y
-                    : X;
-
-            if (Y is IComparable yComparable)
-                return yComparable.CompareTo(X) < 0
-                    ? Y
-                    : X;
-
-            throw new InvalidOperationException(typeof(T).Name + " is neither an " + nameof(IComparable) + " or " + nameof(IComparable<T>) + ".");
-        }
+        public override T CoalesceDifference(T x, T y)
+            => throw Nonsense_NotSupportedException();
     }
 }

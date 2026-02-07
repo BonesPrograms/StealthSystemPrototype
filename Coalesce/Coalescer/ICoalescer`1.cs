@@ -11,9 +11,9 @@ namespace StealthSystemPrototype
         /// <summary>
         /// Coalesces two instance objects of the same type and returns the result.
         /// </summary>
-        /// <param name="X">The first object to coalesce.</param>
-        /// <param name="Y">The other object to coalesce.</param>
-        /// <returns>The result of coalescing the <paramref name="X"/> with the <paramref name="Y"/>.</returns>
+        /// <param name="x">The first object to coalesce.</param>
+        /// <param name="y">The other object to coalesce.</param>
+        /// <returns>The result of coalescing the <paramref name="x"/> with the <paramref name="y"/>.</returns>
         /// <example>
         /// Examples of Coalsce:
         ///     strings:
@@ -37,6 +37,6 @@ namespace StealthSystemPrototype
         ///         Coalesce(bool1, bool2) returns false (XOR) reducing them from two instances to one.
         ///         Coalesce(bool1, bool2) returns true (NAND) reducing them from two instances to one.
         /// </example>
-        T Coalesce(T X, T Y);
+        T Coalesce(T x, T y);
     }
 }
