@@ -42,13 +42,7 @@ namespace StealthSystemPrototype
 
         public virtual bool IsReadOnly => false;
 
-        bool ICollection.IsSynchronized => false;
-        object ICollection.SyncRoot => this;
-
-        void ICollection<T>.Add(T Item)
-            => Add(Item);
-
-        public void Clear()
+        public virtual void Clear()
         {
             if (Length > 0)
             {
@@ -58,7 +52,7 @@ namespace StealthSystemPrototype
             Variant++;
         }
 
-        public bool Contains(T Item)
+        public virtual bool Contains(T Item)
             => IndexOf(Item) >= 0;
 
         public void CopyTo(T[] Array, int ArrayIndex)
@@ -76,5 +70,15 @@ namespace StealthSystemPrototype
             }
             return false;
         }
+
+        #region Explicit Implementaitons
+
+        bool ICollection.IsSynchronized => false;
+        object ICollection.SyncRoot => this;
+
+        void ICollection<T>.Add(T Item)
+            => Add(Item);
+
+        #endregion
     }
 }

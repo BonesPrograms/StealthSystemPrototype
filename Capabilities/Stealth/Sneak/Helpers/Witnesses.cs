@@ -4,7 +4,7 @@ using System.Text;
 
 using XRL.World;
 
-namespace StealthSystemPrototype.Capabilities.Stealth.Sneak.Helpers
+namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public class Witnesses : HashSet<GameObject>
     {

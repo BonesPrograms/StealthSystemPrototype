@@ -28,9 +28,9 @@ namespace XRL.World.Parts
 
         public PerceptionRack Perceptions => ParentObject?.GetPerceptions();
 
-        protected SneakerRack _ZoneSneakers;
+        protected SneakerSet _ZoneSneakers;
 
-        public SneakerRack ZoneSneakers
+        public SneakerSet ZoneSneakers
         {
             get => _ZoneSneakers ??= new(ParentObject);
             protected set => _ZoneSneakers = value;

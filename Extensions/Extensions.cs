@@ -943,14 +943,49 @@ namespace StealthSystemPrototype
             return output;
         }
 
-        public static string AggregateCommaDelimited<T>(this IEnumerable<T> source)
-            => source?.Aggregate("", CommaDelimitedAggregator) ?? string.Empty;
+        public static string AggregateCommaDelimited<T>(this IEnumerable<T> Source)
+            => Source?.Aggregate("", CommaDelimitedAggregator) ?? string.Empty;
 
-        public static string AggregateCommaSpaceDelimited<T>(this IEnumerable<T> source)
-            => source?.Aggregate("", CommaSpaceDelimitedAggregator) ?? string.Empty;
+        public static string AggregateCommaSpaceDelimited<T>(this IEnumerable<T> Source)
+            => Source?.Aggregate("", CommaSpaceDelimitedAggregator) ?? string.Empty;
 
-        public static string AggregateNewLineDelimited<T>(this IEnumerable<T> source)
-            => source?.Aggregate("", NewLineDelimitedAggregator) ?? string.Empty;
+        public static string AggregateNewLineDelimited<T>(this IEnumerable<T> Source)
+            => Source?.Aggregate("", NewLineDelimitedAggregator) ?? string.Empty;
+
+        public static string CoalesceCommaDelimited<T>(this IEnumerable<T> Source)
+            => Source?.Select(e => e.ToString())?.Coalesce((x, y) => x + "," + y) ?? string.Empty;
+
+        public static string CoalesceCommaSpaceDelimited<T>(this IEnumerable<T> Source)
+            => Source?.Select(e => e.ToString())?.Coalesce((x, y) => x + ", " + y) ?? string.Empty;
+
+        public static string CoalesceNewLineDelimited<T>(this IEnumerable<T> Source)
+            => Source?.Select(e => e.ToString())?.Coalesce((x, y) => x + "\n" + y) ?? string.Empty;
+
+        public static T Coalesce<T>(this IEnumerable<T> Source, Coalesce<T> Coalesce)
+        {
+            if (Source == null)
+                throw new ArgumentNullException(nameof(Source));
+
+            if (Coalesce == null)
+                throw new ArgumentNullException(nameof(Coalesce));
+
+            if (Source.IsNullOrEmpty())
+                return default;
+
+            IReadOnlyList<T> sourceList = new List<T>(Source);
+            T result = sourceList[0];
+
+            for (int i = 1; i < sourceList.Count; i++)
+                result = Coalesce(result, sourceList[i]);
+
+            return result;
+        }
+
+        public static T Coalesce<T>(this IEnumerable<T> Source, ICoalescer<T> Coalescer)
+            => Source.Coalesce(Coalescer.Coalesce);
+
+        public static T Coalesce<T>(this IEnumerable<T> Source, Coalescer<T> Coalescer)
+            => Source.Coalesce(Coalescer.Coalesce);
 
         #endregion
         #region Math?
@@ -1135,5 +1170,15 @@ namespace StealthSystemPrototype
 
         public static IEnumerable<int> IntsUpto(this int High, bool InclusiveEnd = false)
             => Utils.IntsUpto(High, InclusiveEnd);
+
+        public static Func<T, T, T> ToFunc<T>(this Coalesce<T> Coalesce)
+        {
+            if (Coalesce == null)
+                throw new ArgumentNullException(
+                    paramName: nameof(Coalesce),
+                    message: "cannot be null.");
+
+            return Coalesce.Invoke;
+        }
     }
 }

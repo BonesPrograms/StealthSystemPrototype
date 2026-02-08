@@ -19,6 +19,7 @@ using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.AlertExtensions;
+using StealthSystemPrototype.Coalescence;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -82,7 +83,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             protected set => _Owner = value;
         }
 
-        public override CoalesceMethod DefaultCoalesceMethod => CoalesceMethod.Lowest;
+        public override CoalesceMethod DefaultCoalesceMethod => CoalesceMethod.Lesser;
 
         public StringMap<List<StatCollectorEntry>> CollectedStats = DefaultCollectedStats;
 
@@ -115,11 +116,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         {
             this.Owner = Owner;
         }
-        public SneakPerformance(IReadOnlyList<BaseAlert> SourceList)
+        public SneakPerformance(IReadOnlyList<IAlert> SourceList)
             : base(SourceList)
         {
         }
-        public SneakPerformance(GameObject Owner, IReadOnlyList<BaseAlert> SourceList)
+        public SneakPerformance(GameObject Owner, IReadOnlyList<IAlert> SourceList)
             : this(SourceList)
         {
             this.Owner = Owner;
@@ -177,10 +178,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             CollectedStats = DefaultCollectedStats;
         }
 
-        public BaseAlert this[BaseAlert Alert]
+        public IAlert this[IAlert Alert]
             => GetMatchingAlert(Alert);
 
-        public BaseAlert this[string AlertName]
+        public IAlert this[string AlertName]
             => Items?.FirstOrDefault(a => a.Name == AlertName);
 
         public string EntriesDebugString(out string Contents, string Delimiter = "\n")
@@ -309,23 +310,22 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     "does not exist in Collection (this should be impossible).");
         }
 
-        public BaseAlert GetMatchingAlert(BaseAlert Alert)
+        public IAlert GetMatchingAlert(IAlert Alert)
             => GetByType(Alert.Type);
 
-        public bool Contains<A>(A Alert)
-            where A : BaseAlert, new()
-            => Items?.Any(a => a.IsType(Alert.Type)) ?? false;
-
-        public static BaseAlert HigherRated(BaseAlert First, BaseAlert Second)
+        public static IAlert HigherRated(IAlert First, IAlert Second)
             => First == null
                 || Second.Intensity.CompareTo(First.Intensity) > 0
             ? Second
             : First;
 
-        public BaseAlert GetHighestRatedEntry()
+        public IAlert GetHighestRatedEntry()
             => Items
                 ?.Aggregate(
-                    seed: (BaseAlert)null,
+                    seed: (IAlert)default,
                     func: HigherRated);
+
+        public int TotalRating()
+            => this.Select(a => a.Intensity).Coalesce((x, y) => x + y);
     }
 }

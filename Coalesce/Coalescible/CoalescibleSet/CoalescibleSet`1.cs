@@ -66,10 +66,26 @@ namespace StealthSystemPrototype
         protected int Variant;
 
         private EqualityComparer<T> _EqualityComparer;
-        public EqualityComparer<T> EqualityComparer => _EqualityComparer ??= EqualityComparer<T>.Default;
+        public EqualityComparer<T> EqualityComparer
+        {
+            get => _EqualityComparer ??= EqualityComparer<T>.Default;
+            protected set
+            {
+                _EqualityComparer = value;
+                Variant++;
+            }
+        }
 
         private Coalescer<T> _Coalescer;
-        public Coalescer<T> Coalescer => _Coalescer ??= Coalescer<T>.Default;
+        public Coalescer<T> Coalescer
+        {
+            get => _Coalescer ??= Coalescer<T>.Default;
+            protected set
+            {
+                _Coalescer = value;
+                Variant++;
+            }
+        }
 
         public int Capacity => Size;
         public virtual int DefaultCapacity => 4;
@@ -262,6 +278,8 @@ namespace StealthSystemPrototype
             Length = 0;
             Size = 0;
             Variant = 0;
+            EqualityComparer = null;
+            Coalescer = null;
         }
 
         #endregion

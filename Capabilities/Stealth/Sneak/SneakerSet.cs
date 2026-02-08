@@ -8,16 +8,16 @@ using XRL.World;
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public class SneakerRack : Rack<ISneakSource>
+    public class SneakerSet : HashSet<ISneakSource>
     {
         public GameObject Perceiver;
 
-        protected SneakerRack()
+        protected SneakerSet()
             : base()
         {
         }
 
-        public SneakerRack(GameObject Perceiver)
+        public SneakerSet(GameObject Perceiver)
             : this()
         {
             this.Perceiver = Perceiver;

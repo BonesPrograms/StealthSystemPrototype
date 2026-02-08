@@ -57,12 +57,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => SneakSource(Hider) is ISneakSource sneakSource
             && sneakSource.SneakBeingPerceived;
 
-
         private static ISneakSource SneakSource(GameObject Source, Predicate<ISneakSource> Filter)
             => Source?.GetFirstSneakSource(Filter);
 
         private static ISneakSource SneakSource(GameObject Sneaker)
             => SneakSource(Sneaker, null);
+
+        private static IEnumerable<ISneakSource> SneakSources(GameObject Sneaker, Predicate<ISneakSource> Filter)
+            => Sneaker.GetSneakSources(Filter);
+
+        private static IEnumerable<ISneakSource> SneakSources(GameObject Sneaker)
+            => SneakSources(Sneaker, null);
 
         private static bool TryGetSneakSource(GameObject Source, ref ISneakSource SS)
             => (SS ??= SneakSource(Source)) != null;
@@ -87,7 +92,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 Name: abilityName,
                 SS.SneakActivatedAbilityCommand,
                 SS.SneakActivatedAbilityClass,
-                Description: null, // explicitly null. This should take from the xmls.
+                Description: null, // explicitly null. This should be defined in the xmls.
                 Icon: "\u0001",
                 Toggleable: true,
                 DefaultToggleState: SS.SneakSneaking,
@@ -164,11 +169,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Object.ApplyEffect(new UD_Sneaking(Source));
             Object.ToggleActivatedAbility(SS.SneakActivatedAbilityID);
             Object.FireEvent("SneakStarted");
-            ObjectStartedFlyingEvent.SendFor(Object);
+            ObjectStartedSneakingEvent.Send(Object, SS.SneakPerformance, SS.SneakWitnesses);
             return true;
         }
 
-        public static bool StopFlying(GameObject Source, GameObject Object, ISneakSource SS = null, bool Silent = false, bool FromFail = false)
+        public static bool StopSneaking(GameObject Source, GameObject Object, ISneakSource SS = null, bool Silent = false, bool FromFail = false)
         {
             if (!TryGetSneakSource(Source, ref SS))
                 return false;
@@ -201,11 +206,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                         .AddObject(Object)
                         .EmitMessage();
             }
+
             SS.SneakSneaking = false;
-            if (!Object.RemoveEffect(typeof(Flying), (Effect FX) => (FX as Flying).Source == Source))
-            {
-                Object.RemoveEffect<Flying>();
-            }
+            if (!Object.RemoveEffect(typeof(UD_Sneaking), FX => (FX as UD_Sneaking).Source == Source))
+                Object.RemoveEffect<UD_Sneaking>();
+
             Object.ToggleActivatedAbility(SS.SneakActivatedAbilityID, Silent: false);
             Object.FireEvent(nameof(UD_Sneaking) + "StoppedFromOneSource");
             if (effectCount <= 1)
@@ -216,13 +221,18 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     NoLongerSneaking(Object);
                     Object.MovementModeChanged("Not" + nameof(UD_Sneaking));
                 }
-                ObjectStoppedFlyingEvent.SendFor(Object);
+                ObjectStoppedSneakingEvent.Send(Object, SS.SneakPerformance, SS.SneakWitnesses);
             }
             return true;
         }
         private static void NoLongerSneaking(GameObject Object)
         {
             // do clean-up here.
+        }
+
+        public static SneakPerformance GetBestSneakPerformance(GameObject Object)
+        {
+
         }
 
         #region Wishes

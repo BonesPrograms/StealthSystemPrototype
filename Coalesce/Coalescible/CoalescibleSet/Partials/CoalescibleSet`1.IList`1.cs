@@ -51,22 +51,9 @@ namespace StealthSystemPrototype
             }
         }
 
-        object IList.this[int Index]
-        {
-            get => this[Index];
-            set
-            {
-                if (value is null)
-                    Remove(this[Index]);
-                else
-                if (CheckValidCastOrThrow(value, out T tValue))
-                    this[Index] = tValue;
-            }
-        }
-
         public static InvalidCastException New_InvalidCastException(string ParamName, object Value)
             => new(message: ParamName + ", of " + nameof(Type) + " " + Value.GetType().ToStringWithGenerics() +
-                " could not be cast to T " + nameof(Type) + " " + typeof(T).ToStringWithGenerics());
+                " could not be cast to " + nameof(T) + " " + nameof(Type) + " " + typeof(T).ToStringWithGenerics());
 
         protected bool CheckValidCastOrThrow(object value, out T TValue)
         {
@@ -82,21 +69,7 @@ namespace StealthSystemPrototype
             return false;
         }
 
-        int IList.Add(object value)
-        {
-            if (!CheckValidCastOrThrow(value, out T tValue))
-                throw New_InvalidCastException(nameof(value), value);
-            
-            Add(tValue);
-            return IndexOf(tValue);
-        }
-
-        bool IList.Contains(object value)
-            => !CheckValidCastOrThrow(value, out T tValue)
-            ? throw New_InvalidCastException(nameof(value), value)
-            : Contains(tValue);
-
-        public int IndexOf(T item)
+        public virtual int IndexOf(T item)
             => Items
                 .Select((o, i) => new KeyValuePair<int, T>(i, o)) // convert to IEnumerable of KVP<int, T> where int is Index
                 .Aggregate(-1, (a, n) // start with -1 (no item)
@@ -105,6 +78,44 @@ namespace StealthSystemPrototype
                     ? n.Key // (a)ccumulator = n.Key (the Index)
                     : a); // otherwise a is unchanged.
 
+        public void RemoveAt(int Index)
+        {
+            if (Index >= Length)
+                throw new ArgumentOutOfRangeException();
+
+            Length--;
+
+            if (Index < Length)
+                Array.Copy(Items, Index + 1, Items, Index, Length - Index);
+
+            Items[Length] = default;
+            Variant++;
+        }
+
+        #region Explicit Implementations
+
+        object IList.this[int Index]
+        {
+            get => this[Index];
+            set
+            {
+                if (value is null)
+                    Remove(this[Index]);
+                else
+                if (CheckValidCastOrThrow(value, out T tValue))
+                    this[Index] = tValue;
+            }
+        }
+
+        int IList.Add(object value)
+        {
+            if (!CheckValidCastOrThrow(value, out T tValue))
+                throw New_InvalidCastException(nameof(value), value);
+
+            Add(tValue);
+            return IndexOf(tValue);
+        }
+
         int IList.IndexOf(object Value)
         {
             if (!CheckValidCastOrThrow(Value, out T tValue))
@@ -112,6 +123,11 @@ namespace StealthSystemPrototype
 
             return IndexOf(tValue);
         }
+
+        bool IList.Contains(object value)
+            => !CheckValidCastOrThrow(value, out T tValue)
+            ? throw New_InvalidCastException(nameof(value), value)
+            : Contains(tValue);
 
         /// <summary>
         /// Inserts an item to the <see cref="IList{T}"/> at the specified index.
@@ -146,18 +162,6 @@ namespace StealthSystemPrototype
                 Remove(tValue);
         }
 
-        public void RemoveAt(int Index)
-        {
-            if (Index >= Length)
-                throw new ArgumentOutOfRangeException();
-
-            Length--;
-
-            if (Index < Length)
-                Array.Copy(Items, Index + 1, Items, Index, Length - Index);
-
-            Items[Length] = default;
-            Variant++;
-        }
+        #endregion
     }
 }

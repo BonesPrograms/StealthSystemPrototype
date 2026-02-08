@@ -8,6 +8,7 @@ using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
 
 using static StealthSystemPrototype.AlertExtensions;
+using StealthSystemPrototype.Coalescence;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -24,7 +25,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         , IList<IAlert>
         , IReadOnlyList<IAlert>
     {
-        public CoalesceMethod DefaultCoalesceMethod { get; }
+        public string ID { get; }
+
+        public string Name { get; }
+
+        public string Action { get; }
+
+        public GameObject Hider { get; set; }
+
+        public GameObject AlertObject { get; set; }
+
+        public Cell AlertLocation { get; set; }
+
+        public SneakPerformance SneakPerformance => Sneak.GetSneakingEffectFromSource Hider?
+
+        public bool IsAggressive { get; }
 
         public string GetID();
 

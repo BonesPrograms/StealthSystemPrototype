@@ -249,10 +249,23 @@ namespace StealthSystemPrototype
         #endregion
         #region Sneak
 
+        public static IEnumerable<ISneakSource> GetSneakSources(this GameObject Object, Predicate<ISneakSource> Filter)
+        {
+            foreach (ISneakSource partSneakSource in Object.GetPartsDescendedFrom(Filter))
+                yield return partSneakSource;
+
+            foreach (ISneakSource effectSneakSource in Object.GetEffectsDescendedFrom(Filter))
+                yield return effectSneakSource;
+
+            foreach (ISneakSource perceptionSneakSource in Object.GetPerceptionsDescendedFrom(Filter))
+                yield return perceptionSneakSource;
+        }
+
+        public static IEnumerable<ISneakSource> GetSneakSources(this GameObject Object)
+            => Object.GetSneakSources(null);
+
         public static ISneakSource GetFirstSneakSource(this GameObject Object, Predicate<ISneakSource> Filter)
-            => Object.GetPartsDescendedFrom(Filter).FirstOrDefault()
-            ?? Object.GetEffectsDescendedFrom(Filter).FirstOrDefault()
-            ?? Object.GetPerceptionsDescendedFrom(Filter).FirstOrDefault();
+            => Object.GetSneakSources(Filter).FirstOrDefault();
 
         public static ISneakSource GetFirstSneakSource(this GameObject Object)
             => Object.GetFirstSneakSource(null);

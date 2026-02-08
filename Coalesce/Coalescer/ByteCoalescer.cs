@@ -17,6 +17,12 @@ namespace StealthSystemPrototype
             : base(Method)
         { }
 
+        public override byte CoalesceFirst(byte x, byte y)
+            => x;
+
+        public override byte CoalesceSecond(byte x, byte y)
+            => y;
+
         public override byte CoalesceCombine(byte X, byte Y)
             => (byte)(X ^ Y);
 

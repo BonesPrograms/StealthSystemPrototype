@@ -23,14 +23,28 @@ namespace StealthSystemPrototype
         public static Coalescer<T> Default
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if (_Default == null)
-                {
-                    _Default = CreateCoalescer(CoalesceMethod.First);
-                }
-                return _Default;
-            }
+            get => _Default ??= CreateCoalescer(CoalesceMethod.First);
+        }
+
+        private static volatile Coalescer<T> _DefaultSecond;
+        public static Coalescer<T> DefaultSecond
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _DefaultSecond ??= CreateCoalescer(CoalesceMethod.Second);
+        }
+
+        private static volatile Coalescer<T> _DefaultGreater;
+        public static Coalescer<T> DefaultGreater
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _DefaultGreater ??= CreateCoalescer(CoalesceMethod.Greater);
+        }
+
+        private static volatile Coalescer<T> _DefaultLesser;
+        public static Coalescer<T> DefaultLesser
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _DefaultLesser ??= CreateCoalescer(CoalesceMethod.Lesser);
         }
 
         public virtual bool WantFieldReflection => false;
@@ -121,7 +135,7 @@ namespace StealthSystemPrototype
 
         public abstract T CoalesceGreater(T x, T y);
 
-        public abstract T CoalesceLesser(T X, T Y);
+        public abstract T CoalesceLesser(T x, T y);
 
         public abstract T CoalesceCombine(T x, T y);
 
@@ -154,7 +168,6 @@ namespace StealthSystemPrototype
 
             return Coalesce(xTyped, yTyped);
         }
-
 
         protected T CoalesceGreaterInternal(T x, T y)
         {

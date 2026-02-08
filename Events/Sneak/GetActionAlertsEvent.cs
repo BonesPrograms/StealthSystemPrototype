@@ -16,6 +16,7 @@ using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.AlertExtensions;
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 using StealthSystemPrototype.Alerts;
+using StealthSystemPrototype.Coalescence;
 
 namespace StealthSystemPrototype.Events
 {
@@ -77,8 +78,8 @@ namespace StealthSystemPrototype.Events
                 return null;
 
             E.ConcealedAction = ConcealedAction;
-            E.ActionAlerts = new(ConcealedAction.Coalesce(), CoalesceMethod.Merge);
-            E.RemovedActionAlerts = new(CoalesceMethod.Merge);
+            E.ActionAlerts = new(ConcealedAction);
+            E.RemovedActionAlerts = new();
 
             E.AdjustByPercent = new();
             E.AdjustByLinear = new();
@@ -260,7 +261,7 @@ namespace StealthSystemPrototype.Events
             => RemoveActionAlert<A>(null);
 
         public IReadOnlyList<BaseAlert> GetRemovedActionAlerts()
-            => RemovedActionAlerts.Coalesce();
+            => RemovedActionAlerts as IReadOnlyList<BaseAlert>;
     }
 }
 
