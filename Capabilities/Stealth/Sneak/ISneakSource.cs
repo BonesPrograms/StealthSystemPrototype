@@ -10,11 +10,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public interface ISneakSource : ISneakEventHandler
     {
+        public GameObject Sneaker { get; }
+
         public int BaseSneakPerformance { get; }
 
         public SneakPerformance SneakPerformance { get; }
-
-        public List<GameObject> SneakWitnesses { get; }
 
         public Guid SneakActivatedAbilityID { get; set; }
 

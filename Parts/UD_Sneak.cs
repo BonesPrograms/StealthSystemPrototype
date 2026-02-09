@@ -89,8 +89,6 @@ namespace XRL.World.Parts
             set => _WantRecalc = value;
         }
 
-        public List<GameObject> SneakWitnesses => throw new NotImplementedException();
-
         public string SneakActivatedAbilityName => "Sneak";
 
         public string SneakActivatedAbilityCommand => COMMAND_SNEAK;

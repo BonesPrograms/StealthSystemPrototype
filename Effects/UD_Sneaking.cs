@@ -56,7 +56,7 @@ namespace XRL.World.Effects
         [SerializeField]
         private int AppliedQuicknessMultiplierAmount;
 
-        public Dictionary<GameObject, object>.KeyCollection 
+        public Witnesses Witnesses;
 
         public bool IsBeingPerceived;
 
@@ -349,9 +349,9 @@ namespace XRL.World.Effects
                     Aggressive: false,
                     Description: !E.Forced ? "sneaking around" : "being knocked around")
                 {
-                    BaseAlert.GetAlert<Visual>(Intensity: 10),
-                    BaseAlert.GetAlert<Auditory>(Intensity: 10),
-                    BaseAlert.GetAlert<Olfactory>(Intensity: 8),
+                    IAlert.GetAlert<Visual>(Intensity: 10),
+                    IAlert.GetAlert<Auditory>(Intensity: 10),
+                    IAlert.GetAlert<Olfactory>(Intensity: 8),
                 }.Initialize(),
                 AlertObject: E.Actor,
                 AlertCell: E.Actor.CurrentCell);

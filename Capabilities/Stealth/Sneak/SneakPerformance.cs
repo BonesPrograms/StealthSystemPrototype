@@ -83,8 +83,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             protected set => _Owner = value;
         }
 
-        public override CoalesceMethod DefaultCoalesceMethod => CoalesceMethod.Lesser;
-
         public StringMap<List<StatCollectorEntry>> CollectedStats = DefaultCollectedStats;
 
         public float MoveSpeedMultiplier => (GetCollectedStats(MS_MULTI)?.Aggregate(0f, (a, n) => a + n.Value) ?? 100) / 100f;
@@ -109,10 +107,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #region Constructors
 
         public SneakPerformance()
-            : base(DefaultSneakPerformance)
+            : base(DefaultSneakPerformance, CoalesceMethod.Lesser)
         { }
         public SneakPerformance(GameObject Owner)
-            : base(DefaultSneakPerformance)
+            : this()
         {
             this.Owner = Owner;
         }
@@ -320,12 +318,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             : First;
 
         public IAlert GetHighestRatedEntry()
-            => Items
-                ?.Aggregate(
-                    seed: (IAlert)default,
-                    func: HigherRated);
+            => Items?.Coalesce(HigherRated);
+
+        public int TotalRating(Predicate<IAlert> Filter)
+            => this
+                .Where(a => Filter == null || Filter(a))
+                .Select(a => a.Intensity)
+                .Coalesce((x, y) => x + y);
 
         public int TotalRating()
-            => this.Select(a => a.Intensity).Coalesce((x, y) => x + y);
+            => TotalRating(null);
+
+        public int TotalRatingFor(IEnumerable<IAlert> Alerts)
+            => TotalRating(a => Alerts.IsNullOrEmpty() || Alerts.Contains(a));
+
+        public int TotalRatingFor(IEnumerable<Type> AlertTypes)
+            => TotalRating(a => AlertTypes.IsNullOrEmpty() || AlertTypes.Any(t => a.IsType(t)));
     }
 }

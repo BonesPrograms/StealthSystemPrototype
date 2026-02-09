@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 using XRL;
 using XRL.World;
-using XRL.World.Parts;
 using XRL.World.AI;
+using XRL.World.Parts;
+using XRL.World.Effects;
+using XRL.Messages;
 using XRL.Wish;
 
 using StealthSystemPrototype.Events;
@@ -15,9 +18,6 @@ using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Perceptions.Specs;
 
 using static StealthSystemPrototype.Utils;
-using XRL.World.Effects;
-using System.Diagnostics.CodeAnalysis;
-using XRL.Messages;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {

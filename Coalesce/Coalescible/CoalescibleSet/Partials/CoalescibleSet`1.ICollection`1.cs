@@ -35,8 +35,6 @@ namespace StealthSystemPrototype
     //  , IList
     //  , IList<T>
     //  , IReadOnlyList<T>
-        where T
-        : IComposite
     {
         public int Count => Length;
 

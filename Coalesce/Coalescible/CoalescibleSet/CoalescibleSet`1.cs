@@ -40,8 +40,6 @@ namespace StealthSystemPrototype
     //  , IList
     //  , IList<T>
     //  , IReadOnlyList<T>
-        where T
-        : IComposite
     {
         #region Debug
         /*
@@ -136,20 +134,11 @@ namespace StealthSystemPrototype
         {
             Writer.WriteObject(EqualityComparer);
             Writer.Write(Coalescer);
-
-            Writer.WriteOptimized(Length);
-            for (int i = 0; i < Length; i++)
-                Writer.Write(Items[i]);
         }
         public virtual void Read(SerializationReader Reader)
         {
             _EqualityComparer = Reader.ReadObject() as EqualityComparer<T>;
             _Coalescer = Reader.ReadComposite() as Coalescer<T>;
-
-            Items = new T[DefaultCapacity];
-            EnsureCapacity(Reader.ReadOptimizedInt32());
-            for (int i = 0; i < Size; i++)
-                Add((T)Reader.ReadComposite());
         }
 
         #endregion

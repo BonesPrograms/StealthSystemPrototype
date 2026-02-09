@@ -12,16 +12,16 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public class ConcealedMeleeAttackAction : ConcealedMinAction<GetAttackerHitDiceEvent>
     {
-        public static BaseAlert[] DefaultAlertTypes => new BaseAlert[]
+        public static IAlert[] DefaultAlertTypes => new IAlert[]
         {
-            BaseAlert.GetAlert<Kinesthetic>(Intensity: 35,
+            IAlert.GetAlert<Kinesthetic>(Intensity: 35,
                 Properties: new()
                 {
                     { "Pain", null }
                 }),
-            BaseAlert.GetAlert<Visual>(Intensity: 25),
-            BaseAlert.GetAlert<Auditory>(Intensity: 25),
-            BaseAlert.GetAlert<Psionic>(Intensity: 15,
+            IAlert.GetAlert<Visual>(Intensity: 25),
+            IAlert.GetAlert<Auditory>(Intensity: 25),
+            IAlert.GetAlert<Psionic>(Intensity: 15,
                 Properties: new()
                 {
                     { "Intent", "Negative" },

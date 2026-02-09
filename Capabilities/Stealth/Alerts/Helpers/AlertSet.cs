@@ -29,7 +29,7 @@ using static StealthSystemPrototype.Alerts.AlertEqualityComparer;
 namespace StealthSystemPrototype.Alerts
 {
     [Serializable]
-    public class AlertSet : CoalescibleSet<IAlert>
+    public class AlertSet : CoalescibleSet<IAlert>, IComposite
     {
         #region Debug
         [UD_DebugRegistry]
@@ -73,13 +73,13 @@ namespace StealthSystemPrototype.Alerts
         { }
         public AlertSet(IReadOnlyList<IAlert> List, AlertEqualityComparer EqualityComparer, AlertCoalescer Coalescer)
             : base(
-                  List: List.Select(a => a.Copy()).ToList(),
+                  List: List.Select(a => a.DeepCopy()).ToList(),
                   EqualityComparer: EqualityComparer ?? DefaultEqualityComparer,
                   Coalescer: Coalescer ?? DefaultCoalescer)
         { }
         public AlertSet(IReadOnlyList<IAlert> List, CoalesceMethod CoalesceMethod)
             : this(
-                  List: List.Select(a => a.Copy()).ToList(),
+                  List: List.Select(a => a.DeepCopy()).ToList(),
                   EqualityComparer: null,
                   Coalescer: new AlertCoalescer(CoalesceMethod))
         { }
@@ -101,14 +101,16 @@ namespace StealthSystemPrototype.Alerts
 
         public override void Write(SerializationWriter Writer)
         {
-            base.Write(Writer);
-            // do writing here
+            Writer.WriteOptimized(Length);
+            for (int i = 0; i < Length; i++)
+                Writer.Write(Items[i]);
         }
-
         public override void Read(SerializationReader Reader)
         {
-            base.Read(Reader);
-            // do reading here
+            Items = new IAlert[DefaultCapacity];
+            EnsureCapacity(Reader.ReadOptimizedInt32());
+            for (int i = 0; i < Size; i++)
+                Add((IAlert)Reader.ReadComposite());
         }
 
         #endregion

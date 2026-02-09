@@ -34,8 +34,6 @@ namespace StealthSystemPrototype
     //  , IList
     //  , IList<T>
     //  , IReadOnlyList<T>
-        where T
-        : IComposite
     {
         [Serializable]
         public struct Enumerator : IEnumerator<T>, IEnumerator, IDisposable

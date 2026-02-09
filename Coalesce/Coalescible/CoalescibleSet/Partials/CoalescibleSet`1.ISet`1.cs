@@ -34,8 +34,6 @@ namespace StealthSystemPrototype
     //  , IList
     //  , IList<T>
     //  , IReadOnlyList<T>
-        where T
-        : IComposite
     {
         /// <summary>
         /// Adds a unique element to the underlying <see cref="T[]"/> after first ensuring that it has the capacity for a new entry, then updates the <see cref="Version"/> of the current set to ensure the integrity of any enumeration.

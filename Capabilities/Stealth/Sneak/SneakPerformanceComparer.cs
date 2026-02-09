@@ -11,24 +11,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 {
     public class SneakPerformanceComparer : Comparer<SneakPerformance>
     {
-        protected List<Type> AlertTypes;
+        protected HashSet<Type> AlertTypes;
         public SneakPerformanceComparer()
             : base()
         {
-            AlertTypes = null;
+            AlertTypes = new();
         }
         public SneakPerformanceComparer(IAlert Alert)
             : this()
         {
-            AlertTypes = new()
-            {
-                Alert.Type
-            };
+            AlertTypes.Add(Alert.Type);
         }
         public SneakPerformanceComparer(AlertSet Alerts)
             : this()
         {
-            AlertTypes = Alerts.Select(a => a.Type).ToList();
+            if (Alerts.Select(a => a.Type) is IEnumerable<Type> types
+                && !types.IsNullOrEmpty())
+                AlertTypes = new(types);
         }
 
         public override int Compare(SneakPerformance x, SneakPerformance y)

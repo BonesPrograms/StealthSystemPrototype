@@ -245,7 +245,7 @@ namespace StealthSystemPrototype.Alerts
                     {
                         MetricsManager.LogModError(
                             mod: ModManager.GetMod(alertType.Assembly),
-                            Message: CallChain(nameof(Utils), nameof(CacheAlertTypesByName)) + ": " +
+                            Message: CallChain(nameof(BaseAlert), nameof(CacheAlertTypesByName)) + ": " +
                                 alertType.ToStringWithGenerics() + " didn't like being constructed.\n" + x);
 
                         indent.SetIndent(0);
@@ -415,12 +415,13 @@ namespace StealthSystemPrototype.Alerts
 
             if (!Properties.IsNullOrEmpty())
                 baseAlert.Properties = new(Properties);
-            Debug.YehNah(CallChain(nameof(baseAlert), nameof(baseAlert.Properties)), baseAlert.Properties?.Count ?? -1, baseAlert.Properties.IsNullOrEmpty(), Indent: indent[1]);
+
+            Debug.YehNah(CallChain(nameof(baseAlert), nameof(baseAlert.Properties)), baseAlert.Properties?.Count ?? -1, 
+                Good: baseAlert.Properties.IsNullOrEmpty(), Indent: indent[1]);
 
             if (Degrade)
-            {
                 baseAlert.Degrade();
-            }
+
             Debug.YehNah(nameof(Degrade), Degrade, true, Indent: indent[1]);
 
             return baseAlert;
@@ -465,7 +466,7 @@ namespace StealthSystemPrototype.Alerts
         IAlert IAlert.AdjustIntensity(int Amount)
             => AdjustIntensity(Amount);
 
-        IAlert IAlert.Copy()
+        IAlert IAlert.DeepCopy()
             => Copy();
 
         object ICoalescible.Coalesce(object Other)
