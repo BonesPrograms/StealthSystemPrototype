@@ -8,6 +8,8 @@ using XRL;
 using XRL.Rules;
 using XRL.World;
 using XRL.World.AI.Pathfinding;
+using XRL.Collections;
+using XRL.Messages;
 
 using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
@@ -21,8 +23,6 @@ using StealthSystemPrototype.Logging;
 using static StealthSystemPrototype.Utils;
 
 using SerializeField = UnityEngine.SerializeField;
-using XRL.Collections;
-using XRL.Messages;
 
 namespace StealthSystemPrototype.Perceptions
 {
