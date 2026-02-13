@@ -293,7 +293,7 @@ namespace StealthSystemPrototype.Alerts
 
         public IAlert AdjustIntensity(int Amount);
 
-        public IAlert DeepCopy();
+        public IAlert DeepCopy(bool Degrade = false);
 
         public bool IsType(Type Type);
 

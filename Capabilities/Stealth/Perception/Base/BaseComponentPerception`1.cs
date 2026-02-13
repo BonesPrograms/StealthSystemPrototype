@@ -77,7 +77,7 @@ namespace StealthSystemPrototype.Perceptions
         public virtual T GetSource()
             => Source;
 
-        public override GameObject GetOwner()
+        public override GameObject GetPerceiver()
             => FindOwner(Source);
 
         public static GameObject FindOwner(T Source)

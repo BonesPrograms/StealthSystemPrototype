@@ -33,9 +33,9 @@ namespace StealthSystemPrototype.Perceptions
         : IComponent<GameObject>
         , IPerception
         , IComparable<BasePerception>
-        , IWitnessEventHandler
+        , ISneakingZoneEventHandler
         , IPerceptionEventHandler
-        , ISneakEventHandler
+        , ISneakPerformanceEventHandler
         , IDetectionEventHandler
     {
         #region Debug
@@ -59,7 +59,7 @@ namespace StealthSystemPrototype.Perceptions
 
             public override void WriteBind(SerializationWriter Writer, IEventHandler Handler, int ID)
             {
-                Writer.WriteGameObject(((IPerception)Handler).GetOwner(), Reference: true);
+                Writer.WriteGameObject(((IPerception)Handler).GetPerceiver(), Reference: true);
                 Writer.WriteTokenized(Handler.GetType());
             }
 
@@ -404,7 +404,7 @@ namespace StealthSystemPrototype.Perceptions
             set => _Owner = value;
         }
 
-        public PerceptionRack Rack => Owner?.GetPerceptions();
+        public Capabilities.Stealth.PerceptionsSet Rack => Owner?.GetPerceptions();
 
         protected int _Level;
 
@@ -514,28 +514,28 @@ namespace StealthSystemPrototype.Perceptions
         #region Base Methods
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as initial.
+        /// Called once by a <see cref="Capabilities.Stealth.PerceptionsSet"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as initial.
         /// </summary>
-        public virtual void Initialize()
+        public virtual void Added()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when this <see cref="BasePerception"/> is first added into the rack.
+        /// Called once by a <see cref="Capabilities.Stealth.PerceptionsSet"/> when this <see cref="BasePerception"/> is first added into the rack.
         /// </summary>
         public virtual void Attach()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as not creation.
+        /// Called once by a <see cref="Capabilities.Stealth.PerceptionsSet"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as not creation.
         /// </summary>
         public virtual void AddedAfterCreation()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when this <see cref="BasePerception"/> is removed from the rack.
+        /// Called once by a <see cref="Capabilities.Stealth.PerceptionsSet"/> when this <see cref="BasePerception"/> is removed from the rack.
         /// </summary>
         public virtual void Remove()
         {
@@ -585,7 +585,7 @@ namespace StealthSystemPrototype.Perceptions
             ? Name
             : ShortName;
 
-        public virtual GameObject GetOwner()
+        public virtual GameObject GetPerceiver()
             => Owner;
 
         public virtual Type GetAlertType()
@@ -696,12 +696,8 @@ namespace StealthSystemPrototype.Perceptions
         public virtual void GoOffCooldown()
             => Cooldown = 0;
 
-        public virtual bool CanPerceiveAlert(BaseAlert Alert)
+        public virtual bool CanPerceiveAlert(IAlert Alert)
             => Alert?.IsType(GetAlertType()) ?? false;
-
-        bool IPerception.CanPerceiveAlert(IAlert Alert)
-            => Alert is BaseAlert alert
-            && CanPerceiveAlert(alert);
 
         public virtual bool CanPerceive(AlertContext Context)
             => CanPerceiveAlert(Context?.ActionAlert);
@@ -850,7 +846,7 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Virtual HandleEvent
 
-        public virtual bool HandleEvent(GetWitnessesEvent E)
+        public virtual bool HandleEvent(GetZoneWitnessesEvent E)
             => true;
 
         public virtual bool HandleEvent(GetPerceptionsEvent E)

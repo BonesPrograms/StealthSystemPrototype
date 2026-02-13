@@ -58,8 +58,8 @@ namespace StealthSystemPrototype.Perceptions
                 return false;
 
             if (RequiresConsciousness
-                && GetOwner() != null 
-                && GetOwner().HasEffect<Asleep>())
+                && GetPerceiver() != null 
+                && GetPerceiver().HasEffect<Asleep>())
                 return false;
 
             GameObject hider = Context?.Hider;

@@ -25,6 +25,7 @@ using static StealthSystemPrototype.Utils;
 using static StealthSystemPrototype.AlertExtensions;
 using static StealthSystemPrototype.Coalescer<StealthSystemPrototype.Alerts.IAlert>;
 using static StealthSystemPrototype.Alerts.AlertEqualityComparer;
+using StealthSystemPrototype.Alerts.Helpers;
 
 namespace StealthSystemPrototype.Alerts
 {

@@ -15,7 +15,7 @@ namespace StealthSystemPrototype.Perceptions
         where T : BaseMutation
     {
         public new List<T> GetPotentialSources()
-            => GetOwner()?.GetPartsDescendedFrom<T>();
+            => GetPerceiver()?.GetPartsDescendedFrom<T>();
 
         public new T GetBestSource();
     }

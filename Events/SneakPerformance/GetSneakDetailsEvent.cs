@@ -1,4 +1,5 @@
 ﻿using System;
+using XRL.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -16,17 +17,25 @@ using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public abstract class IIsSneakingEvent<T> : ISneakEvent<T>
-        where T : IIsSneakingEvent<T>, new()
+    public class GetSneakDetailsEvent : ISneakPerformanceEvent<GetSneakDetailsEvent>
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
-        public IIsSneakingEvent()
+        protected StringMap<string> DetailsEntries;
+
+        public GetSneakDetailsEvent()
             : base()
         {
+            DetailsEntries = null;
         }
 
-        public static void Send(GameObject Hider, SneakPerformance Performance, List<GameObject> Witnesses)
+        public override void Reset()
+        {
+            base.Reset();
+            DetailsEntries = null;
+        }
+
+        public static StringMap<string> GetFor(GameObject Hider)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -36,18 +45,20 @@ namespace StealthSystemPrototype.Events
                 });
 
             if (!GameObject.Validate(ref Hider)
-                || FromPool(
-                    Hider: Hider,
-                    Performance: Performance,
-                    Witnesses: ref Witnesses,
-                    CollectWitnesses: false) is not T E)
-                return;
+                || FromPool(Hider) is not GetSneakDetailsEvent E)
+                return null;
 
-            E.GetStringyEvent();
+            E.DetailsEntries = new();
 
-            Process(E, Success: out bool _);
+            return Process(E, Success: out bool success).DetailsEntries;
+        }
 
-            ZoneProcess(E, out bool _);
+        public GetSneakDetailsEvent Add<T>(T Source, string Details)
+            where T : IComponent<GameObject>, new()
+        {
+            if (Source != null)
+                DetailsEntries[Source?.TypeStringWithGenerics()] = Details;
+            return this;
         }
     }
 }

@@ -102,8 +102,8 @@ namespace StealthSystemPrototype.Perceptions
                 ?.FirstOrDefault();
         }
 
-        public override GameObject GetOwner()
-            => base.GetOwner();
+        public override GameObject GetPerceiver()
+            => base.GetPerceiver();
 
         #region Explicit Implementations
 

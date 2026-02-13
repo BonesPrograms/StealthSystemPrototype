@@ -257,8 +257,8 @@ namespace XRL.World.Parts
         }
         public virtual bool HandleEvent(GetSneakPerformanceEvent E)
         {
-            if (E.Hider == ParentObject
-                && !E.Hider.HasSkill(nameof(UD_Stealth_LightFooted)))
+            if (E.Sneaker == ParentObject
+                && !E.Sneaker.HasSkill(nameof(UD_Stealth_LightFooted)))
             {
                 E.AdjustMoveSpeedMultiplier(this, -10);
                 E.AdjustQuicknessMultiplier(this, -10);

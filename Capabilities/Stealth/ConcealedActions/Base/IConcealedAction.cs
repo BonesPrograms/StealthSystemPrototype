@@ -31,7 +31,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public string Action { get; }
 
-        public GameObject Hider { get; set; }
+        public GameObject Sneaker { get; set; }
 
         public GameObject AlertObject { get; set; }
 

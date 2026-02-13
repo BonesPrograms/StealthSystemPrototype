@@ -12,30 +12,28 @@ using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
 
 using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
+using XRL.World.ZoneParts;
 
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public abstract class ISneakEvent<T> : ModPooledEvent<T>
-        where T : ISneakEvent<T>, new()
+    public abstract class ISneakPerformanceEvent<T> : ModPooledEvent<T>
+        where T : ISneakPerformanceEvent<T>, new()
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
         public static string RegisteredEventID => typeof(T).Name;
 
-        public GameObject Hider;
+        public GameObject Sneaker;
 
         public SneakPerformance Performance;
 
-        public List<GameObject> Witnesses;
-
         public Event StringyEvent;
 
-        public ISneakEvent()
+        public ISneakPerformanceEvent()
         {
-            Hider = null;
+            Sneaker = null;
             Performance = null;
-            Witnesses = null;
 
             StringyEvent = null;
         }
@@ -49,51 +47,50 @@ namespace StealthSystemPrototype.Events
         public override void Reset()
         {
             base.Reset();
-            Hider = null;
+            Sneaker = null;
             Performance = null;
-            Witnesses = null;
             StringyEvent = null;
         }
 
         public static T FromPool(
-            GameObject Hider)
+            GameObject Sneaker)
         {
-            if (Hider == null
+            if (Sneaker == null
                 || FromPool() is not T E)
                 return null;
 
-            E.Hider = Hider;
+            E.Sneaker = Sneaker;
             E.GetStringyEvent();
             return E;
         }
 
         public static T FromPool(
-            GameObject Hider,
+            GameObject Sneaker,
             ref SneakPerformance Performance)
         {
-            if (Hider == null
-                || FromPool(Hider) is not T E)
+            if (Sneaker == null
+                || FromPool(Sneaker) is not T E)
                 return null;
 
-            E.Performance = (Performance ??= new(E.Hider));
+            E.Performance = (Performance ??= new(E.Sneaker));
             E.GetStringyEvent();
             return E;
         }
 
         public static T FromPool(
-            GameObject Hider,
+            GameObject Sneaker,
             SneakPerformance Performance)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(Hider?.MiniDebugName() ?? "null"),
+                    Debug.Arg(Sneaker?.MiniDebugName() ?? "null"),
                     Debug.Arg(nameof(Performance), Performance?.Count ?? -1),
                 });
 
-            if (Hider == null
-                || FromPool(Hider) is not T E)
+            if (Sneaker == null
+                || FromPool(Sneaker) is not T E)
                 return null;
 
             E.Performance = Performance;
@@ -101,43 +98,12 @@ namespace StealthSystemPrototype.Events
             return E;
         }
 
-        public static T FromPool(
-            GameObject Hider,
-            SneakPerformance Performance,
-            ref List<GameObject> Witnesses,
-            bool CollectWitnesses = false)
-        {
-            if (Hider == null
-                || FromPool(Hider, Performance) is not T E)
-                return null;
-
-            if (CollectWitnesses)
-                GetWitnessesEvent.GetFor(E.Hider, ref Witnesses);
-            E.Witnesses = Witnesses;
-            E.GetStringyEvent();
-            return E;
-        }
-
-        public static T FromPool(
-            GameObject Hider,
-            List<GameObject> Witnesses)
-        {
-            if (Hider == null
-                || FromPool(Hider) is not T E)
-                return null;
-
-            E.Witnesses = Witnesses;
-            E.GetStringyEvent();
-            return E;
-        }
-
-        public static Event GetStringyEvent(ISneakEvent<T> ForEvent, ref Event ExistingEvent)
+        public static Event GetStringyEvent(ISneakPerformanceEvent<T> ForEvent, ref Event ExistingEvent)
             => ForEvent == null
             ? ExistingEvent = Event.New(RegisteredEventID)
             : (ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID()))
-                .SetParameter(nameof(ForEvent.Hider), ForEvent?.Hider)
-                .SetParameterOrNullExisting(nameof(ForEvent.Performance), ForEvent.Performance)
-                .SetParameterOrNullExisting(nameof(ForEvent.Witnesses), ForEvent.Witnesses);
+                .SetParameter(nameof(ForEvent.Sneaker), ForEvent?.Sneaker)
+                .SetParameterOrNullExisting(nameof(ForEvent.Performance), ForEvent.Performance);
 
         public virtual Event GetStringyEvent()
             => GetStringyEvent(this, ref StringyEvent);
@@ -146,9 +112,6 @@ namespace StealthSystemPrototype.Events
         {
             if (StringyEvent?.GetParameter(nameof(Witnesses)) != null)
                 Performance = StringyEvent?.GetParameter<SneakPerformance>(nameof(Performance));
-
-            if (StringyEvent?.GetParameter(nameof(Witnesses)) != null)
-                Witnesses = StringyEvent?.GetParameter<List<GameObject>>(nameof(Witnesses));
         }
 
         protected static T Process(T E, out bool Success)
@@ -158,7 +121,7 @@ namespace StealthSystemPrototype.Events
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(E.TypeStringWithGenerics()),
-                    Debug.Arg(E.Hider?.DebugName ?? "null"),
+                    Debug.Arg(E.Sneaker?.DebugName ?? "null"),
                     Debug.Arg(nameof(E.Performance), E.Performance?.Count ?? -1),
                 });
 
@@ -169,59 +132,24 @@ namespace StealthSystemPrototype.Events
             }
 
             Success = true;
-            if (GameObject.Validate(ref E.Hider))
+            if (GameObject.Validate(ref E.Sneaker))
             {
                 Debug.YehNah(nameof(GameObject.Validate), Success, Indent: indent[1]);
 
                 if (Success
-                    && E.Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
-                    Success = E.Hider.FireEvent(E.StringyEvent);
+                    && E.Sneaker.HasRegisteredEvent(E.GetRegisteredEventID()))
+                    Success = E.Sneaker.FireEvent(E.StringyEvent);
                 Debug.YehNah(nameof(GameObject.FireEvent), Success, Indent: indent[1]);
 
                 E.UpdateFromStringyEvent();
                 Debug.YehNah(nameof(UpdateFromStringyEvent), Success, Indent: indent[1]);
 
                 if (Success
-                    && E.Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
-                    Success = E.Hider.HandleEvent(E);
+                    && E.Sneaker.WantEvent(E.GetID(), E.GetCascadeLevel()))
+                    Success = E.Sneaker.HandleEvent(E);
                 Debug.YehNah(nameof(GameObject.HandleEvent), Success, Indent: indent[1]);
             }
             Debug.YehNah(nameof(Process), Success, Indent: indent[0]);
-            return E;
-        }
-
-        protected static T WitnessesProcess(T E, out bool Success)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(E.TypeStringWithGenerics()),
-                    Debug.Arg(E.Hider?.DebugName ?? "null"),
-                    Debug.Arg(nameof(E.Performance), E.Performance?.Count ?? -1),
-                });
-
-            if (E == null)
-            {
-                Success = false;
-                return null;
-            }
-
-            Success = true;
-            if (!E.Witnesses.IsNullOrEmpty())
-            {
-                if (Success)
-                    Success = E.Witnesses.FireEvent(E.StringyEvent, RegisteredOnly: true);
-                Debug.YehNah(nameof(Zone.FireEvent), Success, Indent: indent[1]);
-
-                if (Success)
-                    E.UpdateFromStringyEvent();
-                Debug.YehNah(nameof(UpdateFromStringyEvent), Success, Indent: indent[1]);
-
-                if (Success)
-                    Success = E.Witnesses.HandleEvent(E, WantOnly: true);
-                Debug.YehNah(nameof(Zone.HandleEvent), Success, Indent: indent[1]);
-            }
             return E;
         }
 
@@ -232,7 +160,7 @@ namespace StealthSystemPrototype.Events
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(E.TypeStringWithGenerics()),
-                    Debug.Arg(E.Hider?.DebugName ?? "null"),
+                    Debug.Arg(E.Sneaker?.DebugName ?? "null"),
                     Debug.Arg(nameof(E.Performance), E.Performance?.Count ?? -1),
                 });
 
@@ -243,9 +171,9 @@ namespace StealthSystemPrototype.Events
             }
 
             Success = true;
-            if (GameObject.Validate(ref E.Hider))
+            if (GameObject.Validate(ref E.Sneaker))
             {
-                Zone zone = E.Hider.GetCurrentZone();
+                Zone zone = E.Sneaker.GetCurrentZone();
 
                 if (Success)
                     Success = zone.FireEvent(E.StringyEvent);
@@ -264,17 +192,16 @@ namespace StealthSystemPrototype.Events
         }
 
         protected static T Process(
-            GameObject Hider,
+            GameObject Sneaker,
             ref SneakPerformance Performance,
             out bool Success)
-            => Process(FromPool(Hider, ref Performance), out Success);
+            => Process(FromPool(Sneaker, ref Performance), out Success);
 
         protected static T Process(
-            GameObject Hider,
-            ref List<GameObject> Witnesses,
+            GameObject Sneaker,
             SneakPerformance Performance,
             out bool Success)
-            => Process(FromPool(Hider, Performance, ref Witnesses), out Success);
+            => Process(FromPool(Sneaker, Performance), out Success);
     }
 }
 

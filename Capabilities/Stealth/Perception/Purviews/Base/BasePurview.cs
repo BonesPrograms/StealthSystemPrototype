@@ -246,7 +246,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             => SetParentPerception(ParentPerception as BasePerception);
 
         public virtual int GetPurviewValueAdjustment(BasePerception ParentPerception, int Value = 0)
-            => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.GetOwner(), ParentPerception, Value);
+            => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.GetPerceiver(), ParentPerception, Value);
 
         int IPurview.GetPurviewValueAdjustment(IPerception ParentPerception, int Value)
             => GetPurviewValueAdjustment(ParentPerception as BasePerception, Value);

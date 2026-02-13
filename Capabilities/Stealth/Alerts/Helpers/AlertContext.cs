@@ -29,8 +29,8 @@ namespace StealthSystemPrototype.Alerts
             protected set => _ParentAction = value;
         }
 
-        private BasePerception _Perception;
-        public BasePerception Perception
+        private IPerception _Perception;
+        public IPerception Perception
         {
             get => _Perception;
             protected set => _Perception = value;
@@ -43,15 +43,15 @@ namespace StealthSystemPrototype.Alerts
             protected set => _Perceiver = value;
         }
 
-        private BaseAlert _ActionAlert;
-        public BaseAlert ActionAlert
+        private IAlert _ActionAlert;
+        public IAlert ActionAlert
         {
             get => _ActionAlert;
             protected set => _ActionAlert = value;
         }
 
-        private BaseAlert _SneakAlert;
-        public BaseAlert SneakAlert
+        private IAlert _SneakAlert;
+        public IAlert SneakAlert
         {
             get => _SneakAlert;
             protected set => _SneakAlert = value;
@@ -96,10 +96,10 @@ namespace StealthSystemPrototype.Alerts
         }
         protected AlertContext(
             BaseConcealedAction ParentAction,
-            BasePerception Perception,
+            IPerception Perception,
             GameObject Perceiver,
-            BaseAlert ActionAlert,
-            BaseAlert SneakAlert,
+            IAlert ActionAlert,
+            IAlert SneakAlert,
             GameObject Hider,
             GameObject AlertObject,
             Cell AlertLocation)
@@ -117,8 +117,8 @@ namespace StealthSystemPrototype.Alerts
         public AlertContext(
             BaseConcealedAction ParentAction,
             GameObject Perceiver,
-            BaseAlert ActionAlert,
-            BaseAlert SneakAlert,
+            IAlert ActionAlert,
+            IAlert SneakAlert,
             GameObject Hider,
             GameObject AlertObject,
             Cell AlertLocation)
@@ -138,8 +138,8 @@ namespace StealthSystemPrototype.Alerts
                   ParentAction: Source.ParentAction,
                   Perception: Source.Perception,
                   Perceiver: Source.Perceiver,
-                  ActionAlert: Source.ActionAlert.Copy(Degrade: true),
-                  SneakAlert: Source.SneakAlert.Copy(),
+                  ActionAlert: Source.ActionAlert.DeepCopy(Degrade: true),
+                  SneakAlert: Source.SneakAlert.DeepCopy(),
                   Hider: Source.Hider,
                   AlertObject: Source.AlertObject,
                   AlertLocation:Source.AlertLocation)
@@ -153,10 +153,10 @@ namespace StealthSystemPrototype.Alerts
         {
             ConcealedActionData concealedActionData = (ConcealedActionData)ParentAction;
             Writer.WriteComposite(concealedActionData);
-            Writer.WriteComposite(Perception);
+            Writer.Write(Perception);
             Writer.WriteGameObject(Perceiver);
-            Writer.WriteComposite(ActionAlert);
-            Writer.WriteComposite(SneakAlert);
+            Writer.Write(ActionAlert);
+            Writer.Write(SneakAlert);
             Writer.WriteGameObject(Hider);
             Writer.WriteGameObject(AlertObject);
             Writer.Write(AlertLocation);
@@ -164,10 +164,10 @@ namespace StealthSystemPrototype.Alerts
         public virtual void Read(SerializationReader Reader)
         {
             ParentAction = (BaseConcealedAction)Reader.ReadComposite<ConcealedActionData>();
-            Perception = Reader.ReadComposite<BasePerception>();
+            Perception = Reader.ReadComposite() as IPerception;
             Perceiver = Reader.ReadGameObject();
-            ActionAlert = Reader.ReadComposite<BaseAlert>();
-            SneakAlert = Reader.ReadComposite<BaseAlert>();
+            ActionAlert = Reader.ReadComposite() as IAlert;
+            SneakAlert = Reader.ReadComposite() as IAlert;
             Hider = Reader.ReadGameObject();
             AlertObject = Reader.ReadGameObject();
             AlertLocation = Reader.ReadCell();

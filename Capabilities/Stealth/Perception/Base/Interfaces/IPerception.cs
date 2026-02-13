@@ -14,6 +14,7 @@ using StealthSystemPrototype;
 using StealthSystemPrototype.Events;
 using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Detetection.Opinions;
+using StealthSystemPrototype.Detetection.ResponseGoals;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Capabilities.Stealth.Perception;
 using StealthSystemPrototype.Logging;
@@ -23,12 +24,9 @@ using static StealthSystemPrototype.Utils;
 namespace StealthSystemPrototype.Perceptions
 {
     /// <summary>
-    /// Contracts a class as capable of detecting <see cref="IConcealedAction"/>s and issuing <see cref="BaseOpinionGoal"/>s.
+    /// Contracts a class as capable of detecting <see cref="IConcealedAction"/>s and issuing <see cref="IDetectionResponseGoal"/>s.
     /// </summary>
-    public interface IPerception
-        : IComposite
-        , IComparable<IPerception>
-        , IEventHandler
+    public interface IPerception : IComposite
     {
         #region Static & Const
 
@@ -42,7 +40,9 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
-        int Level { get; }
+        GameObject Perceiver { get; set; }
+
+        int Level { get; set; }
 
         #region Serialization
 
@@ -52,36 +52,16 @@ namespace StealthSystemPrototype.Perceptions
         #region Contracts
         #region Event Registration
 
-        void ApplyRegistrar(GameObject Object, bool Active = false);
-
-        void ApplyUnregistrar(GameObject Object, bool Active = false);
-
-        void RegisterActive(GameObject Object, IEventRegistrar Registrar);
-
-        void Register(GameObject Object, IEventRegistrar Registrar);
-
-        bool FireEvent(Event E);
-
         #endregion
         #region Object Life-cycle
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as initial.
+        /// Called once by a <see cref="PerceptionsSet"/> when an <see cref="IPerception"/> is first coalesced into the set.
         /// </summary>
-        void Initialize();
+        void Added();
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack.
-        /// </summary>
-        void Attach();
-
-        /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is first added into the rack if indicated as not creation.
-        /// </summary>
-        void AddedAfterCreation();
-
-        /// <summary>
-        /// Called once by a <see cref="PerceptionRack"/> when an <see cref="IPerception"/> is removed from the rack.
+        /// Called once by a <see cref="PerceptionsSet"/> when an <see cref="IPerception"/> is removed from the set.
         /// </summary>
         void Remove();
 
@@ -105,7 +85,7 @@ namespace StealthSystemPrototype.Perceptions
         /// <returns>The ID-like name of the <see cref="IPerception"/>.</returns>
         string GetName(bool Short = false);
 
-        GameObject GetOwner();
+        GameObject GetPerceiver();
 
         /// <summary>
         /// Get the <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.
@@ -182,34 +162,6 @@ namespace StealthSystemPrototype.Perceptions
         void ClearCaches();
 
         bool Validate();
-
-        #endregion
-        #region Comparison
-
-        int CompareLevelTo(IPerception Other)
-            => GetLevel() - Other.GetLevel();
-
-        int CompareEffectiveLevelTo(IPerception Other)
-            => GetEffectiveLevel() - Other.GetEffectiveLevel();
-
-        int ComparePurviewTo(IPerception Other)
-            => GetPurview().CompareTo(Other.GetPurview());
-
-        new int CompareTo(IPerception Other)
-        {
-            if (EitherNull(this, Other, out int comparison))
-                return comparison;
-
-            int levelComp = CompareLevelTo(Other);
-            if (levelComp != 0)
-                return levelComp;
-
-            int effectiveLevelComp = CompareEffectiveLevelTo(Other);
-            if (effectiveLevelComp != 0)
-                return effectiveLevelComp;
-
-            return ComparePurviewTo(Other);
-        }
 
         #endregion
     }

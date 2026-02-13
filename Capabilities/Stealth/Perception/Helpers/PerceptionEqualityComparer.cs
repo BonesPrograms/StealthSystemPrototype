@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-using StealthSystemPrototype.Alerts.Helpers;
-using StealthSystemPrototype.Coalescence;
+using StealthSystemPrototype.Perceptions.Helpers;
+using StealthSystemPrototype.Perceptions;
+
 using static StealthSystemPrototype.Utils;
 
-namespace StealthSystemPrototype.Alerts.Helpers
+namespace StealthSystemPrototype.Perceptions.Helpers
 {
     [Serializable]
     [Flags]
@@ -14,38 +15,38 @@ namespace StealthSystemPrototype.Alerts.Helpers
     {
         Reference = 0,
         Value = 1,
-        Type = 2,
+        AlertType = 2,
     }
 }
-namespace StealthSystemPrototype.Alerts
+namespace StealthSystemPrototype.Perceptions
 {
-    [Serializable]
-    public class AlertEqualityComparer : EqualityComparer<IAlert>
+    public class PerceptionEqualityComparer : EqualityComparer<IPerception>
     {
+
         protected EqualityComparisonType _ComparisonTypeFlags;
         public EqualityComparisonType ComparisonTypeFlags => _ComparisonTypeFlags;
 
-        public AlertEqualityComparer()
+        public PerceptionEqualityComparer()
             : base()
         {
-            _ComparisonTypeFlags = EqualityComparisonType.Type;
+            _ComparisonTypeFlags = EqualityComparisonType.AlertType;
         }
-        public AlertEqualityComparer(EqualityComparisonType ComparisonTypeFlags)
+        public PerceptionEqualityComparer(EqualityComparisonType ComparisonTypeFlags)
             : this()
         {
             _ComparisonTypeFlags = ComparisonTypeFlags;
         }
 
-        protected bool EqualsValue(IAlert x, IAlert y)
-            => x.Intensity == y.Intensity;
+        protected bool EqualsValue(IPerception x, IPerception y)
+            => x.Level == y.Level;
 
-        protected bool EqualsType(IAlert x, IAlert y)
-            => x.Type == y.Type;
+        protected bool EqualsType(IPerception x, IPerception y)
+            => x.GetAlertType() == y.GetAlertType();
 
-        protected bool EqualsReference(IAlert x, IAlert y)
+        protected bool EqualsReference(IPerception x, IPerception y)
             => x == y;
 
-        public override bool Equals(IAlert x, IAlert y)
+        public override bool Equals(IPerception x, IPerception y)
         {
             if (EitherNull(x, y, out bool areEqual))
                 return areEqual;
@@ -53,7 +54,7 @@ namespace StealthSystemPrototype.Alerts
             if (ComparisonTypeFlags.HasFlag(EqualityComparisonType.Reference))
                 return EqualsReference(x, y);
 
-            if (ComparisonTypeFlags.HasFlag(EqualityComparisonType.Type)
+            if (ComparisonTypeFlags.HasFlag(EqualityComparisonType.AlertType)
                 && !EqualsType(x, y))
                 return false;
 
@@ -64,8 +65,8 @@ namespace StealthSystemPrototype.Alerts
             return true;
         }
 
-        public override int GetHashCode(IAlert obj)
+        public override int GetHashCode(IPerception obj)
             => obj.GetType().GetHashCode()
-            ^ obj.Intensity.GetHashCode();
+            ^ obj.Level.GetHashCode();
     }
 }

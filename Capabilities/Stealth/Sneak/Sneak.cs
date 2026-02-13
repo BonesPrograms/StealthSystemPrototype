@@ -18,6 +18,7 @@ using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Perceptions.Specs;
 
 using static StealthSystemPrototype.Utils;
+using XRL.Collections;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
@@ -143,7 +144,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             string abortedByEventMessage = null;
 
-            if (!BeforeSneakEvent.Check(Object, SS.SneakPerformance, SS.SneakWitnesses, ref abortedByEventMessage))
+            if (!BeforeSneakEvent.Check(Object, SS.SneakPerformance, ref abortedByEventMessage))
                 return !abortedByEventMessage.IsNullOrEmpty()
                     && Object.ShowFailure(abortedByEventMessage);
 
@@ -169,7 +170,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Object.ApplyEffect(new UD_Sneaking(Source));
             Object.ToggleActivatedAbility(SS.SneakActivatedAbilityID);
             Object.FireEvent("SneakStarted");
-            ObjectStartedSneakingEvent.Send(Object, SS.SneakPerformance, SS.SneakWitnesses);
+            ObjectStartedSneakingEvent.Send(Object, SS.SneakPerformance);
             return true;
         }
 
@@ -221,7 +222,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     NoLongerSneaking(Object);
                     Object.MovementModeChanged("Not" + nameof(UD_Sneaking));
                 }
-                ObjectStoppedSneakingEvent.Send(Object, SS.SneakPerformance, SS.SneakWitnesses);
+                ObjectStoppedSneakingEvent.Send(Object, SS.SneakPerformance);
             }
             return true;
         }
@@ -230,10 +231,27 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             // do clean-up here.
         }
 
-        public static SneakPerformance GetBestSneakPerformance(GameObject Object)
+        private static SneakPerformance GetBestSneakPerformance(GameObject Object, SneakPerformanceComparer Comparer, Predicate<SneakPerformance> Where)
         {
+            using var sneakSources = ScopeDisposedList<ISneakSource>.GetFromPoolFilledWith(Object.GetSneakSources());
+            if (sneakSources.IsNullOrEmpty())
+                return null;
 
+            return sneakSources
+                .Select(ss => ss.SneakPerformance)
+                .Where(sp => Where?.Invoke(sp) ?? true)
+                .OrderInPlace(Comparer.Compare)
+                .FirstOrDefault();
         }
+        public static SneakPerformance GetBestSneakPerformance(GameObject Object, Predicate<SneakPerformance> Where = null)
+            => GetBestSneakPerformance(Object, new SneakPerformanceComparer(), Where)
+            ;
+        public static SneakPerformance GetBestSneakPerformanceMatching(GameObject Object, AlertSet Alerts, Predicate<SneakPerformance> Where = null)
+            => GetBestSneakPerformance(Object, new SneakPerformanceComparer(Alerts), Where)
+            ;
+        public static SneakPerformance GetBestSneakPerformanceMatching(GameObject Object, IAlert Alert, Predicate<SneakPerformance> Where = null)
+            => GetBestSneakPerformance(Object, new SneakPerformanceComparer(Alert), Where)
+            ;
 
         #region Wishes
 

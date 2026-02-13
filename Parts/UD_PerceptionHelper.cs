@@ -27,7 +27,7 @@ namespace XRL.World.Parts
         : IScribedPart
         , IPerceptionEventHandler
         , IDetectionEventHandler
-        , ISneakEventHandler
+        , ISneakPerformanceEventHandler
     {
         #region Debug
         [UD_DebugRegistry]
@@ -78,8 +78,8 @@ namespace XRL.World.Parts
         #endregion
         #region Properties & Fields
 
-        private PerceptionRack _Perceptions;
-        public PerceptionRack Perceptions
+        private PerceptionsSet _Perceptions;
+        public PerceptionsSet Perceptions
         {
             get
             {
@@ -119,7 +119,12 @@ namespace XRL.World.Parts
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
-            _Perceptions = Reader.ReadComposite<PerceptionRack>();
+            _Perceptions = Reader.ReadComposite<PerceptionsSet>();
+        }
+        public override void FinalizeRead(SerializationReader Reader)
+        {
+            base.FinalizeRead(Reader);
+            Perceptions.FinalizeRead(Reader);
         }
 
         #endregion
@@ -424,12 +429,12 @@ namespace XRL.World.Parts
                     Debug.Arg(ParentObject?.DebugName ?? "null"),
                 });
 
-            if (E.Hider != ParentObject)
+            if (E.Sneaker != ParentObject)
             {
                 Debug.CheckYeh(nameof(Perceptions), "!= " + nameof(ParentObject), Indent: indent[1]);
-                if (!E.Hider.InSamePartyAs(ParentObject))
+                if (!E.Sneaker.InSamePartyAs(ParentObject))
                 {
-                    Debug.CheckYeh(nameof(E.Hider), "!" + nameof(GameObject.InSamePartyAs) + "(" + nameof(ParentObject) + ")", Indent: indent[1]);
+                    Debug.CheckYeh(nameof(E.Sneaker), "!" + nameof(GameObject.InSamePartyAs) + "(" + nameof(ParentObject) + ")", Indent: indent[1]);
                     if (!Perceptions.IsNullOrEmpty())
                     {
                         Debug.CheckYeh(nameof(Perceptions), "!IsNullOrEmpty", Indent: indent[1]);

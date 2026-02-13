@@ -21,7 +21,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 
         public IEnumerable<Cell> GetCellsInArea()
         {
-            if (GetParentPerception()?.GetOwner()?.CurrentCell is not Cell { InActiveZone: true } origin
+            if (GetParentPerception()?.GetPerceiver()?.CurrentCell is not Cell { InActiveZone: true } origin
                 || origin?.GetAdjacentCells(GetEffectiveValue()) is not IEnumerable<Cell> cellsInArea)
                 return null;
 

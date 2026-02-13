@@ -76,11 +76,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         #endregion
         #region Instance Fields & Props
 
-        protected GameObject _Owner = null;
-        public GameObject Owner
+        protected GameObject _Sneaker = null;
+        public GameObject Sneaker
         {
-            get => _Owner;
-            protected set => _Owner = value;
+            get => _Sneaker;
+            protected set => _Sneaker = value;
         }
 
         public StringMap<List<StatCollectorEntry>> CollectedStats = DefaultCollectedStats;
@@ -109,10 +109,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public SneakPerformance()
             : base(DefaultSneakPerformance, CoalesceMethod.Lesser)
         { }
-        public SneakPerformance(GameObject Owner)
+        public SneakPerformance(GameObject Sneaker)
             : this()
         {
-            this.Owner = Owner;
+            this.Sneaker = Sneaker;
         }
         public SneakPerformance(IReadOnlyList<IAlert> SourceList)
             : base(SourceList)
@@ -121,10 +121,10 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public SneakPerformance(GameObject Owner, IReadOnlyList<IAlert> SourceList)
             : this(SourceList)
         {
-            this.Owner = Owner;
+            this.Sneaker = Owner;
         }
         public SneakPerformance(SneakPerformance Source)
-            : this(Source.Owner, Source)
+            : this(Source.Sneaker, Source)
         {
             CollectedStats = Source.CollectedStats;
         }
@@ -135,7 +135,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public override void Write(SerializationWriter Writer)
         {
             base.Write(Writer);
-            Writer.WriteGameObject(Owner);
+            Writer.WriteGameObject(Sneaker);
             Writer.WriteOptimized(Variant);
 
             bool wantWriteCollectedStats = CollectedStats != null;
@@ -154,7 +154,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public override void Read(SerializationReader Reader)
         {
             base.Read(Reader);
-            Owner = Reader.ReadGameObject();
+            Sneaker = Reader.ReadGameObject();
             Variant = Reader.ReadOptimizedInt32();
             if (Reader.ReadBoolean())
             {

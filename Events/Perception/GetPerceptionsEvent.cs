@@ -38,7 +38,7 @@ namespace StealthSystemPrototype.Events
         {
         }
 
-        public static void GetFor(GameObject Perceiver, ref PerceptionRack Perceptions)
+        public static void GetFor(GameObject Perceiver, ref Capabilities.Stealth.PerceptionsSet Perceptions)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -47,7 +47,7 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Perceiver?.DebugName ?? "null"),
                 });
 
-            Perceptions ??= new PerceptionRack(Perceiver);
+            Perceptions ??= new Capabilities.Stealth.PerceptionsSet(Perceiver);
 
             if (FromPool(Perceiver, Perceptions) is not GetPerceptionsEvent E)
                 return;
@@ -99,7 +99,7 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Perception?.ToString()),
                 });
 
-            Perceptions ??= new PerceptionRack(Perceiver);
+            Perceptions ??= new Capabilities.Stealth.PerceptionsSet(Perceiver);
 
             if (Perception.Owner != Perceiver)
                 Perception.Owner = Perceiver;
@@ -121,7 +121,7 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Perception?.ToString()),
                 });
 
-            Perceptions ??= new PerceptionRack(Perceiver);
+            Perceptions ??= new Capabilities.Stealth.PerceptionsSet(Perceiver);
 
             if (!Perceptions.TryGet(out P perception))
             {

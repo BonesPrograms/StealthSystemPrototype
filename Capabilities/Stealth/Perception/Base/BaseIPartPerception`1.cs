@@ -100,12 +100,12 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         public virtual List<T> GetPotentialSources()
-            => GetOwner()?.GetPartsDescendedFrom<T>();
+            => GetPerceiver()?.GetPartsDescendedFrom<T>();
 
         public virtual T GetBestSource()
             => GetPotentialSources()?.GetRandomElementCosmetic();
 
-        public override GameObject GetOwner()
+        public override GameObject GetPerceiver()
             => Owner;
 
         public new static GameObject FindOwner(T Source)

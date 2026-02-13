@@ -9,7 +9,7 @@ using XRL.World.Skills;
 
 namespace XRL.World.Parts.Skill
 {
-    public class UD_Stealth_LightFooted : BaseSkill, ISneakEventHandler
+    public class UD_Stealth_LightFooted : BaseSkill, ISneakPerformanceEventHandler
     {
         public override void Initialize()
         {
@@ -69,7 +69,7 @@ namespace XRL.World.Parts.Skill
         }
         public virtual bool HandleEvent(GetSneakPerformanceEvent E)
         {
-            if (E.Hider == ParentObject)
+            if (E.Sneaker == ParentObject)
             {
                 E.AdjustMoveSpeedMultiplier(this, -10);
                 E.AdjustQuicknessMultiplier(this, -10);

@@ -14,11 +14,12 @@ using StealthSystemPrototype.Perceptions;
 using StealthSystemPrototype.Detetection.Opinions;
 using StealthSystemPrototype.Capabilities.Stealth;
 using StealthSystemPrototype.Logging;
+using XRL.World.ZoneParts;
 
 namespace XRL.World.Parts
 {
     [Serializable]
-    public class UD_Witness : IScribedPart, IWitnessEventHandler
+    public class UD_Witness : IScribedPart, ISneakingZoneEventHandler, ISneakPerformanceEventHandler
     {
         public static bool ConstantDebugOutput => UD_StealthHelper.ConstantDebugOutput;
 
@@ -26,15 +27,9 @@ namespace XRL.World.Parts
 
         private UD_PerceptionHelper PerceptionHelper => ParentObject?.GetPart<UD_PerceptionHelper>();
 
-        public PerceptionRack Perceptions => ParentObject?.GetPerceptions();
+        public PerceptionsSet Perceptions => ParentObject?.GetPerceptions();
 
-        protected Sneakers _ZoneSneakers;
-
-        public Sneakers ZoneSneakers
-        {
-            get => _ZoneSneakers ??= new(ParentObject);
-            protected set => _ZoneSneakers = value;
-        }
+        public Sneakers ZoneSneakers => ParentObject?.CurrentZone?.RequirePart<UD_SneakWitnesser>()?.Sneakers;
 
         public bool PlayerPerceptable
         {
@@ -56,9 +51,8 @@ namespace XRL.World.Parts
         #endregion
 
         public UD_Witness()
-        {
-            ZoneSneakers = null;
-        }
+            : base()
+        { }
 
         #region Serialization
 
@@ -74,16 +68,6 @@ namespace XRL.World.Parts
         }
 
         #endregion
-
-        public override void Initialize()
-        {
-            ZoneSneakers = new(ParentObject);
-            base.Initialize();
-        }
-
-        public void ClearSneakers()
-            => _ZoneSneakers = null;
-
         #region Event Handling
 
         public override bool AllowStaticRegistration()
@@ -91,34 +75,22 @@ namespace XRL.World.Parts
 
         public override bool WantEvent(int ID, int Cascade)
             => base.WantEvent(ID, Cascade)
-            || ID == BeforeTakeActionEvent.ID
-            || ID == GetWitnessesEvent.ID
+            || ID == GetZoneWitnessesEvent.ID
             || ID == GetDebugInternalsEvent.ID
             ;
-        public override bool HandleEvent(BeforeTakeActionEvent E)
+        public bool HandleEvent(GetZoneWitnessesEvent E)
         {
-            if (ConstantDebugOutput && false)
-            {
-                using Indent indent = new(1);
-                Debug.Log((ParentObject?.DebugName?.Strip() ?? "no one") + " " + nameof(Perceptions) + ":", Indent: indent);
-                Debug.Log(Perceptions?.ToString(Delimiter: indent[1] + "\n", Short: true, null) ?? indent[1] + "none??", Indent: indent);
-            }
-            return base.HandleEvent(E);
-        }
-        public bool HandleEvent(GetWitnessesEvent E)
-        {
-            if (ParentObject != E.Hider
-                && !ParentObject.InSamePartyAs(E.Hider))
+            if (ParentObject != E.Sneaker
+                && !ParentObject.InSamePartyAs(E.Sneaker))
             {
                 E.AddWitness(this);
 
                 using Indent indent = new(1);
                 Debug.CheckYeh(Name, ParentObject?.DebugName ?? "NO_WITNESS", Indent: indent);
             }
-                
             return base.HandleEvent(E);
         }
-        public bool HandleEvent(IIsSneakingEvent E)
+        public bool HandleEvent(IObjectSneakingZoneEvent E)
         {
             if (ParentObject != E.Hider
                 && !ParentObject.InSamePartyAs(E.Hider))

@@ -16,11 +16,11 @@ using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public class ObjectIsSneakingEvent : IIsSneakingEvent<ObjectIsSneakingEvent>
+    public class ObjectStoppedSneakingEvent : IObjectSneakingZoneEvent<ObjectStoppedSneakingEvent>
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
-        public ObjectIsSneakingEvent()
+        public ObjectStoppedSneakingEvent()
             : base() { }
     }
 }

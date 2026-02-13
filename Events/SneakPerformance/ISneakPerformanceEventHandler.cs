@@ -2,12 +2,11 @@
 
 namespace StealthSystemPrototype.Events
 {
-    public interface ISneakEventHandler
+    public interface ISneakPerformanceEventHandler
         : IModEventHandler<BeforeSneakEvent>
         , IModEventHandler<GetSneakPerformanceEvent>
         , IModEventHandler<GetSneakDetailsEvent>
         , IModEventHandler<GetActionAlertsEvent>
-        , IModEventHandler<TryConcealActionEvent>
     {
     }
 }

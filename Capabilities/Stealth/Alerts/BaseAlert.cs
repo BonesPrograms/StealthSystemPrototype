@@ -37,7 +37,7 @@ namespace StealthSystemPrototype.Alerts
                 Type: typeof(StealthSystemPrototype.Alerts.BaseAlert),
                 MethodNameValues: new Dictionary<string, bool>()
                 {
-                    { nameof(Copy), false },
+                    { nameof(DeepCopy), false },
                 });
         }
         #endregion
@@ -389,7 +389,7 @@ namespace StealthSystemPrototype.Alerts
         public virtual BaseAlert AdjustIntensity(int Amount)
             => new(Intensity + Amount);
 
-        public virtual BaseAlert Copy(bool Degrade)
+        public virtual BaseAlert DeepCopy(bool Degrade)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -427,8 +427,8 @@ namespace StealthSystemPrototype.Alerts
             return baseAlert;
         }
 
-        public BaseAlert Copy()
-            => Copy(false);
+        public BaseAlert DeepCopy()
+            => DeepCopy(false);
 
         public BaseAlert Degrade(int Amount = 1)
         {
@@ -466,8 +466,8 @@ namespace StealthSystemPrototype.Alerts
         IAlert IAlert.AdjustIntensity(int Amount)
             => AdjustIntensity(Amount);
 
-        IAlert IAlert.DeepCopy()
-            => Copy();
+        IAlert IAlert.DeepCopy(bool Degrade)
+            => DeepCopy(Degrade);
 
         object ICoalescible.Coalesce(object Other)
         {

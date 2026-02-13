@@ -8,7 +8,7 @@ using XRL.World.Skills;
 
 namespace XRL.World.Parts.Skill
 {
-    public class UD_Stealth_Shameless : BaseSkill, ISneakEventHandler
+    public class UD_Stealth_Shameless : BaseSkill, ISneakPerformanceEventHandler
     {
         public override bool AddSkill(GameObject GO)
         {
@@ -39,7 +39,7 @@ namespace XRL.World.Parts.Skill
             ;
         public virtual bool HandleEvent(GetSneakPerformanceEvent E)
         {
-            if (E.Hider == ParentObject)
+            if (E.Sneaker == ParentObject)
             {
                 E.Performance.AdjustMoveSpeedMultiplier(this, 10);
                 E.Performance.AdjustQuicknessMultiplier(this, 10);
@@ -49,7 +49,7 @@ namespace XRL.World.Parts.Skill
         }
         public virtual bool HandleEvent(GetActionAlertsEvent E)
         {
-            if (E.Hider == ParentObject)
+            if (E.Sneaker == ParentObject)
             {
                 throw new NotImplementedException();
             }

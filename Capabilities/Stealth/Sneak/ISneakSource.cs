@@ -8,7 +8,7 @@ using XRL.World;
 
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
-    public interface ISneakSource : ISneakEventHandler
+    public interface ISneakSource : ISneakPerformanceEventHandler
     {
         public GameObject Sneaker { get; }
 

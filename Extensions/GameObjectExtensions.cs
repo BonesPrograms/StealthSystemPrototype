@@ -42,17 +42,17 @@ namespace StealthSystemPrototype
         #endregion
         #region Perceptions
 
-        public static PerceptionRack GetPerceptions(this GameObject Object)
+        public static Capabilities.Stealth.PerceptionsSet GetPerceptions(this GameObject Object)
             => Object.GetPart<UD_PerceptionHelper>()?.Perceptions;
 
-        public static PerceptionRack RequirePerceptions(this GameObject Object)
+        public static Capabilities.Stealth.PerceptionsSet RequirePerceptions(this GameObject Object)
             => Object.RequirePart<UD_PerceptionHelper>()?.Perceptions;
 
         public static bool HasPerceptions([NotNullWhen(true)] this GameObject Object)
             => Object?.HasPart<UD_PerceptionHelper>() ?? false;
 
         public static bool HasAnyPerceptions([NotNullWhen(true)] this GameObject Object)
-            => Object?.GetPart<UD_PerceptionHelper>()?.Perceptions is PerceptionRack perceptions
+            => Object?.GetPart<UD_PerceptionHelper>()?.Perceptions is Capabilities.Stealth.PerceptionsSet perceptions
             && perceptions.Count > 0;
 
         public static bool HasPerception<A>([NotNullWhen(true)] this GameObject Object, BasePerception Perception = null)
@@ -88,7 +88,7 @@ namespace StealthSystemPrototype
             where P : BasePerception, new()
         {
             Perception = null;
-            return Object?.GetPerceptions() is PerceptionRack perceptions
+            return Object?.GetPerceptions() is Capabilities.Stealth.PerceptionsSet perceptions
                 && perceptions.TryGet(out Perception);
         }
 
@@ -139,7 +139,7 @@ namespace StealthSystemPrototype
 
         // re-write this. it's hacky.
         public static bool WithinAnyPurview(this GameObject Object, GameObject Perceiver)
-            => Perceiver?.GetPerceptions() is PerceptionRack perceptions
+            => Perceiver?.GetPerceptions() is Capabilities.Stealth.PerceptionsSet perceptions
             && perceptions.Any(p => Object.CurrentCell.CosmeticDistanceToCell(Perceiver.CurrentCell) >= p.Purview.EffectiveValue);
 
         #endregion

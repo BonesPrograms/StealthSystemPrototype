@@ -62,7 +62,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         private GameObject _Hider;
-        public virtual GameObject Hider
+        public virtual GameObject Sneaker
         {
             get => _Hider;
             protected set => _Hider = value;
@@ -83,7 +83,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         private SneakPerformance _SneakPerformance;
-        public virtual SneakPerformance SneakPerformance => _SneakPerformance ??= Hider?.GetPart<UD_Sneak>()?.SneakPerformance;
+        public virtual SneakPerformance SneakPerformance => _SneakPerformance ??= Sneaker?.GetPart<UD_Sneak>()?.SneakPerformance;
 
         public virtual bool Aggressive { get; } = false;
 
@@ -96,7 +96,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             ID = null;
             Name = null;
             Action = null;
-            Hider = null;
+            Sneaker = null;
             AlertObject = null;
             AlertLocation = null;
             Aggressive = false;
@@ -108,7 +108,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             this.ID = ID ?? Name;
             this.Name = Name ?? this.ID;
             this.Action = Action ?? this.Name;
-            this.Hider = Hider;
+            this.Sneaker = Sneaker;
             this.Aggressive = Aggressive;
             this.Description = Description;
         }
@@ -130,7 +130,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             ID = Source.GetID();
             Name = Source.GetName();
             Action = Source.GetAction();
-            Hider = Source.GetHider();
+            Sneaker = Source.GetHider();
             AlertObject = Source.GetAlertObject();
             AlertLocation = Source.GetAlertLocation();
             Aggressive = Source.GetAggressive();
@@ -146,7 +146,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             Writer.WriteOptimized(ID);
             Writer.WriteOptimized(Name);
             Writer.WriteOptimized(Action);
-            Writer.WriteGameObject(Hider);
+            Writer.WriteGameObject(Sneaker);
             Writer.WriteGameObject(AlertObject);
             Writer.Write(AlertLocation);
             Writer.WriteComposite(SneakPerformance);
@@ -157,7 +157,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             ID = Reader.ReadOptimizedString();
             Name = Reader.ReadOptimizedString();
             Action = Reader.ReadOptimizedString();
-            Hider = Reader.ReadGameObject();
+            Sneaker = Reader.ReadGameObject();
             AlertObject = Reader.ReadGameObject();
             AlertLocation = Reader.ReadCell();
             _SneakPerformance = Reader.ReadComposite<SneakPerformance>();
@@ -175,7 +175,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => Action;
 
         public GameObject GetHider()
-            => Hider;
+            => Sneaker;
 
         public GameObject GetAlertObject()
             => AlertObject;
@@ -193,7 +193,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => Description;
 
         public virtual BaseConcealedAction Initialize()
-            => Coalesce() as BaseConcealedAction;
+            => this;
 
         IConcealedAction IConcealedAction.Initialize()
             => Initialize();
@@ -207,7 +207,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     Debug.Arg(Hider?.MiniDebugName() ?? "null"),
                 });
 
-            this.Hider = Hider;
+            this.Sneaker = Hider;
             return this;
         }
 
@@ -216,7 +216,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual BaseConcealedAction SetAlertObject(GameObject AlertObject = null)
         {
-            this.AlertObject = AlertObject ?? Hider;
+            this.AlertObject = AlertObject ?? Sneaker;
 
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -233,7 +233,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual BaseConcealedAction SetAlertLocation(Cell AlertLocation = null)
         {
-            this.AlertLocation = AlertLocation ?? Hider?.CurrentCell;
+            this.AlertLocation = AlertLocation ?? Sneaker?.CurrentCell;
 
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -248,9 +248,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         IConcealedAction IConcealedAction.SetAlertLocation(Cell AlertLocation)
             => SetAlertLocation(AlertLocation);
 
-        public new Enumerator GetEnumerator()
-            => new(Coalesce());
-
         public virtual void Configure()
         {
             using Indent indent = new(1);
@@ -263,7 +260,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 });
         }
 
-        public void ReplaceActionAlerts(IEnumerable<BaseAlert> NewActionAlerts)
+        public void ReplaceActionAlerts(IEnumerable<IAlert> NewActionAlerts)
         {
             Clear();
             if (!NewActionAlerts.IsNullOrEmpty())

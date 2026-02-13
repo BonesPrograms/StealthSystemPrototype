@@ -16,33 +16,30 @@ using static StealthSystemPrototype.Capabilities.Stealth.Sneak;
 namespace StealthSystemPrototype.Events
 {
     [GameEvent(Base = true, Cascade = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS, Cache = Cache.Pool)]
-    public class GetSneakPerformanceEvent : ISneakEvent<GetSneakPerformanceEvent>
+    public class GetSneakPerformanceEvent : ISneakPerformanceEvent<GetSneakPerformanceEvent>
     {
         public new static readonly int CascadeLevel = CASCADE_EQUIPMENT | CASCADE_INVENTORY | CASCADE_SLOTS;
 
         public GetSneakPerformanceEvent()
             : base()
-        {
-        }
+        { }
 
-        public static SneakPerformance GetFor(GameObject Hider, ref SneakPerformance Performance)
+        public static SneakPerformance GetFor(GameObject Sneaker, ref SneakPerformance Performance)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(Hider?.DebugName ?? "null"),
+                    Debug.Arg(Sneaker?.DebugName ?? "null"),
                 });
 
-            if (!GameObject.Validate(ref Hider)
+            if (!GameObject.Validate(ref Sneaker)
                 || Process(
-                    Hider: Hider,
+                    Sneaker: Sneaker,
                     Performance: ref Performance, 
                     Success: out bool success) is not GetSneakPerformanceEvent E
                 || !success)
                 return null;
-
-            WitnessesProcess(E, out success);
 
             E.Performance.WantSync = false;
             return E.Performance;

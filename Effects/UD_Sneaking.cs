@@ -20,7 +20,7 @@ using static StealthSystemPrototype.Capabilities.Stealth.SneakPerformance;
 
 namespace XRL.World.Effects
 {
-    public class UD_Sneaking : IScribedEffect, ITierInitialized, ISneakEventHandler
+    public class UD_Sneaking : IScribedEffect, ITierInitialized, ISneakPerformanceEventHandler
     {
         public const string DISPLAY_NAME = "{{K|light footed}}";
 
@@ -320,7 +320,7 @@ namespace XRL.World.Effects
         }
         public override bool HandleEvent(EndTurnEvent E)
         {
-            ObjectIsSneakingEvent.Send(Object, SneakPerformance, Witnesses)
+            ObjectIsSneakingEvent.Send(Object, SneakPerformance);
             return base.HandleEvent(E);
         }
         public override bool HandleEvent(CommandEvent E)

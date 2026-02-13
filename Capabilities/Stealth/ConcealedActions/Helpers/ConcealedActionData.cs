@@ -34,7 +34,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             { nameof(ID), null },
             { nameof(Name), null },
             { nameof(Action), null },
-            { nameof(Hider), null },
+            { nameof(Sneaker), null },
             { nameof(AlertObject), null },
             { nameof(AlertLocation), null },
             { nameof(SneakPerformance), null },
@@ -46,7 +46,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public string ID => StoredFields[nameof(ID)] as string;
         public string Name => StoredFields[nameof(Name)] as string;
         public string Action => StoredFields[nameof(Action)] as string;
-        public GameObject Hider => StoredFields[nameof(Hider)] as GameObject;
+        public GameObject Sneaker => StoredFields[nameof(Sneaker)] as GameObject;
         public GameObject AlertObject => StoredFields[nameof(AlertObject)] as GameObject;
         public Cell AlertLocation => StoredFields[nameof(AlertLocation)] as Cell;
         public SneakPerformance SneakPerformance => StoredFields[nameof(SneakPerformance)] as SneakPerformance;
@@ -71,7 +71,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             StoredFields[nameof(ID)] = Source.GetAction();
             StoredFields[nameof(Name)] = Source.GetName();
             StoredFields[nameof(Action)] = Source.GetAction();
-            StoredFields[nameof(Hider)] = Source.GetHider();
+            StoredFields[nameof(Sneaker)] = Source.GetHider();
             StoredFields[nameof(AlertObject)] = Source.GetAlertObject();
             StoredFields[nameof(AlertLocation)] = Source.GetAlertLocation();
             StoredFields[nameof(SneakPerformance)] = Source.GetSneakPerformance();
@@ -112,7 +112,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => Action;
 
         public GameObject GetHider()
-            => Hider;
+            => Sneaker;
 
         public GameObject GetAlertObject()
             => AlertObject;
@@ -137,7 +137,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual ConcealedActionData SetHider(GameObject Hider)
         {
-            StoredFields[nameof(this.Hider)] = Hider;
+            StoredFields[nameof(this.Sneaker)] = Hider;
             return this;
         }
 
@@ -146,7 +146,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual ConcealedActionData SetAlertObject(GameObject AlertObject = null)
         {
-            StoredFields[nameof(this.AlertObject)] = AlertObject ?? Hider;
+            StoredFields[nameof(this.AlertObject)] = AlertObject ?? Sneaker;
             return this;
         }
 
@@ -155,7 +155,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         public virtual ConcealedActionData SetAlertLocation(Cell AlertLocation = null)
         {
-            StoredFields[nameof(this.AlertLocation)] = AlertLocation ?? Hider?.CurrentCell;
+            StoredFields[nameof(this.AlertLocation)] = AlertLocation ?? Sneaker?.CurrentCell;
             return this;
         }
 

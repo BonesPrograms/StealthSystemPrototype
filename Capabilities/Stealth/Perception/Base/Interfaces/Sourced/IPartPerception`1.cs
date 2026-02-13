@@ -15,7 +15,7 @@ namespace StealthSystemPrototype.Perceptions
         where T : IPart
     {
         public new List<T> GetPotentialSources()
-            => GetOwner()?.GetPartsDescendedFrom<T>();
+            => GetPerceiver()?.GetPartsDescendedFrom<T>();
 
         public new T GetBestSource();
 

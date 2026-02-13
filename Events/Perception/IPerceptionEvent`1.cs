@@ -27,7 +27,7 @@ namespace StealthSystemPrototype.Events
 
         protected BasePerception Perception;
 
-        public PerceptionRack Perceptions;
+        public Capabilities.Stealth.PerceptionsSet Perceptions;
 
         public Event StringyEvent;
 
@@ -58,7 +58,7 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(
             GameObject Perciever,
             BasePerception Perception,
-            PerceptionRack Perceptions)
+            Capabilities.Stealth.PerceptionsSet Perceptions)
         {
             if (Perciever == null
                 || FromPool() is not T E)
@@ -74,7 +74,7 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(GameObject Perciever, BasePerception Perception)
             => FromPool(Perciever, Perception, null);
 
-        public static T FromPool(GameObject Perciever, PerceptionRack Perceptions)
+        public static T FromPool(GameObject Perciever, Capabilities.Stealth.PerceptionsSet Perceptions)
             => FromPool(Perciever, null, Perceptions);
 
         public static T FromPool(GameObject Perciever)
@@ -93,14 +93,14 @@ namespace StealthSystemPrototype.Events
 
         public virtual void UpdateFromStringyEvent()
         {
-            if (StringyEvent?.GetParameter(nameof(Perceptions)) is PerceptionRack perceptions)
+            if (StringyEvent?.GetParameter(nameof(Perceptions)) is Capabilities.Stealth.PerceptionsSet perceptions)
                 Perceptions = perceptions;
         }
 
         protected static T Process(
             GameObject Perciever,
             BasePerception Perception,
-            PerceptionRack Perceptions,
+            Capabilities.Stealth.PerceptionsSet Perceptions,
             out bool Success)
         {
             Success = true;
