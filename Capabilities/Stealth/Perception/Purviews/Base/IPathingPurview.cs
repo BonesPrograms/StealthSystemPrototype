@@ -10,46 +10,46 @@ using StealthSystemPrototype.Alerts;
 using StealthSystemPrototype.Perceptions;
 
 using static StealthSystemPrototype.Utils;
+using XRL.Collections;
 
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     /// <summary>
-    /// Contracts a type as being capable of determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/> producing a <see cref="FindPath"/> through which the determination is made.
+    /// Defines methods for determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/> producing a <see cref="FindPath"/> through which the determination is made.
     /// </summary>
     public interface IPathingPurview : IPurview
     {
-        public FindPath LastPath { get; set; }
+        Cell Origin { get; }
 
-        public FindPath GetPathTo(AlertContext Context)
+        FindPath GetPathTo(ref PerceptionSet.AlertEvent E)
             => new(
-                StartCell: Context?.Perceiver?.CurrentCell,
-                EndCell: Context?.AlertLocation,
-                Looker: Context?.Perceiver,
+                StartCell: Origin,
+                EndCell: E.AlertLocation,
+                Looker: E.Perceiver,
                 IgnoreCreatures: true);
 
-        public bool CheckCanPathTo(AlertContext Context, out int Steps)
+        bool CheckCanPathTo(ref PerceptionSet.AlertEvent E, out int Steps)
         {
             Steps = -1;
-            if (GetPathTo(Context) is not FindPath findPath
+            if (GetPathTo(ref E) is not FindPath findPath
                 || !findPath.Found)
                 return false;
 
-            List<Cell> steps = findPath.Steps;
-            List<int> weights = findPath.Weights;
+            using var steps = ScopeDisposedList<Cell>.GetFromPoolFilledWith(findPath.Steps);
+            using var weights = ScopeDisposedList<int>.GetFromPoolFilledWith(findPath.Weights);
 
             int stepsCount = steps.Count;
-            int effectiveRangeCents = GetEffectiveValue() * 100;
+            int effectiveRangeCents = BaseValue * 100;
             for (int i = 0; i < stepsCount; i++)
             {
                 if (effectiveRangeCents < 0)
                     return false;
 
-                if (steps[i] == Context.AlertLocation)
+                if (steps[i] == E.AlertLocation)
                 {
                     Steps = i;
                     return true;
                 }
-
                 effectiveRangeCents -= weights[i];
             }
             return false;

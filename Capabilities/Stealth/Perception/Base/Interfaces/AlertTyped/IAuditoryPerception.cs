@@ -10,7 +10,7 @@ using StealthSystemPrototype.Capabilities.Stealth.Perception;
 namespace StealthSystemPrototype.Perceptions
 {
     /// <summary>
-    /// Contracts a class as capable of detecting <see cref="Auditory"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/> by way of an <see cref="AuditoryPurview"/>.
+    /// Contracts a class as capable of detecting <see cref="Auditory"/> <see cref="IAlert"/>s contained within an <see cref="IConcealedAction"/> by way of an <see cref="AreaPathDiffusePurview"/>.
     /// </summary>
     public interface IAuditoryPerception : IAlertTypedPerception<Auditory>
     {

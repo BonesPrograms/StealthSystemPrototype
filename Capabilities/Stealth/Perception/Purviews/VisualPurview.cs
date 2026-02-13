@@ -29,6 +29,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         private BaseDoubleDiffuser _Diffuser = DefaultDiffuser;
         public virtual BaseDoubleDiffuser Diffuser => _Diffuser;
 
+        public Cell Origin => throw new NotImplementedException();
+
         #region Constructors
 
         public VisualPurview()
@@ -45,8 +47,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception?.GetName() ?? "NO_PERCEPTION"),
-                    Debug.Arg(nameof(Value), Value),
+                    Debug.Arg(nameof(BaseValue), BaseValue),
                 });
 
             _Diffuser = Diffuser ?? _Diffuser;
@@ -98,8 +99,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
                 {
                     ConfigureDiffuser(difuserArgs);
                 }
-                if (args.ContainsKey(nameof(Value))
-                    && args[nameof(Value)] is int valueArg)
+                if (args.ContainsKey(nameof(BaseValue))
+                    && args[nameof(BaseValue)] is int valueArg)
                 {
                    SetValue(valueArg);
                 }
@@ -132,7 +133,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
             return 0;
         }
 
-        public override int GetModifedEffectiveLevel(AlertContext Context)
+        public override int GetEffectiveLevel(AlertContext Context)
         {
             if (ParentPerception == null
                 || !CheckWithinLine(Context, out int distance))

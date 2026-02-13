@@ -57,11 +57,11 @@ namespace StealthSystemPrototype.Alerts
             protected set => _SneakAlert = value;
         }
 
-        private GameObject _Hider;
-        public GameObject Hider
+        private GameObject _Sneaker;
+        public GameObject Sneaker
         {
-            get => _Hider;
-            protected set => _Hider = value;
+            get => _Sneaker;
+            protected set => _Sneaker = value;
         }
 
         private GameObject _AlertObject;
@@ -89,7 +89,7 @@ namespace StealthSystemPrototype.Alerts
             Perceiver = null;
             ActionAlert = null;
             SneakAlert = null;
-            Hider = null;
+            Sneaker = null;
             AlertObject = null;
             AlertLocation = null;
             SuccessMargin = int.MinValue;
@@ -110,7 +110,7 @@ namespace StealthSystemPrototype.Alerts
             this.Perceiver = Perceiver;
             this.ActionAlert = ActionAlert;
             this.SneakAlert = SneakAlert;
-            this.Hider = Hider;
+            this.Sneaker = Hider;
             this.AlertObject = AlertObject;
             this.AlertLocation = AlertLocation;
         }
@@ -140,7 +140,7 @@ namespace StealthSystemPrototype.Alerts
                   Perceiver: Source.Perceiver,
                   ActionAlert: Source.ActionAlert.DeepCopy(Degrade: true),
                   SneakAlert: Source.SneakAlert.DeepCopy(),
-                  Hider: Source.Hider,
+                  Hider: Source.Sneaker,
                   AlertObject: Source.AlertObject,
                   AlertLocation:Source.AlertLocation)
         {
@@ -157,7 +157,7 @@ namespace StealthSystemPrototype.Alerts
             Writer.WriteGameObject(Perceiver);
             Writer.Write(ActionAlert);
             Writer.Write(SneakAlert);
-            Writer.WriteGameObject(Hider);
+            Writer.WriteGameObject(Sneaker);
             Writer.WriteGameObject(AlertObject);
             Writer.Write(AlertLocation);
         }
@@ -168,7 +168,7 @@ namespace StealthSystemPrototype.Alerts
             Perceiver = Reader.ReadGameObject();
             ActionAlert = Reader.ReadComposite() as IAlert;
             SneakAlert = Reader.ReadComposite() as IAlert;
-            Hider = Reader.ReadGameObject();
+            Sneaker = Reader.ReadGameObject();
             AlertObject = Reader.ReadGameObject();
             AlertLocation = Reader.ReadCell();
         }
@@ -177,11 +177,11 @@ namespace StealthSystemPrototype.Alerts
 
         public virtual AlertContext DeepCopy(GameObject Perceiver)
         {
-            AlertContext alertContext = Activator.CreateInstance(GetType()) as AlertContext;
+            var alertContext = Activator.CreateInstance(GetType()) as AlertContext;
 
-            FieldInfo[] fields = GetType().GetFields();
+            var fields = GetType().GetFields();
 
-            foreach (FieldInfo fieldInfo in fields)
+            foreach (var fieldInfo in fields)
                 if ((fieldInfo.Attributes & FieldAttributes.NotSerialized) == 0
                     && !fieldInfo.IsLiteral)
                     fieldInfo.SetValue(alertContext, fieldInfo.GetValue(this));
@@ -192,7 +192,7 @@ namespace StealthSystemPrototype.Alerts
         }
 
         public bool Validate()
-            => GameObject.Validate(Hider)
+            => GameObject.Validate(Sneaker)
             && GameObject.Validate(Perceiver)
             && (Perception == null 
                 || Perception.Validate())

@@ -14,46 +14,26 @@ using static StealthSystemPrototype.Utils;
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     /// <summary>
-    /// Contracts a type as being capable of determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/> using a <see cref="BaseDoubleDiffuser"/> or derivative thereof to adjust the effectiveness of the detection over distance.
+    /// Defines methods for determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/> using a <see cref="BaseDoubleDiffuser"/> or derivative thereof to adjust the effectiveness of the detection over distance.
     /// </summary>
     public interface IDiffusingPurview : IPurview
     {
-        public static BaseDoubleDiffuser DefaultDiffuser => new DelayedLinearDoubleDiffuser(DelayType.Steps, 5);
+        public static BaseDoubleDiffuser DefaultDiffuser => new DelayedLinearDoubleDiffuser(DelayType.Steps, 0.0);
 
-        public BaseDoubleDiffuser Diffuser { get; }
+        BaseDoubleDiffuser Diffuser { get; }
 
-        #region Serialization
-
-        #endregion
-        #region Contracts
-
-        public void ConfigureDiffuser(Dictionary<string, object> args = null)
+        double Diffuse(int Level)
         {
-            if (!args.IsNullOrEmpty())
-            {
-                if (args.ContainsKey(nameof(Diffuser.SetSteps))
-                    && args[nameof(Diffuser.SetSteps)] is int valueArg)
-                {
-                    Diffuser.SetSteps(valueArg);
-                }
-            }
+            BaseDoubleDiffuser diffuser = Diffuser ?? DefaultDiffuser;
+            if (diffuser == null)
+                return Level;
+
+            diffuser.SetSteps(BaseValue);
+
+            if (!diffuser.TryGetValue(BaseValue, out double diffusionFactor))
+                return 0;
+
+            return Level * diffusionFactor;
         }
-
-        public double Diffuse(int Value)
-        {
-            if (Diffuser == null)
-                return Value;
-
-            int effectiveValue = GetEffectiveValue();
-            if (effectiveValue >= Diffuser.Count)
-                Diffuser.SetSteps(effectiveValue);
-
-            if (Diffuser.TryGetValue(effectiveValue, out double diffusionFactor))
-                return Value * diffusionFactor;
-
-            return 0;
-        }
-
-        #endregion
     }
 }

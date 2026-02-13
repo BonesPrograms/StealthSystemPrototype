@@ -15,31 +15,32 @@ using System.Diagnostics.CodeAnalysis;
 namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     /// <summary>
-    /// Contracts a type as being capable of determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/> producing a <see cref="Cell"/> <see cref="IEnumerable{Cell}"/> through which the determination is made.
+    /// Defines methods for determining whether or not an <see cref="IConcealedAction"/> occured within proximity of an <see cref="IPerception"/> producing a <see cref="Cell"/> <see cref="IEnumerable{Cell}"/> through which the determination is made.
     /// </summary>
     public interface ILinePurview : IPurview
     {
+        Cell Origin { get; }
+
         public bool CheckWithinLine(
-            Cell PerceiverLocation,
             Cell AlertLocation,
-            out int Distance)
+            out int Distance
+            )
         {
             Distance = -1;
-            if (PerceiverLocation is not Cell { InActiveZone: true } origin
+            if (Origin is not Cell { InActiveZone: true } origin
                 || AlertLocation is not Cell { InActiveZone: true } destination)
                 return false;
 
             Distance = origin.CosmeticDistanceToCell(destination);
 
-            return Distance <= GetEffectiveValue()
-                && (!GetOccludes()
+            return Distance <= BaseValue
+                && (!Occludes
                     || origin.HasLOSTo(destination));
         }
 
-        public bool CheckWithinLine(AlertContext Context, out int Distance)
+        public bool CheckWithinLine(ref PerceptionSet.AlertEvent E, out int Distance)
             => CheckWithinLine(
-                PerceiverLocation: Context?.Perceiver?.CurrentCell,
-                AlertLocation: Context?.AlertLocation,
+                AlertLocation: E.AlertLocation,
                 Distance: out Distance);
     }
 }

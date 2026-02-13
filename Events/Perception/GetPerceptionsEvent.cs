@@ -38,7 +38,7 @@ namespace StealthSystemPrototype.Events
         {
         }
 
-        public static void GetFor(GameObject Perceiver, ref Capabilities.Stealth.PerceptionsSet Perceptions)
+        public static void GetFor(GameObject Perceiver, ref Capabilities.Stealth.PerceptionSet Perceptions)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -47,7 +47,7 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Perceiver?.DebugName ?? "null"),
                 });
 
-            Perceptions ??= new Capabilities.Stealth.PerceptionsSet(Perceiver);
+            Perceptions ??= new Capabilities.Stealth.PerceptionSet(Perceiver);
 
             if (FromPool(Perceiver, Perceptions) is not GetPerceptionsEvent E)
                 return;
@@ -99,7 +99,7 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Perception?.ToString()),
                 });
 
-            Perceptions ??= new Capabilities.Stealth.PerceptionsSet(Perceiver);
+            Perceptions ??= new Capabilities.Stealth.PerceptionSet(Perceiver);
 
             if (Perception.Owner != Perceiver)
                 Perception.Owner = Perceiver;
@@ -121,9 +121,9 @@ namespace StealthSystemPrototype.Events
                     Debug.Arg(Perception?.ToString()),
                 });
 
-            Perceptions ??= new Capabilities.Stealth.PerceptionsSet(Perceiver);
+            Perceptions ??= new Capabilities.Stealth.PerceptionSet(Perceiver);
 
-            if (!Perceptions.TryGet(out P perception))
+            if (!Perceptions.TryGetPerception(out P perception))
             {
                 perception = Perception;
                 AddPerception(perception, DoRegistration: true, Creation);

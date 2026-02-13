@@ -61,11 +61,11 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             set => _Action = value;
         }
 
-        private GameObject _Hider;
+        private GameObject _Sneaker;
         public virtual GameObject Sneaker
         {
-            get => _Hider;
-            protected set => _Hider = value;
+            get => _Sneaker;
+            protected set => _Sneaker = value;
         }
 
         private GameObject _AlertObject;

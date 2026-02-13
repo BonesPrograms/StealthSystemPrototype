@@ -13,6 +13,7 @@ namespace StealthSystemPrototype
     [Serializable]
     public abstract class SerializableSequence<T>
         : IComposite
+        , IDisposable
         , IEnumerable<T>
         , IReadOnlyList<T>
         , IReadOnlyDictionary<int, T>
@@ -147,13 +148,30 @@ namespace StealthSystemPrototype
         }
 
         #endregion
+        #region Serialization
+
+        public abstract void WriteStartValue(SerializationWriter Writer, T StartValue);
+        public abstract void ReadStartValue(SerializationReader Reader, out T StartValue);
+
+        public virtual void Write(SerializationWriter Writer)
+        {
+            WriteStartValue(Writer, StartValue);
+            Steps.WriteOptimized(Writer);
+        }
+        public virtual void Read(SerializationReader Reader)
+        {
+            ReadStartValue(Reader, out StartValue);
+            Steps = InclusiveRange.ReadOptimizedInclusiveRange(Reader);
+        }
+
+        #endregion
 
         public virtual string GetName(bool Short = false)
             => GetType()?.ToStringWithGenerics(Short) ?? (Short ? "?" : "null?");
 
         private static string LastIndent(int Offset = 0)
         {
-            using Indent indent = new(Offset);
+            using var indent = new Indent(Offset);
             return indent.ToString();
         }
         private static string IndentOrComma(bool Comma, int Offset = 0)
@@ -245,6 +263,12 @@ namespace StealthSystemPrototype
         public IEnumerator<KeyValuePair<int, T>> GetPairEnumerator()
             => new PairEnumerator(this);
 
+        public void Dispose()
+        {
+            Steps = default;
+            StartValue = default;
+        }
+
         #region Explicit Implementations
 
         IEnumerable<int> IReadOnlyDictionary<int, T>.Keys => Steps.GetValues();
@@ -256,23 +280,6 @@ namespace StealthSystemPrototype
 
         IEnumerator<KeyValuePair<int, T>> IEnumerable<KeyValuePair<int, T>>.GetEnumerator()
             => GetPairEnumerator();
-
-        #endregion
-        #region Serialization
-
-        public abstract void WriteStartValue(SerializationWriter Writer, T StartValue);
-        public abstract void ReadStartValue(SerializationReader Reader, out T StartValue);
-
-        public virtual void Write(SerializationWriter Writer)
-        {
-            WriteStartValue(Writer, StartValue);
-            Steps.WriteOptimized(Writer);
-        }
-        public virtual void Read(SerializationReader Reader)
-        {
-            ReadStartValue(Reader, out StartValue);
-            Steps = InclusiveRange.ReadOptimizedInclusiveRange(Reader);
-        }
 
         #endregion
         #region Conversion

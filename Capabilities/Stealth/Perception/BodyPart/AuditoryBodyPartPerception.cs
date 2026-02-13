@@ -28,7 +28,7 @@ namespace StealthSystemPrototype.Perceptions
     {
         public override BasePurview Purview
         {
-            get => _Purview ??= new AuditoryPurview(this);
+            get => _Purview ??= new AreaPathDiffusePurview(this);
             protected set => base.Purview = value;
         }
 

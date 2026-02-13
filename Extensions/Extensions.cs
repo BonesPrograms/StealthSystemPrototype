@@ -646,18 +646,18 @@ namespace StealthSystemPrototype
             AwarenessLevel Level = AwarenessLevel.None,
             float Magnitude = 1f)
         {
-            if (!Brain.TryGetOpinions(Context.Hider, out var opinions))
+            if (!Brain.TryGetOpinions(Context.Sneaker, out var opinions))
                 return null;
 
             string message = null;
-            if (!BeforeDetectedEvent.CheckHider(Context.Hider, ref Detection, ref message)
+            if (!BeforeDetectedEvent.CheckHider(Context.Sneaker, ref Detection, ref message)
                 || !BeforeDetectedEvent.CheckPerceiver(Brain.ParentObject, ref Detection, ref message))
             {
                 if (!message.IsNullOrEmpty())
                     message.StartReplace()
-                        .AddObject(Context.Hider, nameof(Context.Hider).ToLower())
+                        .AddObject(Context.Sneaker, nameof(Context.Sneaker).ToLower())
                         .AddObject(Brain.ParentObject, nameof(Context.Perceiver).ToLower())
-                        .EmitMessage(ColorAsGoodFor: Context.Hider, ColorAsBadFor: Brain.ParentObject);
+                        .EmitMessage(ColorAsGoodFor: Context.Sneaker, ColorAsBadFor: Brain.ParentObject);
                 return null;
             }
 
@@ -714,12 +714,12 @@ namespace StealthSystemPrototype
         {
             if (!Renew && Opinion.Value < 0)
             {
-                int feeling = Context.Perceiver.Brain.GetFeeling(Context.Hider);
+                int feeling = Context.Perceiver.Brain.GetFeeling(Context.Sneaker);
                 if (feeling < -10
                     && feeling - Opinion.Value >= -10)
                     Brain.PlayWorldSound("sfx_creature_angered");
             }
-            AfterAddOpinionEvent.Send(Opinion, Context.Perceiver, Context.Hider, Context.AlertObject, Renew);
+            AfterAddOpinionEvent.Send(Opinion, Context.Perceiver, Context.Sneaker, Context.AlertObject, Renew);
         }
 
         public static GoalHandler FindGoal(this Brain Brain, Type Type)
@@ -841,10 +841,12 @@ namespace StealthSystemPrototype
         #endregion
         #region Collection Manipulation
 
-        public static IEnumerable<T> OrderInPlace<T>(this IEnumerable<T> List, Comparison<T> Comparison)
+        public static IEnumerable<T> OrderInPlace<T>(this IEnumerable<T> Enumerable, Comparison<T> Comparison)
         {
-            List?.ToList()?.Sort(Comparison);
-            return List;
+            using var scopeList = ScopeDisposedList<T>.GetFromPoolFilledWith(Enumerable);
+            scopeList.Sort(Comparison.ToComparer());
+            foreach (var item in scopeList)
+                yield return item;
         }
 
         public static void ForEach<T>(this IEnumerable<T> Items, Action<T> Proc)
@@ -1093,7 +1095,26 @@ namespace StealthSystemPrototype
         #endregion
         #region Comparison
 
-        // nuffin yet.
+        [Serializable]
+        private class ComparisonComparer<T> : IComparer<T>
+        {
+            private readonly Comparison<T> Comparison;
+
+            public ComparisonComparer(Comparison<T> Comparison)
+            {
+                this.Comparison = Comparison;
+            }
+
+            public int Compare(T x, T y)
+            {
+                return Comparison(x, y);
+            }
+        }
+        public static IComparer<T> ToComparer<T>(this Comparison<T> Comparison)
+            => new ComparisonComparer<T>(Comparison);
+
+        public static Comparison<T> ToComparison<T>(this IComparer<T> Comparer)
+            => Comparer.Compare;
 
         #endregion
         #region Predicates

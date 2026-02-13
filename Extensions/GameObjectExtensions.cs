@@ -42,17 +42,17 @@ namespace StealthSystemPrototype
         #endregion
         #region Perceptions
 
-        public static Capabilities.Stealth.PerceptionsSet GetPerceptions(this GameObject Object)
+        public static Capabilities.Stealth.PerceptionSet GetPerceptions(this GameObject Object)
             => Object.GetPart<UD_PerceptionHelper>()?.Perceptions;
 
-        public static Capabilities.Stealth.PerceptionsSet RequirePerceptions(this GameObject Object)
+        public static Capabilities.Stealth.PerceptionSet RequirePerceptions(this GameObject Object)
             => Object.RequirePart<UD_PerceptionHelper>()?.Perceptions;
 
         public static bool HasPerceptions([NotNullWhen(true)] this GameObject Object)
             => Object?.HasPart<UD_PerceptionHelper>() ?? false;
 
         public static bool HasAnyPerceptions([NotNullWhen(true)] this GameObject Object)
-            => Object?.GetPart<UD_PerceptionHelper>()?.Perceptions is Capabilities.Stealth.PerceptionsSet perceptions
+            => Object?.GetPart<UD_PerceptionHelper>()?.Perceptions is Capabilities.Stealth.PerceptionSet perceptions
             && perceptions.Count > 0;
 
         public static bool HasPerception<A>([NotNullWhen(true)] this GameObject Object, BasePerception Perception = null)
@@ -64,23 +64,23 @@ namespace StealthSystemPrototype
             bool IncludeShort = false)
             => Object
                 ?.RequirePerceptions()
-                ?.Has(PerceptionName, IncludeShort)
+                ?.HasPerception(PerceptionName, IncludeShort)
             ?? false;
 
         public static P GetPerception<P>(this GameObject Object)
             where P : BasePerception, new()
-            => Object.RequirePerceptions()?.Get<P>();
+            => Object.RequirePerceptions()?.GetPerception<P>();
 
         public static List<IAlertTypedPerception<A>> GetPerceptionsForAlert<A>(this GameObject Object)
             where A : BaseAlert, new()
             => Object.RequirePerceptions()?.GetForAlert<A>();
 
         public static IPerception GetPerception(this GameObject Object, string PerceptionName, bool IncludeShort = false)
-            => Object.RequirePerceptions().Get(PerceptionName, IncludeShort);
+            => Object.RequirePerceptions().GetPerceptionByName(PerceptionName, IncludeShort);
 
         public static IPerception GetFirstPerceptionOfAlert<A>(this GameObject Object, A Alert = null)
             where A : class, IAlert, new()
-            => Object.RequirePerceptions().GetFirstOfAlert(Alert);
+            => Object.RequirePerceptions().FirstPerceptionOfAlert(Alert);
 
         public static bool TryGetPerception<P>(
             [NotNullWhen(true)] this GameObject Object,
@@ -88,8 +88,8 @@ namespace StealthSystemPrototype
             where P : BasePerception, new()
         {
             Perception = null;
-            return Object?.GetPerceptions() is Capabilities.Stealth.PerceptionsSet perceptions
-                && perceptions.TryGet(out Perception);
+            return Object?.GetPerceptions() is Capabilities.Stealth.PerceptionSet perceptions
+                && perceptions.TryGetPerception(out Perception);
         }
 
         public static P AddPerception<P>(
@@ -139,7 +139,7 @@ namespace StealthSystemPrototype
 
         // re-write this. it's hacky.
         public static bool WithinAnyPurview(this GameObject Object, GameObject Perceiver)
-            => Perceiver?.GetPerceptions() is Capabilities.Stealth.PerceptionsSet perceptions
+            => Perceiver?.GetPerceptions() is Capabilities.Stealth.PerceptionSet perceptions
             && perceptions.Any(p => Object.CurrentCell.CosmeticDistanceToCell(Perceiver.CurrentCell) >= p.Purview.EffectiveValue);
 
         #endregion
@@ -165,12 +165,12 @@ namespace StealthSystemPrototype
                             yield return opinionDetection;
         }
 
-        public static IEnumerable<IOpinionDetection> GetOpinionDetectionsFor(this GameObject Perceiver, GameObject Hider, Predicate<IOpinionDetection> Filter)
+        public static IEnumerable<IOpinionDetection> GetOpinionDetectionsFor(this GameObject Perceiver, GameObject Sneaker, Predicate<IOpinionDetection> Filter)
         {
             if (Perceiver.Brain is not Brain brain)
                 yield break;
 
-            if (GetOpinionDetections(Perceiver, o => o.AlertContext.Hider == Hider) is not IEnumerable<IOpinionDetection> opinionDetections)
+            if (GetOpinionDetections(Perceiver, o => o.Sneaker == Sneaker) is not IEnumerable<IOpinionDetection> opinionDetections)
                 yield break;
 
             foreach (IOpinionDetection opinionDetection in opinionDetections)

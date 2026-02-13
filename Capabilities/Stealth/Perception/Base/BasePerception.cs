@@ -148,7 +148,7 @@ namespace StealthSystemPrototype.Perceptions
             bool LogRoll = false)
         {
             GameObject perceiver = Context.Perceiver;
-            GameObject hider = Context.Hider;
+            GameObject hider = Context.Sneaker;
             GameObject alertObject = Context.AlertObject;
 
             BaseAlert actonAlert = Context.ActionAlert;
@@ -278,7 +278,7 @@ namespace StealthSystemPrototype.Perceptions
             bool IgnoreGodmode = false)
         {
             GameObject perceiver = Context.Perceiver;
-            GameObject hider = Context.Hider;
+            GameObject hider = Context.Sneaker;
             GameObject alertObject = Context.AlertObject;
 
             string perceptionName = Perception.GetName();
@@ -404,7 +404,7 @@ namespace StealthSystemPrototype.Perceptions
             set => _Owner = value;
         }
 
-        public Capabilities.Stealth.PerceptionsSet Rack => Owner?.GetPerceptions();
+        public PerceptionSet ParentSet => Owner?.GetPerceptions();
 
         protected int _Level;
 
@@ -425,7 +425,7 @@ namespace StealthSystemPrototype.Perceptions
                 {
                     GettingLevelAdjustment.Toggle();
 
-                    _EffectiveLevel = Level + GetLevelAdjustment(Level);
+                    _EffectiveLevel = Level + GetLevelAdjustment();
 
                     GettingLevelAdjustment.Toggle();
                 }
@@ -514,28 +514,28 @@ namespace StealthSystemPrototype.Perceptions
         #region Base Methods
 
         /// <summary>
-        /// Called once by a <see cref="Capabilities.Stealth.PerceptionsSet"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as initial.
+        /// Called once by a <see cref="Capabilities.Stealth.PerceptionSet"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as initial.
         /// </summary>
-        public virtual void Added()
+        public virtual void AfterAdded()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="Capabilities.Stealth.PerceptionsSet"/> when this <see cref="BasePerception"/> is first added into the rack.
+        /// Called once by a <see cref="Capabilities.Stealth.PerceptionSet"/> when this <see cref="BasePerception"/> is first added into the rack.
         /// </summary>
         public virtual void Attach()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="Capabilities.Stealth.PerceptionsSet"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as not creation.
+        /// Called once by a <see cref="Capabilities.Stealth.PerceptionSet"/> when this <see cref="BasePerception"/> is first added into the rack if indicated as not creation.
         /// </summary>
         public virtual void AddedAfterCreation()
         {
         }
 
         /// <summary>
-        /// Called once by a <see cref="Capabilities.Stealth.PerceptionsSet"/> when this <see cref="BasePerception"/> is removed from the rack.
+        /// Called once by a <see cref="Capabilities.Stealth.PerceptionSet"/> when this <see cref="BasePerception"/> is removed from the rack.
         /// </summary>
         public virtual void Remove()
         {
@@ -594,7 +594,7 @@ namespace StealthSystemPrototype.Perceptions
         public virtual int GetLevel()
             => Level;
 
-        public virtual int GetLevelAdjustment(int Level = 0)
+        public virtual int GetLevelAdjustment()
             => AdjustTotalPerceptionLevelEvent.GetFor(Owner, this, Level);
 
         public virtual int GetEffectiveLevel()
@@ -675,7 +675,7 @@ namespace StealthSystemPrototype.Perceptions
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(nameof(Owner), Owner?.MiniDebugName() ?? "null"),
-                    Debug.Arg(nameof(Context.Hider), Context?.Hider?.MiniDebugName() ?? "null"),
+                    Debug.Arg(nameof(Context.Sneaker), Context?.Sneaker?.MiniDebugName() ?? "null"),
                 });
 
             return Purview?.CheckWithin(Context) ?? false;
@@ -696,13 +696,13 @@ namespace StealthSystemPrototype.Perceptions
         public virtual void GoOffCooldown()
             => Cooldown = 0;
 
-        public virtual bool CanPerceiveAlert(IAlert Alert)
+        public virtual bool CanPerceive(IAlert Alert)
             => Alert?.IsType(GetAlertType()) ?? false;
 
         public virtual bool CanPerceive(AlertContext Context)
-            => CanPerceiveAlert(Context?.ActionAlert);
+            => CanPerceive(Context?.ActionAlert);
 
-        public virtual bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
+        public virtual bool RollPerception(AlertContext Context, out int SuccessMargin, out int FailureMargin)
         {
             SuccessMargin = 0;
             FailureMargin = 0;
@@ -713,7 +713,7 @@ namespace StealthSystemPrototype.Perceptions
             if (!Validate())
                 return false;
 
-            if (!CanPerceiveAlert(Context.ActionAlert))
+            if (!CanPerceive(Context.ActionAlert))
                 return false;
 
             if (IsOnCooldown())
@@ -745,7 +745,7 @@ namespace StealthSystemPrototype.Perceptions
                 {
                     Debug.Arg(ToString()),
                     Debug.Arg(nameof(Context.Perceiver), Context?.Perceiver.MiniDebugName()),
-                    Debug.Arg(nameof(Context.Hider), Context?.Hider.MiniDebugName()),
+                    Debug.Arg(nameof(Context.Sneaker), Context?.Sneaker.MiniDebugName()),
                 });
 
             if (Context == null)
@@ -761,7 +761,7 @@ namespace StealthSystemPrototype.Perceptions
             return Owner.Brain.AddOpinionDetection(
                 Detection: GetDetectionOpinionEvent.GetFor(
                     Perceiver: Owner,
-                    Hider: Context.Hider,
+                    Hider: Context.Sneaker,
                     Detection: new Curious(),
                     Level: ref level),
                 Context: Context,

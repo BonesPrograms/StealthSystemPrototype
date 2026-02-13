@@ -34,13 +34,11 @@ namespace StealthSystemPrototype.Detetection.ResponseGoals
         protected ResponseGrammar? _Grammar;
         public virtual ResponseGrammar Grammar => _Grammar ??= GetResponseGrammar();
 
-        public AlertContext AlertContext;
+        public GameObject Perciever;
 
-        public GameObject Perciever => AlertContext?.Perceiver;
+        public GameObject Sneaker;
 
-        public GameObject Hider => AlertContext?.Hider;
-
-        public GameObject AlertObject => AlertContext?.AlertObject;
+        public GameObject AlertObject;
 
         public Cell Origin;
 
@@ -56,7 +54,7 @@ namespace StealthSystemPrototype.Detetection.ResponseGoals
         public bool IsValid => Level > AwarenessLevel.None
             && Perciever == ParentObject
             && GameObject.Validate(Perciever)
-            && GameObject.Validate(Hider)
+            && GameObject.Validate(Sneaker)
             && GameObject.Validate(AlertObject)
             && SourceOpinion.RemainingTime > 0;
 

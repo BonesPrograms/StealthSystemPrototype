@@ -177,7 +177,7 @@ namespace StealthSystemPrototype.Perceptions
                 && Owner.HasEffect<Asleep>())
                 return false;
 
-            GameObject actor = Context?.Hider;
+            GameObject actor = Context?.Sneaker;
             if (actor == null)
                 return Attunement >= PsionicAttunement.Ambient;
 
@@ -208,8 +208,8 @@ namespace StealthSystemPrototype.Perceptions
             return false;
         }
 
-        public override bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
-            => base.TryPerceive(Context, out SuccessMargin, out FailureMargin);
+        public override bool RollPerception(AlertContext Context, out int SuccessMargin, out int FailureMargin)
+            => base.RollPerception(Context, out SuccessMargin, out FailureMargin);
 
         public override IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin)
             => base.RaiseDetection(Context, SuccessMargin);

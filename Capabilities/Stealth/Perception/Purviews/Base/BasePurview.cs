@@ -21,9 +21,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
 {
     [StealthSystemBaseClass]
     [Serializable]
-    public class BasePurview
+    public abstract class BasePurview
         : IPurview
-        , IComparable<BasePurview>
+        , IDisposable
     {
         #region Debug
         [UD_DebugRegistry]
@@ -33,292 +33,70 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
                 Type: typeof(StealthSystemPrototype.Capabilities.Stealth.Perception.BasePurview),
                 MethodNameValues: new Dictionary<string, bool>()
                 {
-                    { nameof(Configure), false },
-                    { nameof(SetParentPerception), false },
+                    { nameof(GetPurviewValueAdjustment), false },
                 });
-
-            Registry.Register(new MethodRegistryEntry(
-                MethodBase: AccessTools.PropertySetter(typeof(BasePurview), nameof(ParentPerception)),
-                Value: false));
-
-            Registry.Register(new MethodRegistryEntry(
-                MethodBase: AccessTools.Constructor(typeof(BasePurview), 
-                    parameters: new Type[]
-                    {
-                        typeof(BasePerception),
-                    }),
-                Value: false));
-
-            Registry.Register(new MethodRegistryEntry(
-                MethodBase: AccessTools.Constructor(typeof(BasePurview), 
-                    parameters: new Type[]
-                    {
-                        typeof(BasePurview),
-                    }),
-                Value: false));
         }
         #endregion
 
-        protected BasePerception _ParentPerception;
-        public BasePerception ParentPerception
+        protected bool _Occludes = false;
+        public virtual bool Occludes
         {
-            get => _ParentPerception;
-            set
-            {
-                using Indent indent = new(1);
-                Debug.LogCaller(indent,
-                    ArgPairs: new Debug.ArgPair[]
-                    {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(value?.Name ?? "NO_PERCEPTION"),
-                    Debug.Arg(nameof(Value), Value),
-                    });
-
-                SetParentPerception(value);
-            }
+            get => _Occludes;
+            protected set => _Occludes = value;
         }
 
-        public virtual GameObject Perceiver => ParentPerception?.Owner;
-
-        protected int _Value;
-        public int Value
+        protected int _BaseValue = IPurview.DEFAULT_VALUE;
+        public int BaseValue
         {
-            get => _Value;
-            protected set => _Value = value;
+            get => _BaseValue;
+            protected set => _BaseValue = value;
         }
-
-        private int? _EffectiveValue;
-        public int EffectiveValue
-        {
-            get
-            {
-                if (_EffectiveValue == null
-                    && !GettingValueAdjustment)
-                {
-                    GettingValueAdjustment.Toggle();
-
-                    _EffectiveValue = Value + GetPurviewValueAdjustment(ParentPerception, Value);
-
-                    GettingValueAdjustment.Toggle();
-                }
-                return _EffectiveValue ?? Value;
-            }
-        }
-        private bool GettingValueAdjustment = false;
-
-        public virtual bool Occludes { get; } = false;
-
-        public virtual Type AlertType { get; }
 
         #region Constructors
 
         public BasePurview()
-        {
-            ParentPerception = null;
-            Value = 0;
-            _EffectiveValue = null;
-        }
-        protected BasePurview(BasePerception ParentPerception)
+        { }
+        public BasePurview(int BaseValue, bool Occludes)
             : this()
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
-                });
-
-            this.ParentPerception = ParentPerception;
+            this.BaseValue = BaseValue;
+            this.Occludes = Occludes;
         }
-        protected BasePurview(BasePerception ParentPerception, int Value)
-            : this(ParentPerception)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
-                    Debug.Arg(nameof(Value), Value),
-                });
-
-            this.Value = Value;
-        }
+        public BasePurview(int BaseValue)
+            : this(BaseValue, false)
+        { }
         public BasePurview(BasePurview Source)
-            : this(Source.ParentPerception, Source.Value)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(nameof(Source)),
-                });
-        }
+            : this(Source.BaseValue, Source.Occludes)
+        { }
 
         #endregion
         #region Serialization
 
         public virtual void Write(SerializationWriter Writer)
         {
-            Writer.WriteComposite(ParentPerception);
-            Writer.WriteOptimized(Value);
+            Writer.WriteOptimized(BaseValue);
+            Writer.Write(Occludes);
         }
         public virtual void Read(SerializationReader Reader)
         {
-            ParentPerception = Reader.ReadComposite() as BasePerception;
-            Value = Reader.ReadOptimizedInt32();
+            BaseValue = Reader.ReadOptimizedInt32();
+            Occludes = Reader.ReadBoolean();
         }
 
         #endregion
 
-        public IPerception GetParentPerception()
-            => ParentPerception;
+        public virtual int GetPurviewValueAdjustment(IPerception Perception)
+            => AdjustTotalPurviewEvent.GetFor(Perception.Perceiver, Perception, this, BaseValue);
 
-        public virtual Type GetAlertType()
-            => AlertType;
+        public virtual bool CheckWithin(IPerception Perception, ref PerceptionSet.AlertEvent E)
+            => GetEffectiveLevel(Perception, ref E) > 0;
 
-        public int GetValue()
-            => Value;
+        public abstract int GetEffectiveLevel(IPerception Perception, ref PerceptionSet.AlertEvent E);
 
-        public int GetEffectiveValue()
-            => EffectiveValue;
-
-        public bool GetOccludes()
-            => Occludes;
-
-        public override string ToString()
-            => Value + "(E:" + EffectiveValue + ")" +
-            (Occludes ? "[" + nameof(Occludes) + "]" : null) +
-            "<" +(GetAlertType() != null ?  GetAlertType().ToStringWithGenerics() : "NO_ALERT") + ">";
-
-        public virtual void Configure(Dictionary<string, object> args = null)
+        public virtual void Dispose()
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(nameof(args), args?.Count ?? 0),
-                });
-
-            if (!args.IsNullOrEmpty())
-            {
-                args.ForEach(kvp => Debug.Log(kvp.Key, kvp.Value, Indent: indent[1]));
-
-                if (args.ContainsKey(nameof(ParentPerception))
-                    && args[nameof(ParentPerception)] is BasePerception parentPerceptionArg)
-                {
-                    ParentPerception = parentPerceptionArg;
-                }
-                if (args.ContainsKey(nameof(Value))
-                    && args[nameof(Value)] is int valueArg)
-                {
-                    Value = valueArg;
-                }
-            }
+            _BaseValue = IPurview.DEFAULT_VALUE;
+            _Occludes = false;
         }
-
-        public BasePurview SetParentPerception(BasePerception ParentPerception)
-        {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(ParentPerception?.Name ?? "NO_PERCEPTION"),
-                });
-
-            if (ParentPerception != null
-                && !ParentPerception.IsCompatibleWith(this))
-                throw new ArgumentException(
-                    message: GetType().ToStringWithGenerics() + " requires a " + nameof(ParentPerception) +
-                        " compatible with " + nameof(IAlert) + " of type " + AlertType.ToStringWithGenerics() + ". " +
-                        ParentPerception.GetName() + " uses " + ParentPerception.GetAlertType().ToStringWithGenerics(),
-                    paramName: nameof(ParentPerception));
-
-            _ParentPerception = ParentPerception;
-            return this;
-        }
-
-        IPurview IPurview.SetParentPerception(IPerception ParentPerception)
-            => SetParentPerception(ParentPerception as BasePerception);
-
-        public virtual int GetPurviewValueAdjustment(BasePerception ParentPerception, int Value = 0)
-            => AdjustTotalPerceptionLevelEvent.GetFor(ParentPerception.GetPerceiver(), ParentPerception, Value);
-
-        int IPurview.GetPurviewValueAdjustment(IPerception ParentPerception, int Value)
-            => GetPurviewValueAdjustment(ParentPerception as BasePerception, Value);
-
-        public void SetValue(int Value)
-            => this.Value = Value;
-
-        public void MaybeSetValue(int? Value)
-        {
-            if (Value != null)
-                SetValue((int)Value);
-        }
-
-        public void AdjustBy(int Amount)
-            => SetValue(Value + Amount);
-
-        #region Predicates
-
-        public virtual bool IsForAlert(IAlert Alert)
-            => Alert.IsType(GetAlertType());
-
-        public virtual int GetModifedEffectiveLevel(AlertContext Context)
-            => ParentPerception?.EffectiveLevel ?? 0;
-
-        public virtual bool CheckWithin(AlertContext Context)
-            => GetModifedEffectiveLevel(Context) > 0;
-
-        public virtual void ClearCaches()
-        {
-            _EffectiveValue = null;
-        }
-
-        #endregion
-        #region Equatable
-
-        public virtual bool Equals(IPurview Other)
-            => EitherNull(this, Other, out bool areEqual)
-            ? areEqual
-            : GetValue() == Other.GetValue()
-                || GetEffectiveValue() == Other.GetEffectiveValue();
-
-        #endregion
-        #region Comparable
-
-        public int CompareValueTo(BasePurview Other)
-            => Value - Other.Value;
-
-        public int CompareEffectiveValueTo(BasePurview Other)
-            => EffectiveValue - Other.EffectiveValue;
-
-        public virtual int CompareTo(BasePurview Other)
-            => EitherNull(this, Other, out int comparison)
-            ? comparison
-            : CompareValueTo(Other) + CompareEffectiveValueTo(Other);
-
-        public int CompareValueTo(IPurview Other)
-            => GetValue() - Other.GetValue();
-
-        public int CompareEffectiveValueTo(IPurview Other)
-            => GetEffectiveValue() - Other.GetEffectiveValue();
-
-        public virtual int CompareTo(IPurview Other)
-            => EitherNull(this, Other, out int comparison)
-            ? comparison
-            : CompareValueTo(Other) + CompareEffectiveValueTo(Other);
-
-        #endregion
-        #region Conversion
-
-        public static explicit operator int(BasePurview Operand)
-            => Operand.GetEffectiveValue();
-
-        #endregion
     }
 }

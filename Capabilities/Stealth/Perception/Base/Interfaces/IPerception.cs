@@ -40,9 +40,27 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
 
+        /// <summary>ID-like name for the perception.</summary>
+        string Name { get; }
+
+        /// <summary>Acronymised version of <see cref="Name"/>.</summary>
+        string ShortName { get; }
+
+        /// <summary>
+        /// The <see cref="GameObject"/> to whom this perception belongs. 
+        /// </summary>
         GameObject Perceiver { get; set; }
 
+        /// <summary>The <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.</summary>
+        Type AlertType { get; }
+
         int Level { get; set; }
+
+        int EffectiveLevel => Level + GetLevelAdjustment();
+
+        int Cooldown { get; set; }
+
+        int MaxCooldown { get; }
 
         #region Serialization
 
@@ -50,18 +68,15 @@ namespace StealthSystemPrototype.Perceptions
 
         #endregion
         #region Contracts
-        #region Event Registration
-
-        #endregion
         #region Object Life-cycle
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionsSet"/> when an <see cref="IPerception"/> is first coalesced into the set.
+        /// Called once by a <see cref="PerceptionSet"/> when an <see cref="IPerception"/> is first coalesced into the set.
         /// </summary>
-        void Added();
+        void AfterAdded();
 
         /// <summary>
-        /// Called once by a <see cref="PerceptionsSet"/> when an <see cref="IPerception"/> is removed from the set.
+        /// Called once by a <see cref="PerceptionSet"/> when an <see cref="IPerception"/> is removed from the set.
         /// </summary>
         void Remove();
 
@@ -79,39 +94,16 @@ namespace StealthSystemPrototype.Perceptions
         #region Field Accessors
 
         /// <summary>
-        /// Produces an ID-like name for the <see cref="IPerception"/>.
-        /// </summary>
-        /// <param name="Short">Indicates an alternate shorter version of the output.<br/><br/>A good option is to use <see cref="Extensions.Acronymize(string)"/> to get an acronym.</param>
-        /// <returns>The ID-like name of the <see cref="IPerception"/>.</returns>
-        string GetName(bool Short = false);
-
-        GameObject GetPerceiver();
-
-        /// <summary>
-        /// Get the <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.
-        /// </summary>
-        /// <returns>The <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.</returns>
-        Type GetAlertType();
-
-        /// <summary>
         /// Get the <see cref="IPurview"/> used by this <see cref="IPerception"/> to determine whether an <see cref="IConcealedAction"/> is in proximity enough to be detected.
         /// </summary>
         /// <returns>The <see cref="IPurview"/> used by this <see cref="IPerception"/> to determine whether an <see cref="IConcealedAction"/> is in proximity enough to be detected.</returns>
         IPurview GetPurview();
 
-        int GetLevel();
-
-        int GetLevelAdjustment(int Level = 0);
-
-        int GetEffectiveLevel();
-
-        int GetCooldown();
-
-        int GetMaxCoolDown();
-
         #endregion
 
         string ToString(bool Short);
+
+        int GetLevelAdjustment();
 
         #region Compatibility
 
@@ -127,11 +119,11 @@ namespace StealthSystemPrototype.Perceptions
         /// <summary>
         /// Used to configure the <see cref="IPurview"/> used by this <see cref="IPerception"/> without having to pass arguments to a constructor.
         /// </summary>
-        /// <param name="Value">The value to which the <see cref="IPurview.Value"/> should be set.</param>
+        /// <param name="Value">The value to which the <see cref="IPurview.BaseValue"/> should be set.</param>
         /// <param name="args">An optional set of string &amp; object pairs that represent named values to pass on to <see cref="IPurview.Configure(Dictionary{string, object})"/>.</param>
         void ConfigurePurview(int Value, Dictionary<string, object> args = null);
 
-        bool CheckInPurview(AlertContext Context);
+        bool CheckInPurview(ref PerceptionSet.AlertEvent E);
 
         #endregion
         #region Cooldown
@@ -149,13 +141,14 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
         #region Perceive
 
-        bool CanPerceiveAlert(IAlert Alert);
+        bool CanPerceive(IAlert Alert)
+            => AlertType == Alert.GetType();
 
-        bool CanPerceive(AlertContext Context);
+        bool CanPerceive(ref PerceptionSet.AlertEvent E);
 
-        bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin);
+        bool RollPerception(ref PerceptionSet.AlertEvent E, out int SuccessMargin, out int FailureMargin);
 
-        IOpinionDetection RaiseDetection(AlertContext Context, int SuccessMargin);
+        IOpinionDetection RaiseDetection(ref PerceptionSet.AlertEvent E, int SuccessMargin);
 
         #endregion
 

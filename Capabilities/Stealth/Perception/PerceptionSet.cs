@@ -26,20 +26,31 @@ using StealthSystemPrototype.Perceptions.Helpers;
 namespace StealthSystemPrototype.Capabilities.Stealth
 {
     [Serializable]
-    public class PerceptionsSet : CoalescibleSet<IPerception>
+    public class PerceptionSet : CoalescibleSet<IPerception>
     {
         #region Debug
         [UD_DebugRegistry]
         public static void PerceptionRack_DoDebugRegistry(DebugMethodRegistry Registry)
             => Registry.RegisterEach(
-                Type: typeof(StealthSystemPrototype.Capabilities.Stealth.PerceptionsSet),
+                Type: typeof(StealthSystemPrototype.Capabilities.Stealth.PerceptionSet),
                 MethodNameValues: new Dictionary<string, bool>()
                 {
                     { nameof(GetPerceptionsBestFirst), false },
-                    { nameof(GetAlertContexts), false },
                 });
         #endregion
         #region Static & Const
+
+        public ref struct AlertEvent
+        {
+            public string ActionID;
+            public string Action;
+            public GameObject Perceiver;
+            public IAlert ActionAlert;
+            public IAlert SneakAlert;
+            public GameObject Sneaker;
+            public GameObject AlertObject;
+            public Cell AlertLocation;
+        }
 
         public static PerceptionEqualityComparer DefaultEqualityComparer => new();
         public static PerceptionCoalescer DefaultCoalescer => new(CoalesceMethod.Greater);
@@ -61,23 +72,23 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
         #region Constructors
 
-        public PerceptionsSet()
+        public PerceptionSet()
             : base(DefaultEqualityComparer, DefaultCoalescer)
         { }
-        public PerceptionsSet(GameObject Perceiver)
+        public PerceptionSet(GameObject Perceiver)
             : this()
         {
             this.Perceiver = Perceiver;
         }
-        public PerceptionsSet(IReadOnlyList<IPerception> SourceList)
+        public PerceptionSet(IReadOnlyList<IPerception> SourceList)
             : base(SourceList, DefaultEqualityComparer, DefaultCoalescer)
         { }
-        public PerceptionsSet(GameObject Perceiver, IReadOnlyList<IPerception> SourceList)
+        public PerceptionSet(GameObject Perceiver, IReadOnlyList<IPerception> SourceList)
             : this(SourceList)
         {
             this.Perceiver = Perceiver;
         }
-        public PerceptionsSet(PerceptionsSet Source)
+        public PerceptionSet(PerceptionSet Source)
             : this(Source.Perceiver, Source)
         { }
 
@@ -127,7 +138,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             bool Short,
             IAlert Alert = null)
             => Alert == null
-                || Next.CanPerceiveAlert(Alert)
+                || Next.CanPerceive(Alert)
             ? AggregatePerception(
                 Accumulator: Accumulator,
                 Next: Next,
@@ -161,7 +172,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             {
                 Item.Perceiver = Perceiver;
                 if (!DuringSerialization)
-                    Item.Added();
+                    Item.AfterAdded();
 
                 return true;
             }
@@ -217,21 +228,21 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             => ContainsAlert<A>();
 
         protected static bool IsPerceptionName(IPerception Perception, string PerceptionName)
-            => Perception.GetName() == PerceptionName;
+            => Perception.Name == PerceptionName;
 
         protected static bool IsPerceptionShortName(IPerception Perception, string PerceptionShortName)
-            => Perception.GetName(Short: true) == PerceptionShortName;
+            => Perception.ShortName == PerceptionShortName;
 
         protected static bool IsPerceptionName(IPerception Perception, string PerceptionName, bool IncludeShort)
             => IsPerceptionName(Perception, PerceptionName)
             || (IncludeShort
                 && IsPerceptionShortName(Perception, PerceptionName));
 
-        public bool Has(string PerceptionName, bool IncludeShort = false)
+        public bool HasPerception(string PerceptionName, bool IncludeShort = false)
             => AsEnumerable(p => IsPerceptionName(p, PerceptionName, IncludeShort))
             ?.FirstOrDefault() != null;
 
-        public P Get<P>()
+        public P GetPerception<P>()
             where P : class, IPerception, new()
         {
             for (int i = 0; i < Count; i++)
@@ -240,7 +251,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return null;
         }
 
-        public IPerception GetOfType(Type Type)
+        public IPerception GetPerceptionOfType(Type Type)
         {
             for (int i = 0; i < Count; i++)
                 if (Items[i].GetType() == Type)
@@ -248,46 +259,24 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return null;
         }
 
-        public List<IAlertTypedPerception<A>> GetForAlert<A>(A Alert = null)
-            where A : class, IAlert, new()
-        {
-            var output = new List<IAlertTypedPerception<A>>();
-
-            for (int i = 0; i < Count; i++)
-                if (Items[i] is IAlertTypedPerception<A> typedPerception)
-                    output.Add(typedPerception);
-
-            return output;
-        }
-
-        public IPerception Get(string PerceptionName, bool IncludeShort = false)
+        public IPerception GetPerceptionByName(string PerceptionName, bool IncludeShort = false)
             => AsEnumerable(p => IsPerceptionName(p, PerceptionName, IncludeShort))
-            ?.FirstOrDefault();
-
-        protected static bool IsPerceptionOfAlert<A>(IPerception Perception)
-            where A : class, IAlert, new()
-            => Perception is IAlertTypedPerception<A>;
-
-        public IAlertTypedPerception<A> GetFirstOfAlert<A>(A Alert)
-            where A : class, IAlert, new()
-            => AsEnumerable<A>()
                 ?.FirstOrDefault();
 
-        public IAlertTypedPerception<A> GetFirstTypedOfAlert<A>(A Alert)
-            where A : class, IAlert, new()
-            => AsEnumerable<A>()
+        public IPerception FirstPerceptionOfAlert(IAlert Alert)
+            => AsEnumerable(p => p.CanPerceive(Alert))
                 ?.FirstOrDefault();
 
-        public bool TryGet<P>(out P Perception)
+        public bool TryGetPerception<P>(out P Perception)
             where P : class, IPerception, new()
-            => (Perception = Get<P>()) != null;
+            => (Perception = GetPerception<P>()) != null;
 
-        public bool TryGet(string Name, out IPerception Perception)
-            => (Perception = Get(Name)) != null;
+        public bool TryGetPerceptionByName(string Name, out IPerception Perception)
+            => (Perception = GetPerceptionByName(Name)) != null;
 
-        public virtual PerceptionsSet DeepCopy(GameObject Parent)
+        public virtual PerceptionSet DeepCopy(GameObject Parent)
         {
-            var perceptionSet = (PerceptionsSet)Activator.CreateInstance(GetType());
+            var perceptionSet = (PerceptionSet)Activator.CreateInstance(GetType());
 
             var fields = GetType().GetFields();
 
@@ -322,7 +311,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             {
                 if (!perception.Validate())
                 {
-                    Debug.CheckNah(perception?.GetName() ?? "NO_PERCEPTION", "Invalid", Indent: indent[1]);
+                    Debug.CheckNah(perception?.Name ?? "NO_PERCEPTION", "Invalid", Indent: indent[1]);
                     if (RemoveInvalid)
                         removeList.Add(perception);
                     else
@@ -350,26 +339,30 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IEnumerable<IPerception> GetPerceptionsBestFirst(
             Comparison<IPerception> Comparison,
             Predicate<IPerception> Filter,
-            bool ClearFirst)
+            bool ClearFirst
+            )
         {
-            using Indent indent = new(1);
+            using var indent = new Indent(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(nameof(ClearFirst), ClearFirst),
                 });
 
-            if (Items.ToList() is not List<IPerception> perceptionsList)
-                return null;
-
             if (ClearFirst)
                 ClearCaches();
 
-            perceptionsList.Sort(Comparison);
-
-            return perceptionsList
-                ?.Where(Filter.ToFunc());
+            return Items
+                .Where(Filter.ToFunc())
+                .OrderInPlace(Comparison);
         }
+
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(
+            IComparer<IPerception> Comparer,
+            Predicate<IPerception> Filter,
+            bool ClearFirst
+            )
+            => GetPerceptionsBestFirst(Comparer.Compare, Filter, ClearFirst);
 
         public static int BestForThisAlert<A>(A Alert, IPerception x, IPerception y)
             where A : IAlert, new()
@@ -378,17 +371,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         public IEnumerable<IPerception> GetPerceptionsBestFirst(bool ClearFirst, IAlert Alert = null)
             => GetPerceptionsBestFirst(
                 Comparison: new PerceptionComparer(ComparisonType.EffectiveLevel, Alert).Compare,
-                Filter: p => p.CanPerceiveAlert(Alert),
+                Filter: p => p.CanPerceive(Alert),
                 ClearFirst: ClearFirst);
 
         public IEnumerable<IPerception> GetPerceptionsBestFirst(IAlert Alert = null)
             => GetPerceptionsBestFirst(true, Alert);
 
-        public IEnumerable<IPerception> GetPerceptionsBestFirst(AlertContext Context, bool ClearFirst)
-            => GetPerceptionsBestFirst(true, Context.ActionAlert);
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(ref AlertEvent E, bool ClearFirst)
+            => GetPerceptionsBestFirst(ClearFirst, E.ActionAlert);
 
-        public IEnumerable<IPerception> GetPerceptionsBestFirst(AlertContext Context)
-            => GetPerceptionsBestFirst(Context, true);
+        public IEnumerable<IPerception> GetPerceptionsBestFirst(ref AlertEvent E)
+            => GetPerceptionsBestFirst(ref E, true);
 
         public IPerception GetHighestRatedPerceptionFor(IAlert Alert)
         {
@@ -411,7 +404,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return output;
         }
 
-        public virtual void TickCooldowns()
+        public void TickCooldowns()
         {
             foreach (IPerception perception in this)
                 perception.TickCooldown();
@@ -432,7 +425,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 perception.GoOffCooldown();
         }
 
-        public virtual bool CanPerceiveAlert(IAlert Alert)
+        public bool CanPerceiveAlert(IAlert Alert)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
@@ -445,48 +438,43 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                 throw new ArgumentNullException(nameof(Alert), nameof(this.CanPerceiveAlert) + " requires an " + nameof(IAlert) + " to check for perceivablitiy.");
 
             for (int i = 0; i < Count; i++)
-                if (Items[i].CanPerceiveAlert(Alert))
+                if (Items[i].CanPerceive(Alert))
                     return true;
 
             return false;
         }
 
-        public bool CanPerceive(AlertContext Context)
+        public bool CanPerceive(ref AlertEvent E)
         {
             using Indent indent = new(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
-                    Debug.Arg(Context?.ActionAlert?.ToString() ?? "NO_CONTEXT"),
+                    Debug.Arg(E.ActionAlert?.ToString() ?? "NO_CONTEXT"),
                 });
 
-            if (Context?.ActionAlert is IAlert alert)
+            if (E.ActionAlert is IAlert alert)
             {
                 if (CanPerceiveAlert(alert))
                     return true;
 
                 for (int i = 0; i < Count; i++)
-                    if (Items[i].CanPerceive(Context))
+                    if (Items[i].CanPerceive(ref E))
                         return true;
             }
             return false;
         }
 
-        public virtual bool TryPerceive(AlertContext Context, out int SuccessMargin, out int FailureMargin)
+        private bool RollPerception(ref AlertEvent E, out int SuccessMargin, out int FailureMargin)
         {
-            using Indent indent = new(1);
-            Debug.LogCaller(indent,
-                ArgPairs: new Debug.ArgPair[]
-                {
-                    Debug.Arg(Context?.ActionAlert?.ToString() ?? "NO_CONTEXT"),
-                });
-            SuccessMargin = 0;
-            FailureMargin = 0;
+            SuccessMargin = int.MinValue;
+            FailureMargin = int.MaxValue;
 
             bool any = false;
-            foreach (IPerception perception in GetPerceptionsBestFirst(Context) ?? new IPerception[0])
+            using var perceptionsBestFirst = ScopeDisposedList<IPerception>.GetFromPoolFilledWith(GetPerceptionsBestFirst(ref E));
+            foreach (var perception in perceptionsBestFirst)
             {
-                any = perception.TryPerceive(Context, out int successMargin, out int failureMargin)
+                any = perception.RollPerception(ref E, out int successMargin, out int failureMargin)
                     || any;
 
                 GetMinMax(out _, out SuccessMargin, SuccessMargin, successMargin);
@@ -501,9 +489,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return any;
         }
 
-        public virtual bool TryPerceive(BaseConcealedAction ConcealedAction)
+        public bool RollPerception(IConcealedAction ConcealedAction, out int SuccessMargin, out int FailureMargin)
         {
-            using Indent indent = new(1);
+            using var indent = new Indent(1);
             Debug.LogCaller(indent,
                 ArgPairs: new Debug.ArgPair[]
                 {
@@ -511,25 +499,41 @@ namespace StealthSystemPrototype.Capabilities.Stealth
                     Debug.Arg(nameof(ConcealedAction.Sneaker), ConcealedAction.Sneaker?.DebugName ?? "NO_HIDER"),
                 });
 
-            bool any = false;
-            if (GetAlertContexts(ConcealedAction) is IEnumerable<AlertContext> alertContexts)
-            {
-                Debug.CheckYeh(nameof(alertContexts), alertContexts.Count(), Indent: indent[1]);
-                foreach (AlertContext context in alertContexts)
-                {
-                    bool didPercieve = TryPerceive(context, out int SuccessMargin, out int FailureMargin);
-                    any = didPercieve || any;
-                    Debug.YehNah(context.ActionAlert.ToString() ?? "NO_CONTEXT", didPercieve, Indent: indent[2]);
+            SuccessMargin = int.MinValue;
+            FailureMargin = int.MaxValue;
 
-                    if (didPercieve)
-                        context.RaiseDetection();
-                }
+            var sneakPerformance = ConcealedAction.SneakPerformance;
+
+            bool any = false;
+            foreach (var actionAlert in ConcealedAction)
+            {
+                var E  = new AlertEvent()
+                {
+                    ActionID = ConcealedAction.ID,
+                    Action = ConcealedAction.Action,
+                    Perceiver = Perceiver,
+                    ActionAlert = actionAlert,
+                    SneakAlert = sneakPerformance[actionAlert],
+                    Sneaker = ConcealedAction.Sneaker,
+                    AlertObject = ConcealedAction.AlertObject,
+                    AlertLocation = ConcealedAction.AlertLocation,
+                };
+                Debug.Log(nameof(E.ActionAlert), E.ActionAlert, indent[1]);
+                bool didPercieve = RollPerception(ref E, out int successMargin, out int failureMargin);
+                any = didPercieve || any;
+
+                GetMinMax(out _, out SuccessMargin, SuccessMargin, successMargin);
+                GetMinMax(out FailureMargin, out _, FailureMargin, failureMargin);
+
+                Debug.YehNah(E.ActionAlert.ToString() ?? "NO_CONTEXT", didPercieve, Indent: indent[2]);
             }
+            if (any)
+                FailureMargin = 0;
             else
-                Debug.CheckNah(nameof(alertContexts), "null", Indent: indent[1]);
+                SuccessMargin = 0;
+
             return any;
         }
-            //=> GetAlertContexts(ConcealedAction).Aggregate(false, (a, n) => TryPerceive(n) || a);
 
         #region Container Helpers
 
@@ -579,33 +583,6 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             }
         }
 
-        protected static bool IsAlertTypedPerception<A>(IPerception Perception)
-            where A : class, IAlert, new()
-            => Perception is IAlertTypedPerception<A>;
-
-        protected static IAlertTypedPerception<A> AsAlertTypedPerception<A>(IPerception Perception)
-            where A : class, IAlert, new()
-            => Perception as IAlertTypedPerception<A>;
-
-        public IEnumerable<IAlertTypedPerception<A>> AsEnumerable<A>(Predicate<IAlertTypedPerception<A>> Filter = null)
-            where A : class, IAlert, new()
-        {
-            try
-            {
-                if (Items == null)
-                    throw new InnerArrayNullException(nameof(Items));
-
-                return Items
-                    .Where(IsAlertTypedPerception<A>)
-                    .Select(AsAlertTypedPerception<A>)
-                    .Where(Filter.ToFunc());
-            }
-            catch (InnerArrayNullException)
-            {
-                return new IAlertTypedPerception<A>[0];
-            }
-        }
-
         public IEnumerable<AlertContext> GetAlertContexts(BaseConcealedAction ConcealedAction)
         {
             if (ConcealedAction == null)
@@ -629,7 +606,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
 
             // iterate all the alerts in the concealed action.
             // these represent how obvious the action was to this type of sense.
-            foreach (BaseAlert actionAlert in ConcealedAction)
+            foreach (var actionAlert in ConcealedAction)
                 yield return new AlertContext(
                     ParentAction: ConcealedAction,
                     Perceiver: Perceiver,

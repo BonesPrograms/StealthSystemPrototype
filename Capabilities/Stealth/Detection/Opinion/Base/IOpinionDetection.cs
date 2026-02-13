@@ -30,7 +30,13 @@ namespace StealthSystemPrototype.Detetection.Opinions
     {
         public abstract IDetectionResponseGoal Response { get; }
 
-        public AlertContext AlertContext;
+        public GameObject Perceiver;
+
+        public GameObject Sneaker;
+
+        public GameObject AlertObject;
+
+        public Cell AlertLocation;
 
         public AwarenessLevel Level;
 
@@ -47,7 +53,9 @@ namespace StealthSystemPrototype.Detetection.Opinions
         public IOpinionDetection()
             : base()
         {
-            AlertContext = null;
+            Perceiver = null;
+            Sneaker = null;
+            AlertObject = null;
             Level = AwarenessLevel.None;
             _Duration = BaseDuration;
         }
@@ -56,34 +64,46 @@ namespace StealthSystemPrototype.Detetection.Opinions
 
         public override void Write(SerializationWriter Writer)
         {
-            Writer.WriteComposite(AlertContext);
+            base.Write(Writer);
+            Writer.WriteGameObject(Perceiver);
+            Writer.WriteGameObject(Sneaker);
+            Writer.WriteGameObject(AlertObject);
+            Writer.Write(AlertLocation);
             Writer.WriteOptimized((int)Level);
+            Writer.WriteOptimized(_Duration);
         }
-
         public override void Read(SerializationReader Reader)
         {
-            AlertContext = Reader.ReadComposite<AlertContext>();
+            base.Read(Reader);
+            Perceiver = Reader.ReadGameObject();
+            Sneaker = Reader.ReadGameObject();
+            AlertObject = Reader.ReadGameObject();
+            AlertLocation = Reader.ReadCell();
             Level = (AwarenessLevel)Reader.ReadOptimizedInt32();
+            _Duration = Reader.ReadOptimizedInt32();
         }
 
         #endregion
 
         public virtual void Initialize(AlertContext AlertContext, AwarenessLevel Level)
         {
-            this.AlertContext = AlertContext;
+            Perceiver = AlertContext.Perceiver;
+            Sneaker = AlertContext.Sneaker;
+            AlertObject = AlertContext.AlertObject;
+            AlertLocation = AlertContext.AlertLocation;
             Response.Initialize(this);
 
-            AfterDetectedEvent.Send(AlertContext.Perceiver, AlertContext.Hider, this);
+            AfterDetectedEvent.Send(AlertContext.Perceiver, AlertContext.Sneaker, this);
             AlertContext.Perceiver.Brain.PushGoal(Response);
         }
 
         public virtual IOpinionDetection DeepCopy(GameObject Perceiver)
         {
-            IOpinionDetection opinionDetection = Activator.CreateInstance(GetType()) as IOpinionDetection;
+            var opinionDetection = Activator.CreateInstance(GetType()) as IOpinionDetection;
 
-            FieldInfo[] fields = GetType().GetFields();
+            var fields = GetType().GetFields();
 
-            foreach (FieldInfo fieldInfo in fields)
+            foreach (var fieldInfo in fields)
                 if ((fieldInfo.Attributes & FieldAttributes.NotSerialized) == 0
                     && !fieldInfo.IsLiteral)
                     fieldInfo.SetValue(opinionDetection, fieldInfo.GetValue(this));

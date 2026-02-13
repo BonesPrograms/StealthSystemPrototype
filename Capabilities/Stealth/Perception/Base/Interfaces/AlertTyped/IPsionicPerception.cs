@@ -62,7 +62,7 @@ namespace StealthSystemPrototype.Perceptions
                 && GetPerceiver().HasEffect<Asleep>())
                 return false;
 
-            GameObject hider = Context?.Hider;
+            GameObject hider = Context?.Sneaker;
             if (hider == null)
                 return Attunement >= PsionicAttunement.Ambient;
 

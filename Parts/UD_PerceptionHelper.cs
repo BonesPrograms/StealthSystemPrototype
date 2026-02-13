@@ -78,8 +78,8 @@ namespace XRL.World.Parts
         #endregion
         #region Properties & Fields
 
-        private PerceptionsSet _Perceptions;
-        public PerceptionsSet Perceptions
+        private PerceptionSet _Perceptions;
+        public PerceptionSet Perceptions
         {
             get
             {
@@ -119,7 +119,7 @@ namespace XRL.World.Parts
         public override void Read(GameObject Basis, SerializationReader Reader)
         {
             base.Read(Basis, Reader);
-            _Perceptions = Reader.ReadComposite<PerceptionsSet>();
+            _Perceptions = Reader.ReadComposite<PerceptionSet>();
         }
         public override void FinalizeRead(SerializationReader Reader)
         {
@@ -438,7 +438,7 @@ namespace XRL.World.Parts
                     if (!Perceptions.IsNullOrEmpty())
                     {
                         Debug.CheckYeh(nameof(Perceptions), "!IsNullOrEmpty", Indent: indent[1]);
-                        Perceptions.TryPerceive(E.ConcealedAction);
+                        Perceptions.RollPerception(E.ConcealedAction, out int successMargin, out int failureMargin);
                     }
                 }
             }

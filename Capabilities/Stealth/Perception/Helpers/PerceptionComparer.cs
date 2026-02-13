@@ -97,8 +97,8 @@ namespace StealthSystemPrototype.Perceptions
 
             if (Alert != null)
             {
-                bool xCanPerceive = x.CanPerceiveAlert(Alert);
-                bool yCanPerceive = y.CanPerceiveAlert(Alert);
+                bool xCanPerceive = x.CanPerceive(Alert);
+                bool yCanPerceive = y.CanPerceive(Alert);
                 int canPerceiveComp = xCanPerceive.CompareTo(yCanPerceive);
                 if (canPerceiveComp != 0)
                     return canPerceiveComp;

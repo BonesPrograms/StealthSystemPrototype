@@ -22,7 +22,7 @@ namespace StealthSystemPrototype.Perceptions
             where V : BasePurview<A>;
 
         public new bool CanPerceive(AlertContext Context)
-            => CanPerceiveAlert(Context?.ActionAlert)
+            => CanPerceive(Context?.ActionAlert)
             && ((IPerception)this).CanPerceive(Context);
     }
 }

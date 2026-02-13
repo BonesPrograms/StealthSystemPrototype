@@ -121,8 +121,8 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
                 {
                     ConfigureDiffuser(difuserArgs);
                 }
-                if (args.ContainsKey(nameof(Value))
-                    && args[nameof(Value)] is int valueArg)
+                if (args.ContainsKey(nameof(BaseValue))
+                    && args[nameof(BaseValue)] is int valueArg)
                 {
                     SetValue(valueArg);
                 }
@@ -165,7 +165,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public virtual IEnumerable<Cell> GetCellsInArea()
             => AreaCells;
 
-        public override int GetModifedEffectiveLevel(AlertContext Context)
+        public override int GetEffectiveLevel(AlertContext Context)
         {
             if (ParentPerception == null
                 || !CheckInArea(Context)

@@ -27,7 +27,7 @@ namespace XRL.World.Parts
 
         private UD_PerceptionHelper PerceptionHelper => ParentObject?.GetPart<UD_PerceptionHelper>();
 
-        public PerceptionsSet Perceptions => ParentObject?.GetPerceptions();
+        public PerceptionSet Perceptions => ParentObject?.GetPerceptions();
 
         public Sneakers ZoneSneakers => ParentObject?.CurrentZone?.RequirePart<UD_SneakWitnesser>()?.Sneakers;
 

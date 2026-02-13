@@ -27,7 +27,7 @@ namespace StealthSystemPrototype.Events
 
         protected BasePerception Perception;
 
-        public Capabilities.Stealth.PerceptionsSet Perceptions;
+        public Capabilities.Stealth.PerceptionSet Perceptions;
 
         public Event StringyEvent;
 
@@ -58,7 +58,7 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(
             GameObject Perciever,
             BasePerception Perception,
-            Capabilities.Stealth.PerceptionsSet Perceptions)
+            Capabilities.Stealth.PerceptionSet Perceptions)
         {
             if (Perciever == null
                 || FromPool() is not T E)
@@ -74,7 +74,7 @@ namespace StealthSystemPrototype.Events
         public static T FromPool(GameObject Perciever, BasePerception Perception)
             => FromPool(Perciever, Perception, null);
 
-        public static T FromPool(GameObject Perciever, Capabilities.Stealth.PerceptionsSet Perceptions)
+        public static T FromPool(GameObject Perciever, Capabilities.Stealth.PerceptionSet Perceptions)
             => FromPool(Perciever, null, Perceptions);
 
         public static T FromPool(GameObject Perciever)
@@ -93,14 +93,14 @@ namespace StealthSystemPrototype.Events
 
         public virtual void UpdateFromStringyEvent()
         {
-            if (StringyEvent?.GetParameter(nameof(Perceptions)) is Capabilities.Stealth.PerceptionsSet perceptions)
+            if (StringyEvent?.GetParameter(nameof(Perceptions)) is Capabilities.Stealth.PerceptionSet perceptions)
                 Perceptions = perceptions;
         }
 
         protected static T Process(
             GameObject Perciever,
             BasePerception Perception,
-            Capabilities.Stealth.PerceptionsSet Perceptions,
+            Capabilities.Stealth.PerceptionSet Perceptions,
             out bool Success)
         {
             Success = true;
@@ -125,7 +125,7 @@ namespace StealthSystemPrototype.Events
             => Perception?.GetName(Short);
 
         public virtual bool CanPerceptionPerceive(BaseAlert Alert)
-            => Perception?.CanPerceiveAlert(Alert) ?? false;
+            => Perception?.CanPerceive(Alert) ?? false;
     }
 }
 
