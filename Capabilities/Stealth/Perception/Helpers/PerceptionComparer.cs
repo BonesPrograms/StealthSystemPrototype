@@ -65,13 +65,13 @@ namespace StealthSystemPrototype.Perceptions
         #region Comparison
 
         int CompareLevelTo(IPerception x, IPerception y)
-            => x.GetLevel() - y.GetLevel();
+            => x.BaseLevel - y.BaseLevel;
 
         int CompareEffectiveLevelTo(IPerception x, IPerception y)
-            => x.GetEffectiveLevel() - y.GetEffectiveLevel();
+            => x.Level - y.Level;
 
         int ComparePurviewTo(IPerception x, IPerception y)
-            => x.GetPurview().CompareTo(y.GetPurview());
+            => x.Purview.CompareTo(y.GetPurview());
 
         int CompareTo(IPerception x, IPerception y)
         {

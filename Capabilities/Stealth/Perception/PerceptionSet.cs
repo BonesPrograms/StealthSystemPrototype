@@ -172,7 +172,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             {
                 Item.Perceiver = Perceiver;
                 if (!DuringSerialization)
-                    Item.AfterAdded();
+                    Item.Attach();
 
                 return true;
             }
@@ -180,20 +180,17 @@ namespace StealthSystemPrototype.Capabilities.Stealth
         }
 
         public P Add<P>(
-            int Level,
-            int PurviewValue,
-            bool DoRegistration = true,
-            bool Initial = false,
-            bool Creation = false)
+            int BaseLevel,
+            int BasePurviewValue)
             where P : class, IPerception, new()
         {
             P perception = new()
             {
-                Level = Level,
+                BaseLevel = BaseLevel,
+                BasePurview = BasePurviewValue,
             };
             if (perception != null)
             {
-                perception.ConfigurePurview(PurviewValue);
                 Add(Item: perception);
                 return perception;
             }
@@ -201,20 +198,9 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             return null;
         }
 
-        public P Add<P>(
-            bool DoRegistration = true,
-            bool Initial = false,
-            bool Creation = false)
+        public P Add<P>()
             where P : class, IPerception, new()
-            => Add<P>(0, IPurview.DEFAULT_VALUE, DoRegistration, Initial, Creation);
-
-        public P Add<P>(
-            int Level,
-            int PurviewValue,
-            bool DoRegistration = true,
-            bool Creation = false)
-            where P : class, IPerception, new()
-            => Add<P>(Level, PurviewValue, DoRegistration, false, Creation);
+            => Add<P>(0, IPurview.DEFAULT_VALUE);
 
         public bool Has<P>()
             where P : class, IPerception, new()
@@ -474,7 +460,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth
             using var perceptionsBestFirst = ScopeDisposedList<IPerception>.GetFromPoolFilledWith(GetPerceptionsBestFirst(ref E));
             foreach (var perception in perceptionsBestFirst)
             {
-                any = perception.RollPerception(ref E, out int successMargin, out int failureMargin)
+                any = perception.RollPerception(perception.Purview, ref E, out int successMargin, out int failureMargin)
                     || any;
 
                 GetMinMax(out _, out SuccessMargin, SuccessMargin, successMargin);

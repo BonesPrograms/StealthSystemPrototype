@@ -36,7 +36,7 @@ namespace StealthSystemPrototype.Events
         {
             if (FromPool(
                     Perceiver: Perceiver,
-                    Hider: Hider,
+                    Sneaker: Hider,
                     Detection: Detection) is not AfterDetectedEvent E)
                 return;
 

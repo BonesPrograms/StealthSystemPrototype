@@ -49,8 +49,8 @@ namespace StealthSystemPrototype.Events
 
         public static bool CheckHider(GameObject Hider, ref IOpinionDetection Detection, ref string Message)
         {
-            if (HiderFromPool(
-                Hider: Hider,
+            if (SneakerFromPool(
+                Sneaker: Hider,
                 Detection: Detection) is not BeforeDetectedEvent E)
                 return false;
 

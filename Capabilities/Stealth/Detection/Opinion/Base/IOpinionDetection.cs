@@ -28,6 +28,15 @@ namespace StealthSystemPrototype.Detetection.Opinions
     [StealthSystemBaseClass]
     public abstract class IOpinionDetection : IOpinion
     {
+        public ref struct DetectionEvent
+        {
+            public GameObject Perceiver;
+            public GameObject Sneaker;
+            public GameObject AlertObject;
+            public Cell AlertLocation;
+            public AwarenessLevel Level;
+        }
+
         public abstract IDetectionResponseGoal Response { get; }
 
         public GameObject Perceiver;
@@ -85,16 +94,17 @@ namespace StealthSystemPrototype.Detetection.Opinions
 
         #endregion
 
-        public virtual void Initialize(AlertContext AlertContext, AwarenessLevel Level)
+        public virtual void Initialize(ref DetectionEvent E)
         {
-            Perceiver = AlertContext.Perceiver;
-            Sneaker = AlertContext.Sneaker;
-            AlertObject = AlertContext.AlertObject;
-            AlertLocation = AlertContext.AlertLocation;
+            Perceiver = E.Perceiver;
+            Sneaker = E.Sneaker;
+            AlertObject = E.AlertObject;
+            AlertLocation = E.AlertLocation;
+            Level = E.Level;
             Response.Initialize(this);
 
-            AfterDetectedEvent.Send(AlertContext.Perceiver, AlertContext.Sneaker, this);
-            AlertContext.Perceiver.Brain.PushGoal(Response);
+            AfterDetectedEvent.Send(Perceiver, Sneaker, this);
+            Perceiver.Brain.PushGoal(Response);
         }
 
         public virtual IOpinionDetection DeepCopy(GameObject Perceiver)
@@ -108,9 +118,30 @@ namespace StealthSystemPrototype.Detetection.Opinions
                     && !fieldInfo.IsLiteral)
                     fieldInfo.SetValue(opinionDetection, fieldInfo.GetValue(this));
 
-            opinionDetection.Initialize(AlertContext.DeepCopy(Perceiver), Level);
+            var E = GetDetectionEvent(Perceiver);
+            opinionDetection.Initialize(ref E);
 
             return opinionDetection;
         }
+
+        public DetectionEvent GetDetectionEvent(GameObject Perceiver = null)
+            => new()
+            {
+                Perceiver = Perceiver ?? this.Perceiver,
+                Sneaker = Sneaker,
+                AlertObject = AlertObject,
+                AlertLocation = AlertLocation,
+                Level = Level,
+            };
+
+        public static DetectionEvent GetDetectionEvent(ref PerceptionSet.AlertEvent E, AwarenessLevel Level)
+            => new()
+            {
+                Perceiver = E.Perceiver,
+                Sneaker = E.Sneaker,
+                AlertObject = E.AlertObject,
+                AlertLocation = E.AlertLocation,
+                Level = Level,
+            };
     }
 }

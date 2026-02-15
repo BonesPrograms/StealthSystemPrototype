@@ -101,8 +101,8 @@ namespace StealthSystemPrototype.Events
 
             Perceptions ??= new Capabilities.Stealth.PerceptionSet(Perceiver);
 
-            if (Perception.Owner != Perceiver)
-                Perception.Owner = Perceiver;
+            if (Perception.Perceiver != Perceiver)
+                Perception.Perceiver = Perceiver;
 
             Perceptions.Add(Perception, DoRegistration, Creation);
 
@@ -128,8 +128,8 @@ namespace StealthSystemPrototype.Events
                 perception = Perception;
                 AddPerception(perception, DoRegistration: true, Creation);
             }
-            if (perception.Owner != Perceiver)
-                perception.Owner = Perceiver;
+            if (perception.Perceiver != Perceiver)
+                perception.Perceiver = Perceiver;
                 
             return this;
         }

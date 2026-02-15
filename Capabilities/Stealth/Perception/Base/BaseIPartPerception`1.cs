@@ -23,15 +23,15 @@ namespace StealthSystemPrototype.Perceptions
         , IPartPerception<T>
         where T : IPart
     {
-        public override GameObject Owner
+        public override GameObject Perceiver
         {
-            get => base.Owner ??= IPartPerception<T>.FindOwner(_Source);
-            set => base.Owner = value;
+            get => base.Perceiver ??= IPartPerception<T>.FindOwner(_Source);
+            set => base.Perceiver = value;
         }
 
         public override T Source
         {
-            get => base.Source ??= FindSource(_Owner);
+            get => base.Source ??= FindSource(_Perceiver);
             set => base.Source = value;
         }
         IPart IPartPerception.Source => Source;
@@ -90,13 +90,13 @@ namespace StealthSystemPrototype.Perceptions
                 return false;
 
             if (Source != null
-                && !Owner.HasPart(Source?.Name))
+                && !Perceiver.HasPart(Source?.Name))
                 _Source = null;
 
             if (Source == null)
                 return false;
 
-            return Owner.HasPart<T>();
+            return Perceiver.HasPart<T>();
         }
 
         public virtual List<T> GetPotentialSources()
@@ -106,7 +106,7 @@ namespace StealthSystemPrototype.Perceptions
             => GetPotentialSources()?.GetRandomElementCosmetic();
 
         public override GameObject GetPerceiver()
-            => Owner;
+            => Perceiver;
 
         public new static GameObject FindOwner(T Source)
             => IPartPerception<T>.FindOwner(Source);

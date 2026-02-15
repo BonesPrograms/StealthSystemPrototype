@@ -39,10 +39,10 @@ namespace StealthSystemPrototype.Perceptions
         }
         #endregion
 
-        public override GameObject Owner
+        public override GameObject Perceiver
         {
-            get => base.Owner ??= FindOwner(_Source);
-            set => base.Owner = value;
+            get => base.Perceiver ??= FindOwner(_Source);
+            set => base.Perceiver = value;
         }
 
         protected string _SourceType = null;
@@ -55,7 +55,7 @@ namespace StealthSystemPrototype.Perceptions
         protected BodyPart _Source = null;
         public virtual BodyPart Source
         {
-            get => _Source ??= FindSource(_Owner, SourceType, ref _Source);
+            get => _Source ??= FindSource(_Perceiver, SourceType, ref _Source);
             set => _Source = value;
         }
 
@@ -72,7 +72,7 @@ namespace StealthSystemPrototype.Perceptions
             int? PurviewValue = null)
             : base(Owner, Level)
         {
-            this.Owner = Owner;
+            this.Perceiver = Owner;
             _Source = Source;
             SourceType = Source.Type;
             Purview?.MaybeSetValue(PurviewValue);
@@ -154,7 +154,7 @@ namespace StealthSystemPrototype.Perceptions
                 ArgPairs: new Debug.ArgPair[]
                 {
                     Debug.Arg(GetType().ToStringWithGenerics()),
-                    Debug.Arg(Owner?.MiniDebugName()),
+                    Debug.Arg(Perceiver?.MiniDebugName()),
                     Debug.Arg(nameof(SourceType), SourceType),
                 });
             if (!base.Validate())

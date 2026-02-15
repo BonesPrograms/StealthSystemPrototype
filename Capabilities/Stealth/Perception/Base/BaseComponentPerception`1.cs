@@ -23,10 +23,10 @@ namespace StealthSystemPrototype.Perceptions
         , IComponentPerception<T>
         where T : IComponent<GameObject>
     {
-        public override GameObject Owner
+        public override GameObject Perceiver
         {
-            get => base.Owner ??= FindOwner(Source);
-            set => base.Owner = value;
+            get => base.Perceiver ??= FindOwner(Source);
+            set => base.Perceiver = value;
         }
 
         protected T _Source;
@@ -48,7 +48,7 @@ namespace StealthSystemPrototype.Perceptions
             int Level)
             : base(Owner, Level)
         {
-            this.Owner = Owner;
+            this.Perceiver = Owner;
             this.Source = Source;
         }
         public BaseComponentPerception(

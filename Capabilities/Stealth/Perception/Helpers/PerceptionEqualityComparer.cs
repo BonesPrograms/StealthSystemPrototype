@@ -38,7 +38,7 @@ namespace StealthSystemPrototype.Perceptions
         }
 
         protected bool EqualsValue(IPerception x, IPerception y)
-            => x.Level == y.Level;
+            => x.BaseLevel == y.BaseLevel;
 
         protected bool EqualsType(IPerception x, IPerception y)
             => x.GetAlertType() == y.GetAlertType();
@@ -67,6 +67,6 @@ namespace StealthSystemPrototype.Perceptions
 
         public override int GetHashCode(IPerception obj)
             => obj.GetType().GetHashCode()
-            ^ obj.Level.GetHashCode();
+            ^ obj.BaseLevel.GetHashCode();
     }
 }

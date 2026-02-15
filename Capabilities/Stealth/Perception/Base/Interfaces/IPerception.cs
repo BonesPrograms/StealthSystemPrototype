@@ -34,9 +34,9 @@ namespace StealthSystemPrototype.Perceptions
 
         public static int MAX_LEVEL => 999;
 
-        public static bool IsPerceptionOfAlert<A>(IPerception IPerception)
+        public static bool IsPerceptionOfAlert<A>(IPerception Perception)
             where A : class, IAlert, new()
-            => IPerception is IAlertTypedPerception<A>;
+            => typeof(A).InheritsFrom(Perception.AlertType);
 
         #endregion
 
@@ -51,12 +51,18 @@ namespace StealthSystemPrototype.Perceptions
         /// </summary>
         GameObject Perceiver { get; set; }
 
+        PerceptionSet ParentSet => Perceiver?.GetPerceptions();
+
         /// <summary>The <see cref="IAlert"/> <see langword="class"/> <see cref="Type"/> that this <see cref="IPerception"/> utilizes.</summary>
         Type AlertType { get; }
 
-        int Level { get; set; }
+        int BaseLevel { get; set; }
 
-        int EffectiveLevel => Level + GetLevelAdjustment();
+        int Level => BaseLevel + GetLevelAdjustment();
+
+        int BasePurview { get; set; }
+
+        IPurview Purview { get; }
 
         int Cooldown { get; set; }
 
@@ -73,7 +79,7 @@ namespace StealthSystemPrototype.Perceptions
         /// <summary>
         /// Called once by a <see cref="PerceptionSet"/> when an <see cref="IPerception"/> is first coalesced into the set.
         /// </summary>
-        void AfterAdded();
+        void Attach();
 
         /// <summary>
         /// Called once by a <see cref="PerceptionSet"/> when an <see cref="IPerception"/> is removed from the set.
@@ -91,15 +97,6 @@ namespace StealthSystemPrototype.Perceptions
         IPerception DeepCopy(GameObject Owner);
 
         #endregion
-        #region Field Accessors
-
-        /// <summary>
-        /// Get the <see cref="IPurview"/> used by this <see cref="IPerception"/> to determine whether an <see cref="IConcealedAction"/> is in proximity enough to be detected.
-        /// </summary>
-        /// <returns>The <see cref="IPurview"/> used by this <see cref="IPerception"/> to determine whether an <see cref="IConcealedAction"/> is in proximity enough to be detected.</returns>
-        IPurview GetPurview();
-
-        #endregion
 
         string ToString(bool Short);
 
@@ -110,20 +107,6 @@ namespace StealthSystemPrototype.Perceptions
         bool SameAs(IPerception Other);
 
         bool SameAlertAs(IPerception Other);
-
-        bool IsCompatibleWith(IPurview Purview);
-
-        #endregion
-        #region Purview
-
-        /// <summary>
-        /// Used to configure the <see cref="IPurview"/> used by this <see cref="IPerception"/> without having to pass arguments to a constructor.
-        /// </summary>
-        /// <param name="Value">The value to which the <see cref="IPurview.BaseValue"/> should be set.</param>
-        /// <param name="args">An optional set of string &amp; object pairs that represent named values to pass on to <see cref="IPurview.Configure(Dictionary{string, object})"/>.</param>
-        void ConfigurePurview(int Value, Dictionary<string, object> args = null);
-
-        bool CheckInPurview(ref PerceptionSet.AlertEvent E);
 
         #endregion
         #region Cooldown
@@ -146,7 +129,9 @@ namespace StealthSystemPrototype.Perceptions
 
         bool CanPerceive(ref PerceptionSet.AlertEvent E);
 
-        bool RollPerception(ref PerceptionSet.AlertEvent E, out int SuccessMargin, out int FailureMargin);
+        bool CheckInPurview(ref PerceptionSet.AlertEvent E);
+
+        bool RollPerception(IPurview Purview, ref PerceptionSet.AlertEvent E, out int SuccessMargin, out int FailureMargin);
 
         IOpinionDetection RaiseDetection(ref PerceptionSet.AlertEvent E, int SuccessMargin);
 

@@ -448,7 +448,7 @@ namespace XRL.World.Parts
         {
             if (ParentObject.BelongsToFaction(E.Perceiver.GetPrimaryFaction())
                 && ParentObject != E.Perceiver
-                && ParentObject != E.Hider)
+                && ParentObject != E.Sneaker)
                 ParentObject?.Brain.CascadeOpinionDetection(Detection: E.Detection.DeepCopy(ParentObject));
 
             return base.HandleEvent(E);

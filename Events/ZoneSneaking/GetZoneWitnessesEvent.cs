@@ -52,7 +52,7 @@ namespace StealthSystemPrototype.Events
             => AddWitness(WitnessComponent?.GetComponentBasis());
 
         public GetZoneWitnessesEvent AddWitness(BasePerception Perception)
-            => AddWitness(Perception?.Owner);
+            => AddWitness(Perception?.Perceiver);
     }
 }
 

@@ -52,11 +52,11 @@ namespace StealthSystemPrototype.Events
             ReplacementDetection = StringyEvent.GetParameter<IOpinionDetection>(nameof(ReplacementDetection));
         }
 
-        public static IOpinionDetection GetFor(GameObject Perceiver, GameObject Hider, IOpinionDetection Detection, ref AwarenessLevel Level)
+        public static IOpinionDetection GetFor(GameObject Perceiver, GameObject Sneaker, IOpinionDetection Detection, ref AwarenessLevel Level)
         {
             if (FromPool(
                 Perceiver: Perceiver,
-                Hider: Hider,
+                Sneaker: Sneaker,
                 Detection: Detection) is not GetDetectionOpinionEvent E)
                 return Detection;
 

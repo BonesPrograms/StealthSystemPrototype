@@ -174,7 +174,7 @@ namespace StealthSystemPrototype.Perceptions
                 return false;
 
             if (RequiresConsciousness
-                && Owner.HasEffect<Asleep>())
+                && Perceiver.HasEffect<Asleep>())
                 return false;
 
             GameObject actor = Context?.Sneaker;

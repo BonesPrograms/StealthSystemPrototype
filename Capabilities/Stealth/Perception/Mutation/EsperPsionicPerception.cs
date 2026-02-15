@@ -28,8 +28,8 @@ namespace StealthSystemPrototype.Perceptions
     {
         public override Esper Source
         {
-            get => base.Source = _Owner?.GetPart<Esper>();
-            set => base.Source = _Owner?.GetPart<Esper>();
+            get => base.Source = _Perceiver?.GetPart<Esper>();
+            set => base.Source = _Perceiver?.GetPart<Esper>();
         }
         public override BasePurview Purview
         {
@@ -53,7 +53,7 @@ namespace StealthSystemPrototype.Perceptions
                         seed: 0,
                         func: (a, n) => a + n.Level);
 
-                    short derivedAttunement = (short)(combinedLevels.Clamp(1, count) / count.Clamp(1, count) / (Owner?.Level ?? 1))
+                    short derivedAttunement = (short)(combinedLevels.Clamp(1, count) / count.Clamp(1, count) / (Perceiver?.Level ?? 1))
                         .Clamp((short)PsionicAttunement.Espers, (short)PsionicAttunement.Total);
 
                     return (PsionicAttunement)derivedAttunement;
@@ -63,7 +63,7 @@ namespace StealthSystemPrototype.Perceptions
             }
         }
 
-        public Mutations OwnerMutationsPart => Owner?.GetPart<Mutations>();
+        public Mutations OwnerMutationsPart => Perceiver?.GetPart<Mutations>();
 
         public List<BaseMutation> OrderedOwnerMentalMutations => OwnerMutationsPart
             ?.ActiveMutationList
@@ -112,6 +112,6 @@ namespace StealthSystemPrototype.Perceptions
         #endregion
 
         public override int GetLevelAdjustment(int Level = 0)
-            => base.GetLevelAdjustment(Level) + (Owner?.StatMod("Ego") ?? 0);
+            => base.GetLevelAdjustment(Level) + (Perceiver?.StatMod("Ego") ?? 0);
     }
 }

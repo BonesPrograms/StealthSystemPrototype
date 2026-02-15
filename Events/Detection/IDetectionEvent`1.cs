@@ -26,7 +26,7 @@ namespace StealthSystemPrototype.Events
 
         public GameObject Perceiver;
 
-        public GameObject Hider;
+        public GameObject Sneaker;
 
         public IOpinionDetection Detection;
 
@@ -35,7 +35,7 @@ namespace StealthSystemPrototype.Events
         public IDetectionEvent()
         {
             Perceiver = null;
-            Hider = null;
+            Sneaker = null;
 
             Detection = null;
 
@@ -52,7 +52,7 @@ namespace StealthSystemPrototype.Events
         {
             base.Reset();
             Perceiver = null;
-            Hider = null;
+            Sneaker = null;
             Detection = null;
             StringyEvent?.Clear();
             StringyEvent = null;
@@ -60,29 +60,29 @@ namespace StealthSystemPrototype.Events
 
         public static T FromPool(
             GameObject Perceiver,
-            GameObject Hider,
+            GameObject Sneaker,
             IOpinionDetection Detection,
             bool StringyEvent = true)
         {
             if ((Perceiver == null
-                    && Hider == null)
+                    && Sneaker == null)
                 || FromPool() is not T E)
                 return null;
 
             E.Perceiver = Perceiver;
-            E.Hider = Hider;
+            E.Sneaker = Sneaker;
             E.Detection = Detection;
             if (StringyEvent)
                 E.GetStringyEvent();
             return E;
         }
 
-        public static T HiderFromPool(
-            GameObject Hider,
+        public static T SneakerFromPool(
+            GameObject Sneaker,
             IOpinionDetection Detection)
         {
-            if (Hider == null
-                || FromPool(null, Hider, Detection, StringyEvent: false) is not T E)
+            if (Sneaker == null
+                || FromPool(null, Sneaker, Detection, StringyEvent: false) is not T E)
                 return null;
 
             E.GetStringyEvent();
@@ -106,7 +106,7 @@ namespace StealthSystemPrototype.Events
             ? ExistingEvent = Event.New(RegisteredEventID)
             : (ExistingEvent ??= Event.New(ForEvent.GetRegisteredEventID()))
                 .SetParameter(nameof(ForEvent.Perceiver), ForEvent?.Perceiver)
-                .SetParameter(nameof(ForEvent.Hider), ForEvent?.Hider)
+                .SetParameter(nameof(ForEvent.Sneaker), ForEvent?.Sneaker)
                 .SetParameter(nameof(ForEvent.Detection), ForEvent?.Detection);
 
         public virtual Event GetStringyEvent()
@@ -133,17 +133,17 @@ namespace StealthSystemPrototype.Events
                     && E.Perceiver.WantEvent(E.GetID(), E.GetCascadeLevel()))
                     Success = E.Perceiver.HandleEvent(E);
             }
-            if (GameObject.Validate(ref E.Hider))
+            if (GameObject.Validate(ref E.Sneaker))
             {
                 if (Success
-                    && E.Hider.HasRegisteredEvent(E.GetRegisteredEventID()))
-                    Success = E.Hider.FireEvent(E.StringyEvent);
+                    && E.Sneaker.HasRegisteredEvent(E.GetRegisteredEventID()))
+                    Success = E.Sneaker.FireEvent(E.StringyEvent);
 
                 E.UpdateFromStringyEvent();
 
                 if (Success
-                    && E.Hider.WantEvent(E.GetID(), E.GetCascadeLevel()))
-                    Success = E.Hider.HandleEvent(E);
+                    && E.Sneaker.WantEvent(E.GetID(), E.GetCascadeLevel()))
+                    Success = E.Sneaker.HandleEvent(E);
             }
             return E;
         }
@@ -151,7 +151,7 @@ namespace StealthSystemPrototype.Events
         protected static T ZoneProcess(T E, out bool Success)
         {
             if (!ZoneProcess(E, ref E.Perceiver, out Success))
-                ZoneProcess(E, ref E.Hider, out Success);
+                ZoneProcess(E, ref E.Sneaker, out Success);
 
             return E;
         }
@@ -161,7 +161,7 @@ namespace StealthSystemPrototype.Events
             Success = true;
             if (E != null
                 && GameObject.Validate(ref Actor)
-                && Actor.EqualsAny(E.Perceiver, E.Hider))
+                && Actor.EqualsAny(E.Perceiver, E.Sneaker))
             {
                 if (Success)
                     Success = Actor.GetCurrentZone().FireEvent(E.StringyEvent);
@@ -182,10 +182,10 @@ namespace StealthSystemPrototype.Events
             out bool Success)
             => Process(PerceiverFromPool(Perceiver, Detection), out Success);
 
-        protected static T HiderProcess(
-            GameObject Hider,
+        protected static T SneakerProcess(
+            GameObject Sneaker,
             IOpinionDetection Detection,
             out bool Success)
-            => Process(HiderFromPool(Hider, Detection), out Success);
+            => Process(SneakerFromPool(Sneaker, Detection), out Success);
     }
 }

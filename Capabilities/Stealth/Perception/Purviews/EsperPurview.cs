@@ -67,7 +67,7 @@ namespace StealthSystemPrototype.Capabilities.Stealth.Perception
         public override int GetPurviewValueAdjustment(
             BasePerception ParentPerception,
             int Value = 0)
-            => base.GetPurviewValueAdjustment(ParentPerception, Value) + (ParentPerception?.Owner?.Level ?? 0);
+            => base.GetPurviewValueAdjustment(ParentPerception, Value) + (ParentPerception?.Perceiver?.Level ?? 0);
 
         #region Equatable
 

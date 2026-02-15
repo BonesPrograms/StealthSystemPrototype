@@ -642,22 +642,22 @@ namespace StealthSystemPrototype
         public static IOpinionDetection AddOpinionDetection(
             this Brain Brain,
             IOpinionDetection Detection,
-            AlertContext Context,
-            AwarenessLevel Level = AwarenessLevel.None,
-            float Magnitude = 1f)
+            ref IOpinionDetection.DetectionEvent E,
+            float Magnitude = 1f
+            )
         {
-            if (!Brain.TryGetOpinions(Context.Sneaker, out var opinions))
+            if (!Brain.TryGetOpinions(E.Sneaker, out var opinions))
                 return null;
 
             string message = null;
-            if (!BeforeDetectedEvent.CheckHider(Context.Sneaker, ref Detection, ref message)
+            if (!BeforeDetectedEvent.CheckHider(E.Sneaker, ref Detection, ref message)
                 || !BeforeDetectedEvent.CheckPerceiver(Brain.ParentObject, ref Detection, ref message))
             {
                 if (!message.IsNullOrEmpty())
                     message.StartReplace()
-                        .AddObject(Context.Sneaker, nameof(Context.Sneaker).ToLower())
-                        .AddObject(Brain.ParentObject, nameof(Context.Perceiver).ToLower())
-                        .EmitMessage(ColorAsGoodFor: Context.Sneaker, ColorAsBadFor: Brain.ParentObject);
+                        .AddObject(E.Sneaker, nameof(E.Sneaker).ToLower())
+                        .AddObject(Brain.ParentObject, nameof(E.Perceiver).ToLower())
+                        .EmitMessage(ColorAsGoodFor: E.Sneaker, ColorAsBadFor: Brain.ParentObject);
                 return null;
             }
 
@@ -672,10 +672,10 @@ namespace StealthSystemPrototype
                         Detection = existingOpinionDetection;
                         opinions.RemoveAt(v);
 
-                        if (Level < Detection.Level)
-                            Level = Detection.Level;
+                        if (E.Level < Detection.Level)
+                            E.Level = Detection.Level;
                         else
-                            Level.Increment();
+                            E.Level.Increment();
 
                         Magnitude = Math.Min(Detection.Limit, Detection.Magnitude + Magnitude);
                         break;
@@ -685,41 +685,46 @@ namespace StealthSystemPrototype
 
             Detection.Time = currentTurn;
             Detection.Magnitude = Magnitude;
-            Detection.Initialize(Context, Level);
+            Detection.Initialize(ref E);
             opinions.Add(Detection);
-            Brain.AfterAddOpinionDetection(Detection, Context, renew);
+            Brain.AfterAddOpinionDetection(Detection, ref E, renew);
             return Detection;
         }
 
         public static void CascadeOpinionDetection(this Brain Brain, IOpinionDetection Detection)
-            => Brain.AddOpinionDetection(
-                    Detection: Detection.DeepCopy(Brain.ParentObject),
-                    Context: Detection.AlertContext,
-                    Level: Detection.Level,
-                    Magnitude: Detection.Magnitude);
+        {
+            var E = Detection.GetDetectionEvent();
+            Brain.AddOpinionDetection(
+                Detection: Detection.DeepCopy(Brain.ParentObject),
+                E: ref E,
+                Magnitude: Detection.Magnitude);
+        }
 
         public static D AddOpinionDetection<D>(
             this Brain Brain,
-            AlertContext Context,
-            AwarenessLevel Level = AwarenessLevel.None,
-            float Magnitude = 1f)
+            ref IOpinionDetection.DetectionEvent E,
+            float Magnitude = 1f
+            )
             where D : IOpinionDetection, new()
-            => Brain.AddOpinionDetection(new D(), Context, Level, Magnitude) as D;
+            => Brain.AddOpinionDetection(
+                Detection: new D(),
+                E: ref E,
+                Magnitude: Magnitude) as D;
 
         public static void AfterAddOpinionDetection(
             this Brain Brain,
             IOpinionDetection Opinion,
-            AlertContext Context,
+            ref IOpinionDetection.DetectionEvent E,
             bool Renew = false)
         {
             if (!Renew && Opinion.Value < 0)
             {
-                int feeling = Context.Perceiver.Brain.GetFeeling(Context.Sneaker);
+                int feeling = E.Perceiver.Brain.GetFeeling(E.Sneaker);
                 if (feeling < -10
                     && feeling - Opinion.Value >= -10)
                     Brain.PlayWorldSound("sfx_creature_angered");
             }
-            AfterAddOpinionEvent.Send(Opinion, Context.Perceiver, Context.Sneaker, Context.AlertObject, Renew);
+            AfterAddOpinionEvent.Send(Opinion, E.Perceiver, E.Sneaker, E.AlertObject, Renew);
         }
 
         public static GoalHandler FindGoal(this Brain Brain, Type Type)
@@ -834,9 +839,6 @@ namespace StealthSystemPrototype
                         && Cell.ParentZone.GetCell(x, y) is Cell output)
                         yield return output;
         }
-
-        public static IEnumerable<Cell> GetCellsInACosmeticCircle(this Cell Cell, IPurview Purview)
-            => Cell?.GetCellsInACosmeticCircleSilent(Purview.GetEffectiveValue());
 
         #endregion
         #region Collection Manipulation

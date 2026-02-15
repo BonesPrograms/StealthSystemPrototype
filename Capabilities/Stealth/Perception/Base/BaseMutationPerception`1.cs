@@ -78,7 +78,7 @@ namespace StealthSystemPrototype.Perceptions
             && base.Validate();
 
         public override List<T> GetPotentialSources()
-            => Owner
+            => Perceiver
                 ?.GetPart< Mutations>()
                 ?.ActiveMutationList
                 ?.Where(bm => bm.GetType().InheritsFrom(typeof(T)))
