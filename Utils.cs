@@ -337,7 +337,9 @@ namespace StealthSystemPrototype
             => String + "[" + CROSS + "]" + (AppendSpace ? " " : "");
 
         public static string AppendYehNah(string String, bool Yeh, bool AppendSpace = true)
-            => String + "[" + (Yeh ? TICK : CROSS) + "]" + (AppendSpace ? " " : "");
+            => Yeh
+            ? AppendTick(String, AppendSpace)
+            : AppendCross(String, AppendSpace);
 
         public static string YehNah(bool? Yeh = null)
             => "[" + (Yeh == null ? "-" : (Yeh.GetValueOrDefault() ? TICK : CROSS)) + "]";
